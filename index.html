@@ -9,8 +9,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
   :root{
     --paper: #F3F5FF;
@@ -563,72 +561,18 @@
   .quiz-fill-input.incorrect{border-color:var(--bad);background:#FFE1E4;}
   .quiz-opt-remove{flex:none;background:none;border:none;color:var(--bad);font-weight:800;font-size:16px;box-shadow:none;padding:4px 8px;}
   .quiz-opt-add{margin-bottom:12px;}
-  /* ---------- LOGIN GATE ---------- */
-  .login-gate{
-    min-height:100vh;display:flex;align-items:center;justify-content:center;
-    background:
-      radial-gradient(circle at 12% 8%, rgba(255,201,60,0.16), transparent 40%),
-      radial-gradient(circle at 88% 4%, rgba(91,127,255,0.14), transparent 38%),
-      var(--paper);
-    padding:20px;
-  }
-  .login-card{
-    background:var(--card);border:2.5px solid var(--line);border-radius:var(--radius-lg);
-    padding:32px 28px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px;
-    text-align:center;box-shadow:var(--shadow-lg);
-  }
-  .login-badge{
-    width:56px;height:56px;border-radius:18px;margin:0 auto 4px;
-    background:linear-gradient(150deg, var(--night), var(--night-deep));
-    color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:28px;
-    box-shadow:var(--shadow);
-  }
-  .login-card h1{font-family:'Fredoka';font-size:1.3rem;margin:0;color:var(--ink);}
-  .login-sub{color:var(--ink-soft);margin:0 0 8px;font-size:0.9rem;}
-  .login-card input{
-    background:var(--paper);border:2px solid var(--line);border-radius:var(--radius-sm);
-    color:var(--ink);padding:11px 12px;font-size:0.95rem;font-family:'Nunito';
-  }
-  .login-card button{margin-top:4px;}
-  .login-error{color:var(--bad);font-size:0.85rem;min-height:1.1em;margin:0;font-weight:600;}
 </style>
 </head>
 <body>
-<div id="loginGate" class="login-gate">
-  <form id="loginForm" class="login-card">
-    <div class="login-badge">🎓</div>
-    <h1>Grade 4 Learning Passport</h1>
-    <p class="login-sub">Sign in to continue</p>
-    <input type="email" id="loginEmail" placeholder="Email" autocomplete="username" required>
-    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" required>
-    <button type="submit" id="loginBtn" class="btn btn-primary">Sign In</button>
-    <p class="login-error" id="loginError"></p>
-  </form>
-</div>
-<div id="root" style="display:none;"></div>
+<div id="root"></div>
 <script type="text/babel" data-presets="env,react">
 const {useState, useEffect, useMemo} = React;
 
 /* =========================================================
-   FIREBASE — cloud sync + login gate
-   Same Firebase project as the daily-ledger app (shared account,
-   same sign-in), but its own database path ("grade4_passport") so
-   the two apps' data never collide.
+   FIREBASE — cloud sync (no login/auth; open read/write via REST)
+   Same Firebase project as the daily-ledger app, but its own
+   database path ("grade4_passport") so the two apps' data never collide.
    ========================================================= */
-const firebaseConfig = {
-
-  apiKey: "AIzaSyDIeayv_HtmrXC-ZtegLC1VFjZbT2zU31k",
-  authDomain: "grade4-1064f.firebaseapp.com",
-  databaseURL: "https://grade4-1064f-default-rtdb.firebaseio.com",
-  projectId: "grade4-1064f",
-  storageBucket: "grade4-1064f.firebasestorage.app",
-  messagingSenderId: "626501686100",
-  appId: "1:626501686100:web:9eb753458f3a606c842ec1"
-
-};
-firebase.initializeApp(firebaseConfig);
-const fbAuth = firebase.auth();
-
 const FIREBASE_DB_URL = "https://grade4-1064f-default-rtdb.firebaseio.com/";
 const CLOUD_URL = FIREBASE_DB_URL + "grade4_passport.json";
 const LS_PREFIX = "gs4_"; // every localStorage key this app uses starts with this
@@ -654,10 +598,7 @@ function queueCloudSync(){
 
 async function pushToCloud(){
   try{
-    const user = fbAuth.currentUser;
-    if(!user) throw new Error("not signed in");
-    const token = await user.getIdToken();
-    const res = await fetch(CLOUD_URL.replace(".json", ".json?auth=" + token), {
+    const res = await fetch(CLOUD_URL, {
       method: "PUT",
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify(buildLocalSnapshot())
@@ -665,7 +606,7 @@ async function pushToCloud(){
     if(!res.ok) throw new Error("bad response");
     return true;
   }catch(e){
-    // Offline, or not signed in yet — local copy is still safe.
+    // Offline — local copy is still safe.
     console.warn("Firebase sync skipped:", e.message);
     return false;
   }
@@ -676,10 +617,7 @@ async function loadFromCloud(){
   // picks up progress made on any other device. Falls back silently
   // to whatever is already in localStorage if the cloud isn't reachable.
   try{
-    const user = fbAuth.currentUser;
-    if(!user) throw new Error("not signed in");
-    const token = await user.getIdToken();
-    const res = await fetch(CLOUD_URL.replace(".json", ".json?auth=" + token));
+    const res = await fetch(CLOUD_URL);
     if(!res.ok) throw new Error("bad response");
     const remote = await res.json();
     if(remote && typeof remote === "object"){
@@ -688,7 +626,7 @@ async function loadFromCloud(){
       });
     }
   }catch(e){
-    console.warn("Firebase load skipped (offline, or not signed in yet):", e.message);
+    console.warn("Firebase load skipped (offline):", e.message);
   }
 }
 
@@ -3930,7 +3868,6 @@ function App(){
           >{settings.soundEnabled !== false ? "🔊" : "🔇"}</button>
           <button className="settings-btn" title="Save everything now" onClick={saveEverythingNow}>💾</button>
           <button className="settings-btn" title="Reset progress" onClick={resetAll}>⟳</button>
-          <button className="settings-btn" title="Sign out" onClick={()=>fbAuth.signOut()}>🚪</button>
         </div>
       </div>
       {saveFlash && <div className="save-toast">{saveFlash}</div>}
@@ -3940,46 +3877,13 @@ function App(){
 }
 
 /* =========================================================
-   AUTH GATE — sign in before the app mounts, hydrate from
-   Firebase first so this device sees the latest saved progress.
+   STARTUP — hydrate from Firebase first so this device sees
+   the latest saved progress, then mount the app. No login.
    ========================================================= */
-const loginGateEl = document.getElementById("loginGate");
-const rootEl = document.getElementById("root");
-const loginForm = document.getElementById("loginForm");
-const loginError = document.getElementById("loginError");
-const loginBtn = document.getElementById("loginBtn");
-
-loginForm.addEventListener("submit", async (e)=>{
-  e.preventDefault();
-  loginError.textContent = "";
-  loginBtn.disabled = true; loginBtn.textContent = "Signing in…";
-  try{
-    await fbAuth.signInWithEmailAndPassword(
-      document.getElementById("loginEmail").value.trim(),
-      document.getElementById("loginPassword").value
-    );
-  }catch(err){
-    loginError.textContent = "Sign-in failed — check your email and password.";
-  }finally{
-    loginBtn.disabled = false; loginBtn.textContent = "Sign In";
-  }
-});
-
-let appStarted = false;
-fbAuth.onAuthStateChanged(async (user)=>{
-  if(user){
-    loginGateEl.style.display = "none";
-    rootEl.style.display = "";
-    if(!appStarted){
-      appStarted = true;
-      await loadFromCloud(); // pull the shared save down before first render
-      ReactDOM.createRoot(rootEl).render(<App/>);
-    }
-  } else {
-    rootEl.style.display = "none";
-    loginGateEl.style.display = "";
-  }
-});
+(async function start(){
+  await loadFromCloud();
+  ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+})();
 </script>
 </body>
 </html>
