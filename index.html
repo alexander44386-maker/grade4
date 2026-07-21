@@ -11,38 +11,45 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <style>
   :root{
-    --paper: #F3F5FF;
-    --paper-dark: #E7EBFF;
-    --card: #FFFFFF;
-    --ink: #2B2A55;
-    --ink-soft: #74739B;
-    --line: #E1E3FA;
-    --q1: #FF9F1C;
-    --q1-soft: #FFEACC;
-    --q2: #14C38E;
-    --q2-soft: #D7F7EB;
-    --q3: #5B7FFF;
-    --q3-soft: #E5EAFF;
-    --q4: #FF6FA8;
-    --q4-soft: #FFE1EE;
-    --night: #1B4DE4;
-    --night-deep: #0E2E99;
-    --gold: #FFC93C;
-    --good: #14C38E;
-    --bad: #FF5C6C;
+    --paper: #F7F6F3;
+    --paper-dark: #EDEBE3;
+    --card: #FFFDF9;
+    --ink: #2E2D52;
+    --ink-soft: #777698;
+    --line: #E6E2D9;
+    --q1: #ED9C2E;
+    --q1-soft: #FBE9D0;
+    --q2: #22B588;
+    --q2-soft: #DAF4EA;
+    --q3: #6886F2;
+    --q3-soft: #E7EBFD;
+    --q4: #F37BAA;
+    --q4-soft: #FDE3EE;
+    --night: #2B55D4;
+    --night-deep: #19348E;
+    --gold: #EFC24C;
+    --good: #22B588;
+    --bad: #F26976;
     --radius-lg: 26px;
     --radius-md: 18px;
     --radius-sm: 12px;
     --shadow: 0 5px 0 rgba(43,42,85,0.14);
     --shadow-lg: 0 10px 24px rgba(27,77,228,0.18);
+    /* ---- reward / achievement accent (used only for badges, progress hero,
+       level-up celebrations & results rewards — never on lesson/quiz pages) ---- */
+    --aw-bg1: #171233;
+    --aw-bg2: #0A0A1C;
+    --aw-cyan: #35F2E0;
+    --aw-magenta: #FF3CAC;
+    --aw-purple: #7B2FF7;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
     background:
-      radial-gradient(circle at 12% 8%, rgba(255,201,60,0.16), transparent 40%),
-      radial-gradient(circle at 88% 4%, rgba(91,127,255,0.14), transparent 38%),
-      radial-gradient(circle at 6px 6px, rgba(27,77,228,0.07) 2px, transparent 0) 0 0/28px 28px,
+      radial-gradient(circle at 12% 8%, rgba(239,194,76,0.14), transparent 40%),
+      radial-gradient(circle at 88% 4%, rgba(104,134,242,0.12), transparent 38%),
+      radial-gradient(circle at 6px 6px, rgba(43,85,212,0.06) 2px, transparent 0) 0 0/28px 28px,
       var(--paper);
     color:var(--ink);
     font-family:'Nunito', sans-serif;
@@ -70,7 +77,7 @@
   .btn:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(43,42,85,0.14);}
   @media (hover:hover){ .btn:hover{filter:brightness(1.06);} }
   .btn-primary{background:var(--night);color:#fff;}
-  .btn-ghost{background:#fff;color:var(--ink-soft);box-shadow:none;border:2.5px solid var(--line);}
+  .btn-ghost{background:var(--card);color:var(--ink-soft);box-shadow:none;border:2.5px solid var(--line);}
   .btn-ghost:active{transform:none;}
 
   /* ---------- HEADER ---------- */
@@ -107,23 +114,29 @@
 
   /* ---------- PASSPORT / DASHBOARD HERO ---------- */
   .passport{
-    background:linear-gradient(135deg, #2B6FF6 0%, #1746C9 55%, #0B2A73 100%);
+    background:
+      radial-gradient(circle at 92% -8%, rgba(53,242,224,0.20), transparent 42%),
+      radial-gradient(circle at -6% 110%, rgba(255,60,172,0.16), transparent 45%),
+      linear-gradient(135deg, #1B1650 0%, #171233 55%, #0A0A1C 100%);
     border-radius:var(--radius-lg);padding:26px 22px 22px;
     color:#EAF1FF;
     margin-bottom:26px;
     position:relative;
     overflow:hidden;
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 0 0 1.5px rgba(53,242,224,0.4), 0 12px 28px rgba(123,47,247,0.25), var(--shadow-lg);
   }
   .passport::before{
     content:"";position:absolute;inset:0;
     background-image:
-      radial-gradient(circle at 92% -8%, rgba(255,255,255,0.28), transparent 42%),
-      radial-gradient(circle at -6% 110%, rgba(255,255,255,0.16), transparent 45%);
+      linear-gradient(rgba(53,242,224,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(53,242,224,0.06) 1px, transparent 1px);
+    background-size:26px 26px;
+    mask-image: radial-gradient(circle at 85% 0%, black, transparent 70%);
   }
   .passport::after{
     content:"⭐";position:absolute;right:18px;top:14px;font-size:26px;
-    opacity:.55;transform:rotate(12deg);
+    opacity:.7;transform:rotate(12deg);
+    filter:drop-shadow(0 0 8px var(--aw-cyan));
   }
   .passport-title{
     font-family:'Fredoka', sans-serif;font-size:12.5px;letter-spacing:.1em;font-weight:600;
@@ -149,17 +162,18 @@
   .stamp .label{font-size:11px;font-family:'Fredoka';font-weight:700;letter-spacing:.04em;color:#C7D6F5;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
   .stamp .frac{font-family:'Fredoka';font-weight:700;font-size:17px;color:#fff;margin-top:0;}
   .stamp.complete{
-    border-color: var(--gold);
-    background: rgba(255,201,60,0.22);
+    border-color: var(--aw-cyan);
+    background: linear-gradient(160deg, rgba(53,242,224,0.20), rgba(255,60,172,0.14));
+    box-shadow: 0 0 0 1px rgba(53,242,224,0.55), 0 0 16px rgba(53,242,224,0.4);
   }
   .stamp.complete::after{
     content:"✓";
     position:absolute;top:-6px;right:-6px;
-    background:var(--gold);color:#4a3300;
+    background:linear-gradient(135deg, var(--aw-cyan), var(--aw-magenta));color:#0A0A1C;
     font-weight:800;font-size:12px;
     width:20px;height:20px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    box-shadow:0 2px 0 rgba(0,0,0,0.15);
+    box-shadow:0 0 8px rgba(53,242,224,0.8), 0 2px 0 rgba(0,0,0,0.15);
   }
 
   /* ---------- ICON BADGES (used on subject/quarter cards) ---------- */
@@ -212,12 +226,15 @@
     text-transform:uppercase;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;
     white-space:nowrap;max-width:100%;}
   .subject-square .sq-frac{font-family:'Fredoka';font-weight:800;font-size:17px;margin-top:2px;}
-  .subject-square.complete{box-shadow:0 0 0 3px var(--q2-soft), var(--shadow);}
+  .subject-square.complete{
+    box-shadow:0 0 0 2px var(--aw-cyan), 0 0 14px rgba(53,242,224,0.4), var(--shadow);
+    background:linear-gradient(165deg, #fff 55%, rgba(53,242,224,0.08));
+  }
 
   .subject-switch{display:flex;gap:8px;margin-bottom:18px;overflow-x:auto;padding-bottom:2px;}
   .subject-chip{
     flex:0 0 auto;padding:9px 16px;border-radius:20px;font-weight:800;font-size:13px;
-    border:2.5px solid var(--line);background:#fff;color:var(--ink-soft);white-space:nowrap;
+    border:2.5px solid var(--line);background:var(--card);color:var(--ink-soft);white-space:nowrap;
     font-family:'Fredoka';
   }
   .subject-chip.active{background:var(--night);color:#fff;border-color:var(--night);}
@@ -256,7 +273,7 @@
   /* ---------- BACK BAR / SECTION TITLES ---------- */
   .backbar{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
   .backbtn{
-    background:#fff;border:2.5px solid var(--line);border-radius:14px;
+    background:var(--card);border:2.5px solid var(--line);border-radius:14px;
     width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-size:17px;
     font-weight:800;transition:transform .12s ease;
   }
@@ -291,16 +308,16 @@
   .pill.done{background:var(--q2-soft);color:#0A8F68;}
   .pill.todo{background:var(--paper-dark);color:var(--ink-soft);}
   .pill.score-good{background:var(--q2-soft);color:#0A8F68;}
-  .pill.score-bad{background:#FFE1E4;color:#C43D4B;}
+  .pill.score-bad{background:#FDE3E6;color:#C43D4B;}
   .chev{font-size:20px;color:var(--ink-soft);flex:0 0 auto;}
 
   .longquiz-card{
     margin-top:24px;border-radius:var(--radius-lg);padding:22px;
     background:linear-gradient(135deg, var(--night), var(--night-deep));color:#fff;
     display:flex;align-items:center;gap:16px;
-    box-shadow: var(--shadow-lg);position:relative;overflow:hidden;
+    box-shadow: 0 0 0 1.5px rgba(53,242,224,0.3), var(--shadow-lg);position:relative;overflow:hidden;
   }
-  .longquiz-card::after{content:"🏆";position:absolute;right:-6px;bottom:-10px;font-size:64px;opacity:.14;}
+  .longquiz-card::after{content:"🏆";position:absolute;right:-6px;bottom:-10px;font-size:64px;opacity:.16;filter:drop-shadow(0 0 10px rgba(255,201,60,0.5));}
   .longquiz-card .lqicon{font-size:34px;}
   .longquiz-card h3{margin:0 0 4px;font-size:18px;}
   .longquiz-card p{margin:0;font-size:12.5px;color:#C9C2FF;}
@@ -310,14 +327,14 @@
   .tabbar{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
   .tab{
     padding:11px 18px;border-radius:14px;font-weight:800;font-size:14px;
-    border:2.5px solid var(--line);background:#fff;color:var(--ink-soft);
+    border:2.5px solid var(--line);background:var(--card);color:var(--ink-soft);
     font-family:'Fredoka';transition:transform .12s ease;
   }
   .tab:active{transform:translateY(2px);}
   .tab.active{background:var(--night);color:#fff;border-color:var(--night);}
 
   .journal-page{
-    background:#fff;border-radius:var(--radius-md);
+    background:var(--card);border-radius:var(--radius-md);
     border:2.5px solid var(--line);
     padding:24px 22px;position:relative;
     box-shadow:var(--shadow);
@@ -348,7 +365,7 @@
   .quiz-dot{width:9px;height:9px;border-radius:50%;background:var(--line);}
   .quiz-dot.filled{background:var(--night);}
   .quiz-card{
-    background:#fff;border:2.5px solid var(--line);border-radius:var(--radius-lg);padding:24px;
+    background:var(--card);border:2.5px solid var(--line);border-radius:var(--radius-lg);padding:24px;
     box-shadow:var(--shadow-lg);
   }
   .quiz-tag{font-family:'Fredoka';font-weight:700;font-size:11.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
@@ -360,19 +377,19 @@
   }
   @media (hover:hover){ .quiz-opt:hover:not(:disabled){border-color:var(--night);transform:translateY(-2px);} }
   .quiz-opt.correct{background:var(--q2-soft);border-color:var(--good);color:#0A8F68;}
-  .quiz-opt.incorrect{background:#FFE1E4;border-color:var(--bad);color:#C43D4B;}
+  .quiz-opt.incorrect{background:#FDE3E6;border-color:var(--bad);color:#C43D4B;}
   .quiz-opt.dimmed{opacity:.5;}
   .quiz-opt:disabled{cursor:default;}
   .feedback-box{
     margin-top:8px;padding:14px 16px;border-radius:var(--radius-sm);font-size:14px;line-height:1.55;font-weight:600;
   }
   .feedback-box.good{background:var(--q2-soft);color:#0A6B4E;}
-  .feedback-box.bad{background:#FFE1E4;color:#9A2C36;}
+  .feedback-box.bad{background:#FDE3E6;color:#9A2C36;}
   .quiz-footer{display:flex;justify-content:flex-end;margin-top:16px;}
 
   /* ---------- RESULTS ---------- */
   .results-card{
-    background:#fff;border:2.5px solid var(--line);border-radius:var(--radius-lg);padding:32px 22px;text-align:center;
+    background:var(--card);border:2.5px solid var(--line);border-radius:var(--radius-lg);padding:32px 22px;text-align:center;
     box-shadow:var(--shadow-lg);
   }
   .results-emoji{font-size:56px;}
@@ -389,11 +406,44 @@
   .review-item .rtag{font-family:'Fredoka';font-weight:700;font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;margin-bottom:6px;}
   .results-actions{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap;}
 
+  /* ---------- REWARD / LEVEL-UP CELEBRATION (passing score only) ---------- */
+  .results-card.reward{
+    background:
+      radial-gradient(circle at 15% -10%, rgba(255,60,172,0.22), transparent 45%),
+      radial-gradient(circle at 100% 110%, rgba(53,242,224,0.22), transparent 45%),
+      linear-gradient(165deg, var(--aw-bg1) 0%, var(--aw-bg2) 100%);
+    border-color:transparent;
+    color:#EAF1FF;
+    box-shadow: 0 0 0 1.5px rgba(53,242,224,0.5), 0 16px 36px rgba(123,47,247,0.35);
+  }
+  .results-card.reward .results-sub{color:#C9C2FF;}
+  .results-card.reward .results-emoji{filter:drop-shadow(0 0 14px var(--aw-cyan));}
+  .results-card.reward .results-score{color:#fff;text-shadow:0 0 16px var(--aw-cyan), 0 0 30px rgba(255,60,172,0.6);}
+  .results-card.reward .review-item{background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.16);}
+  .results-card.reward .rq{color:#F1EEFF;}
+  .results-card.reward .review-item .ra.right{color:#6CF7C2;}
+  .results-card.reward .review-item .ra.wrong{color:#FF9FB4;}
+  .results-card.reward .rtag{color:#B7B0E8;}
+  .results-card.reward .btn-ghost{background:rgba(255,255,255,0.08);color:#EAF1FF;border-color:rgba(255,255,255,0.28);}
+  .levelup-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:'Fredoka',sans-serif;font-weight:800;font-size:12.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:#0A0A1C;
+    background:linear-gradient(120deg, var(--aw-cyan), var(--aw-magenta));
+    padding:6px 16px;border-radius:20px;margin-bottom:8px;
+    box-shadow:0 0 14px rgba(53,242,224,0.55);
+    animation: levelupPulse 1.7s ease-in-out infinite;
+  }
+  @keyframes levelupPulse{
+    0%,100%{transform:scale(1);box-shadow:0 0 14px rgba(53,242,224,0.55);}
+    50%{transform:scale(1.05);box-shadow:0 0 22px rgba(255,60,172,0.6);}
+  }
+
   .footer-note{
     text-align:center;color:var(--ink-soft);font-size:11.5px;font-family:'Fredoka';font-weight:600;letter-spacing:.03em;margin-top:36px;opacity:.8;
   }
   .settings-btn{
-    background:#fff;border:2.5px solid var(--line);border-radius:14px;width:42px;height:42px;
+    background:var(--card);border:2.5px solid var(--line);border-radius:14px;width:42px;height:42px;
     display:flex;align-items:center;justify-content:center;font-size:17px;
     transition:transform .12s ease;
   }
@@ -530,20 +580,33 @@
   }
   .text-input, .text-area{
     width:100%;border:2.5px solid var(--line);border-radius:var(--radius-sm);padding:11px 14px;
-    font-family:'Nunito',sans-serif;font-size:15px;background:#fff;color:var(--ink);
+    font-family:'Nunito',sans-serif;font-size:15px;background:var(--card);color:var(--ink);
   }
   .text-area{resize:vertical;line-height:1.55;}
   .text-input:focus, .text-area:focus{outline:none;border-color:var(--night);}
   .btn-sm{padding:9px 15px;font-size:13.5px;box-shadow:none;}
   .option-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
   .option-row input[type="radio"]{width:19px;height:19px;flex:none;accent-color:var(--good);}
-  .topic-picker{border:2.5px solid var(--line);border-radius:var(--radius-sm);padding:10px 14px;text-align:left;max-height:220px;overflow-y:auto;background:#fff;}
+  .topic-picker{border:2.5px solid var(--line);border-radius:var(--radius-sm);padding:10px 14px;text-align:left;max-height:220px;overflow-y:auto;background:var(--card);}
   .topic-picker label{display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer;font-weight:700;font-size:14.5px;}
   .topic-picker label.topic-all{border-bottom:2px solid var(--line);margin-bottom:4px;}
   .topic-picker input[type="checkbox"]{width:19px;height:19px;flex:none;accent-color:var(--good);cursor:pointer;}
-  .bank-item{
-    border:2.5px solid var(--line);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:10px;background:#fff;
+  .type-picker{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+  .type-pill{
+    padding:9px 15px;border-radius:12px;font-weight:800;font-size:13.5px;
+    border:2.5px solid var(--line);background:var(--card);color:var(--ink-soft);
+    font-family:'Fredoka';cursor:pointer;transition:transform .12s ease;
   }
+  .type-pill:active{transform:translateY(1px);}
+  .type-pill.active{background:var(--night);color:#fff;border-color:var(--night);}
+  .bank-item{
+    border:2.5px solid var(--line);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:10px;background:var(--card);
+    display:flex;gap:12px;align-items:flex-start;
+  }
+  .bank-item.bank-item-selected{border-color:var(--night);background:var(--q3-soft);}
+  .bank-item-select{flex:none;padding-top:2px;}
+  .bank-item-select input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--good);}
+  .bank-item-body{flex:1;min-width:0;}
   .bank-item-q{font-weight:800;margin-bottom:8px;}
   .bank-item-opts{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
   .bank-opt{
@@ -553,8 +616,18 @@
   .bank-item-actions{display:flex;gap:8px;}
   .bank-item-type{display:inline-block;font-family:'Fredoka';font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--night);background:var(--q3-soft);border-radius:999px;padding:3px 9px;margin-bottom:8px;}
   .type-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
-  .type-tab{border:2.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 16px;font-weight:800;font-size:13px;font-family:'Fredoka';color:var(--ink-soft);box-shadow:none;}
+  .type-tab{border:2.5px solid var(--line);background:var(--card);border-radius:999px;padding:8px 16px;font-weight:800;font-size:13px;font-family:'Fredoka';color:var(--ink-soft);box-shadow:none;}
   .type-tab.active{border-color:var(--night);color:var(--night);background:var(--q3-soft);}
+  .bank-toolbar{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+    padding:10px 14px;border:2.5px solid var(--line);border-radius:var(--radius-sm);margin-bottom:14px;background:var(--paper);
+  }
+  .bank-selectall{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;cursor:pointer;}
+  .bank-selectall input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--good);}
+  .bank-topic-tools{border:2.5px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:18px;background:var(--card);}
+  .bank-topic-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:8px 0;border-top:1.5px dashed var(--line);}
+  .bank-topic-row:first-of-type{border-top:none;}
+  .bank-topic-name{font-weight:800;font-size:14px;}
   .fill-hint{font-size:12px;color:var(--ink-soft);margin:-2px 0 10px;}
   .quiz-fill-input{
     width:100%;border:2.5px solid var(--line);border-radius:var(--radius-sm);padding:13px 16px;
@@ -562,9 +635,67 @@
   }
   .quiz-fill-input:focus{outline:none;border-color:var(--night);}
   .quiz-fill-input.correct{border-color:var(--good);background:var(--q2-soft);}
-  .quiz-fill-input.incorrect{border-color:var(--bad);background:#FFE1E4;}
+  .quiz-fill-input.incorrect{border-color:var(--bad);background:#FDE3E6;}
   .quiz-opt-remove{flex:none;background:none;border:none;color:var(--bad);font-weight:800;font-size:16px;box-shadow:none;padding:4px 8px;}
   .quiz-opt-add{margin-bottom:12px;}
+
+  /* ---------- MATCHING ---------- */
+  .match-wrap{display:flex;gap:10px;margin-bottom:6px;}
+  .match-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;}
+  .match-item{
+    display:block;width:100%;text-align:left;background:var(--paper);
+    border:2.5px solid var(--line);border-radius:var(--radius-sm);padding:11px 12px;
+    font-size:13.5px;font-weight:700;color:var(--ink);transition:transform .1s ease, border-color .12s ease;
+  }
+  @media (hover:hover){ .match-item:hover:not(:disabled){border-color:var(--night);} }
+  .match-item.active{border-color:var(--night);background:var(--q3-soft);}
+  .match-item.linked{border-color:var(--night);}
+  .match-item.correct{background:var(--q2-soft);border-color:var(--good);color:#0A8F68;}
+  .match-item.incorrect{background:#FDE3E6;border-color:var(--bad);color:#C43D4B;}
+  .match-item:disabled{cursor:default;}
+  .match-num{
+    display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;
+    background:var(--night);color:#fff;font-size:10.5px;font-weight:800;margin-right:6px;flex:none;
+  }
+
+  /* ---------- DRAG & DROP ---------- */
+  .dd-items{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;min-height:20px;}
+  .dd-chip{
+    background:var(--paper);border:2.5px solid var(--line);border-radius:999px;padding:9px 15px;
+    font-size:13.5px;font-weight:700;color:var(--ink);cursor:grab;transition:transform .1s ease, border-color .12s ease;
+  }
+  .dd-chip.active{border-color:var(--night);background:var(--q3-soft);}
+  .dd-categories{display:flex;flex-wrap:wrap;gap:10px;}
+  .dd-category{
+    flex:1;min-width:120px;border:2.5px dashed var(--line);border-radius:var(--radius-sm);padding:10px;
+    background:var(--paper);cursor:pointer;transition:border-color .12s ease, background .12s ease;
+  }
+  .dd-category.drag-over{border-color:var(--night);background:var(--q3-soft);}
+  .dd-category-title{font-family:'Fredoka';font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);margin-bottom:8px;}
+  .dd-empty{font-size:12px;color:var(--ink-soft);font-style:italic;padding:6px 0;}
+  .dd-chip-placed{display:inline-block;margin:0 6px 6px 0;cursor:pointer;}
+  .dd-chip-placed.correct{background:var(--q2-soft);border-color:var(--good);color:#0A8F68;}
+  .dd-chip-placed.incorrect{background:#FDE3E6;border-color:var(--bad);color:#C43D4B;}
+
+  /* ---------- ORDERING ---------- */
+  .order-list{display:flex;flex-direction:column;gap:8px;margin-bottom:6px;}
+  .order-item{
+    display:flex;align-items:center;gap:10px;background:var(--paper);border:2.5px solid var(--line);
+    border-radius:var(--radius-sm);padding:11px 12px;font-size:13.5px;font-weight:700;color:var(--ink);
+  }
+  .order-item.correct{background:var(--q2-soft);border-color:var(--good);color:#0A8F68;}
+  .order-item.incorrect{background:#FDE3E6;border-color:var(--bad);color:#C43D4B;}
+  .order-num{
+    display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;
+    background:var(--night);color:#fff;font-size:11.5px;font-weight:800;flex:none;
+  }
+  .order-label{flex:1;}
+  .order-btns{display:flex;gap:4px;flex:none;}
+  .order-btn{
+    background:var(--card);border:2px solid var(--line);border-radius:8px;width:28px;height:28px;
+    font-size:12px;font-weight:800;color:var(--ink);box-shadow:none;padding:0;
+  }
+  .order-btn:disabled{opacity:.35;}
 </style>
 </head>
 <body>
@@ -2354,17 +2485,293 @@ const FILIPINO_QUARTERS = [
 ];
 
 /* =========================================================
-   SUBJECTS — combines all Grade 4 courses into one app
+   CONTENT DATA — ENGLISH 4, SY 2026-2027 (Sacred Heart Academy of Pasig)
    ========================================================= */
+const ENGLISH_QUARTERS = [
+  {
+    id:"e_q1", num:"First Quarter", title:"Words and Meaning", icon:"🔤",
+    color:"var(--q1)", colorSoft:"var(--q1-soft)",
+    chapters:[
+      {id:"e_q1c1", title:"Chapter 1: Reading", lessons:[
+        {id:"e_q1c1l1", title:"Synonyms and Antonyms", sub:"Words with Similar and Opposite Meanings",
+          learn:[
+            "A synonym is a word that means almost the same thing as another word — like happy and glad, or big and large.",
+            "An antonym is a word that means the opposite of another word — like hot and cold, or fast and slow.",
+            "Learning synonyms helps writers avoid repeating the same word again and again, making their writing more interesting.",
+            "Learning antonyms helps readers understand contrast — like comparing two very different characters or ideas.",
+            "Context clues in a sentence can help you figure out whether a new word is a synonym or antonym of a word you already know."
+          ],
+          },
+        {id:"e_q1c1l2", title:"Sequential Plot", sub:"The Order of Events in a Story",
+          learn:[
+            "The plot of a story is the sequence of events — what happens first, next, and last.",
+            "Most stories follow this order: beginning (introduces characters and setting), middle (the problem or conflict happens), and end (the problem is solved).",
+            "Signal words like first, then, next, after that, and finally help readers follow the order of events.",
+            "Retelling a story in the correct sequence helps readers understand and remember what they read.",
+            "Mixing up the order of events can confuse the meaning of a story, so paying attention to sequence words is important."
+          ],
+          },
+        {id:"e_q1c1l3", title:"Prefixes", sub:"un-, in-, il-, ir-, im-, mis-, dis-",
+          learn:[
+            "A prefix is a word part added to the beginning of a word that changes its meaning.",
+            "un-, in-, il-, ir-, and im- usually mean \"not\" — like unhappy (not happy), incomplete (not complete), illegal (not legal), irregular (not regular), and impossible (not possible).",
+            "il- is used before words starting with l (illegal), ir- before words starting with r (irregular), and im- before words starting with m or p (impossible, immature).",
+            "mis- means \"wrongly\" — like misspell (spell wrongly) or misunderstand (understand wrongly).",
+            "dis- means \"not\" or \"the opposite of\" — like disagree (not agree) or dishonest (not honest).",
+            "Knowing prefixes helps you figure out the meaning of new words without needing a dictionary."
+          ],
+          },
+        {id:"e_q1c1l4", title:"Suffixes", sub:"-able, -en, -ful, -ion, -less, -er, -or, -ly, -ible, -ness",
+          learn:[
+            "A suffix is a word part added to the end of a word that can change its meaning or its part of speech.",
+            "-able and -ible mean \"able to be\" — like washable (able to be washed) or flexible (able to bend).",
+            "-ful means \"full of\" — like joyful (full of joy) — while -less means \"without\" — like fearless (without fear).",
+            "-ion turns a verb into a noun — like celebrate becomes celebration.",
+            "-er and -or often mean \"a person who does something\" — like teacher and actor.",
+            "-ly usually turns an adjective into an adverb — like quick becomes quickly — and -ness turns an adjective into a noun, like kind becomes kindness."
+          ],
+          },
+        {id:"e_q1c1l5", title:"Compound Words", sub:"",
+          learn:[
+            "A compound word is formed when two smaller words are joined together to make one new word with its own meaning.",
+            "Examples: sun + flower = sunflower, note + book = notebook, and rain + bow = rainbow.",
+            "Some compound words are written as one word (basketball), some with a hyphen (mother-in-law), and some as two separate words (ice cream).",
+            "You can often figure out the meaning of a compound word by thinking about the meanings of its two smaller words."
+          ],
+          },
+        {id:"e_q1c1l6", title:"Outlining", sub:"Topic, Main Idea, and Supporting Details",
+          learn:[
+            "An outline organizes information from a text in a clear, structured way before or after reading.",
+            "The topic is what the text is generally about, in just a word or short phrase.",
+            "The main idea is the most important point the writer wants to say about the topic.",
+            "Supporting details are the facts, examples, or explanations that back up the main idea.",
+            "Outlines usually use headings and sub-points (like Roman numerals or bullets) to show which details support which main idea."
+          ],
+          }
+      ]},
+      {id:"e_q1c2", title:"Chapter 2: Grammar in Writing", lessons:[
+        {id:"e_q1c2l1", title:"Kinds of Verb", sub:"Action and Linking Verbs",
+          learn:[
+            "A verb is a word that shows action or a state of being.",
+            "An action verb shows something a subject does, like run, jump, write, or think.",
+            "A linking verb connects the subject to more information about it, without showing action — like is, am, are, was, were, seem, and become.",
+            "Example: \"She runs fast\" uses an action verb, while \"She is happy\" uses a linking verb.",
+            "Identifying the verb in a sentence helps you understand what the sentence is really saying."
+          ],
+          },
+        {id:"e_q1c2l2", title:"Simple Tenses of Verb", sub:"Past, Present, and Future",
+          learn:[
+            "Verb tense tells us when an action happens — in the past, present, or future.",
+            "Simple present tense shows things that happen regularly or facts — like \"She walks to school.\"",
+            "Simple past tense shows actions that already happened — like \"She walked to school.\"",
+            "Simple future tense shows actions that will happen — like \"She will walk to school.\"",
+            "Most verbs form the simple past by adding -ed, but many common verbs are irregular, like go → went and eat → ate."
+          ],
+          },
+        {id:"e_q1c2l3", title:"Subject-Verb Agreement", sub:"Mass, Count, and Collective Nouns",
+          learn:[
+            "Subject-verb agreement means the verb in a sentence must match the subject in number — singular subjects need singular verbs, and plural subjects need plural verbs.",
+            "A count noun can be counted and has a plural form — like one book, two books.",
+            "A mass noun (also called a non-count noun) cannot be counted individually — like rice, water, or information — and is usually treated as singular, so it takes a singular verb (\"The rice is cooking.\").",
+            "A collective noun names a group of people or things acting as one unit — like team, family, or class — and it usually takes a singular verb because the group acts together (\"The team is practicing.\")."
+          ],
+          },
+        {id:"e_q1c2l4", title:"Subject-Verb Agreement: More Noun Types", sub:"Abstract and Concrete Nouns; Regular and Irregular Plurals",
+          learn:[
+            "A concrete noun names something you can see, hear, touch, taste, or smell — like dog, chair, or music.",
+            "An abstract noun names an idea, quality, or feeling that you cannot touch — like honesty, courage, or happiness. Abstract nouns are usually singular and take a singular verb.",
+            "A regular plural noun is formed by adding -s or -es to the singular form — like cat → cats, box → boxes.",
+            "An irregular plural noun changes its spelling in a different way — like child → children, mouse → mice, or foot → feet.",
+            "Whether a noun is singular or plural determines whether the verb should also be singular or plural, so the subject and verb agree."
+          ],
+          }
+      ]}
+    ]
+  },
+  {
+    id:"e_q2", num:"Second Quarter", title:"Sentences and Stories", icon:"📖",
+    color:"var(--q2)", colorSoft:"var(--q2-soft)",
+    chapters:[
+      {id:"e_q2c1", title:"Chapter 1: Reading", lessons:[
+        {id:"e_q2c1l1", title:"Sequencing Events", sub:"",
+          learn:[
+            "Sequencing means arranging events in the order in which they happened.",
+            "Clue words like first, second, next, meanwhile, afterward, and finally help readers identify the correct order of events.",
+            "Some texts are written out of time order, using flashbacks or jumping ahead — careful reading helps you figure out the real sequence.",
+            "Being able to sequence events correctly helps you understand cause and effect — what led to what."
+          ],
+          },
+        {id:"e_q2c1l2", title:"Prefixes", sub:"non-, anti-, de-, mal-, sub-, a-, under-",
+          learn:[
+            "non- means \"not\" — like nonfiction (not fiction) — while anti- means \"against\" — like antivirus (against a virus).",
+            "de- means \"to remove\" or \"reverse\" — like defrost (remove frost) — and mal- means \"bad\" or \"wrongly\" — like malnutrition (bad nutrition).",
+            "sub- means \"under\" or \"below\" — like submarine (under the sea/water) — while a- can mean \"not\" or \"without\" — like asymmetrical (not symmetrical).",
+            "under- means \"below\" or \"not enough\" — like underweight (not enough weight) or underground (below the ground).",
+            "Recognizing these prefixes helps you break down long or unfamiliar words into meaningful parts."
+          ],
+          },
+        {id:"e_q2c1l3", title:"Suffixes", sub:"-dom, -ity, -ty, -ment, -ship, -wise, -al, -age, -ious/-ous",
+          learn:[
+            "-dom often means \"a state or condition\" — like freedom (state of being free) or kingdom (territory ruled by a king).",
+            "-ity and -ty turn adjectives into nouns describing a quality — like real → reality, and cruel → cruelty.",
+            "-ment turns a verb into a noun describing a result or process — like agree → agreement.",
+            "-ship describes a state, condition, or skill — like friendship or leadership.",
+            "-wise means \"in the manner of\" or \"regarding\" — like clockwise — while -al often turns a noun into an adjective, like nation → national.",
+            "-age can mean \"a collection\" or \"a process\" (like package or marriage), and -ious/-ous mean \"full of\" — like dangerous (full of danger)."
+          ],
+          },
+        {id:"e_q2c1l4", title:"Text Types", sub:"Enumeration-Description, Chronology, Procedural, Problem-Solution",
+          learn:[
+            "Writers organize information using different text structures depending on their purpose.",
+            "Enumeration-description text lists facts or details about a topic, often one after another, without a strict order.",
+            "Chronological (time-order) text presents events in the order they happened, often with dates or time-signal words.",
+            "Procedural text gives step-by-step instructions on how to do something, like a recipe or a how-to guide.",
+            "Problem-solution text presents a problem and then explains one or more solutions to fix it.",
+            "Recognizing the text type helps readers know what to expect and how to find the information they need."
+          ],
+          }
+      ]},
+      {id:"e_q2c2", title:"Chapter 2: Grammar in Writing", lessons:[
+        {id:"e_q2c2l1", title:"Subject-Verb Agreement: Pronouns (Part 1)", sub:"Personal and Indefinite Pronouns",
+          learn:[
+            "A personal pronoun takes the place of a specific person or thing — like I, you, he, she, it, we, and they.",
+            "Singular personal pronouns (he, she, it) usually take a singular verb — \"She sings.\" Plural personal pronouns (we, they) take a plural verb — \"They sing.\"",
+            "An indefinite pronoun does not refer to a specific person or thing — like everyone, someone, nobody, few, and many.",
+            "Some indefinite pronouns are always singular (everyone, everybody, each, nobody) and need a singular verb, while others are always plural (several, few, many, both) and need a plural verb."
+          ],
+          },
+        {id:"e_q2c2l2", title:"Subject-Verb Agreement: Pronouns (Part 2)", sub:"Possessive Pronoun, Demonstrative Pronoun, and Possessive Noun",
+          learn:[
+            "A possessive pronoun shows ownership and replaces a noun — like mine, yours, his, hers, ours, and theirs.",
+            "A demonstrative pronoun points to specific things — this and that are singular, while these and those are plural — and the verb must agree with which one is used.",
+            "A possessive noun also shows ownership but is formed from a noun — usually by adding 's for singular nouns (the dog's bone) or just an apostrophe for plural nouns ending in s (the dogs' bones).",
+            "When a possessive noun or pronoun is the subject of a sentence, the verb must still agree with whether it refers to one thing or many — \"The teacher's book is on the table\" versus \"The teachers' books are on the table.\""
+          ],
+          }
+      ]}
+    ]
+  },
+  {
+    id:"e_q3", num:"Third Quarter", title:"Sound and Style", icon:"🎭",
+    color:"var(--q3)", colorSoft:"var(--q3-soft)",
+    chapters:[
+      {id:"e_q3c1", title:"Chapter 1: Reading", lessons:[
+        {id:"e_q3c1l1", title:"Sound Devices", sub:"Onomatopoeia, Alliteration, Assonance, Consonance",
+          learn:[
+            "Sound devices are techniques writers use to create rhythm and interesting sounds in their writing, especially in poems.",
+            "Onomatopoeia uses words that imitate the sound they describe — like buzz, splash, boom, and meow.",
+            "Alliteration repeats the same beginning consonant sound in nearby words — like \"Peter Piper picked a peck of pickled peppers.\"",
+            "Assonance repeats vowel sounds within nearby words — like the ee sound in \"The sleek sea creatures leap.\"",
+            "Consonance repeats consonant sounds anywhere in nearby words, not just at the beginning — like the t sound in \"pitter-patter.\"",
+            "Sound devices make writing more musical and help readers picture or feel what is happening."
+          ],
+          },
+        {id:"e_q3c1l2", title:"Author's Point of View", sub:"First, Second, and Third Person POV",
+          learn:[
+            "Point of view (POV) tells us who is narrating, or telling, the story.",
+            "First person POV uses pronouns like I, me, we, and us — the narrator is a character inside the story, sharing their own thoughts and experiences.",
+            "Second person POV uses the pronoun you, speaking directly to the reader as if they are part of the story — this is less common and often used in instructions or choose-your-own-adventure stories.",
+            "Third person POV uses pronouns like he, she, it, and they — the narrator is outside the story, describing the characters and events from a distance.",
+            "Identifying the point of view helps readers understand whose perspective and feelings are being shared in the story."
+          ],
+          }
+      ]},
+      {id:"e_q3c2", title:"Chapter 2: Grammar in Writing", lessons:[
+        {id:"e_q3c2l1", title:"Adjectives", sub:"Descriptive and Numeral Adjectives",
+          learn:[
+            "An adjective is a word that describes or gives more information about a noun or pronoun.",
+            "A descriptive adjective tells more about the qualities of a noun — like its color, size, shape, or feeling — such as blue, tiny, round, or happy.",
+            "A numeral adjective tells the number or order of nouns — like three apples (cardinal number) or the third place (ordinal number).",
+            "Adjectives usually come right before the noun they describe, like \"a bright red kite,\" or after a linking verb, like \"The kite is bright.\""
+          ],
+          },
+        {id:"e_q3c2l2", title:"Degrees of Regular and Irregular Adjectives", sub:"Positive, Comparative, Superlative",
+          learn:[
+            "Adjectives have degrees that show how something compares to other things: positive, comparative, and superlative.",
+            "The positive degree simply describes one noun without comparing it — like tall.",
+            "The comparative degree compares two nouns, usually adding -er or using \"more\" — like taller or more beautiful.",
+            "The superlative degree compares three or more nouns, usually adding -est or using \"most\" — like tallest or most beautiful.",
+            "Some adjectives are irregular and change completely in their comparative and superlative forms — like good → better → best, and bad → worse → worst."
+          ],
+          },
+        {id:"e_q3c2l3", title:"Series of Adjectives", sub:"Determiner, Quantity, Quality, Size, Shape, Color",
+          learn:[
+            "When two or more adjectives describe the same noun, they are usually arranged in a specific order, called a series of adjectives.",
+            "The typical order is: determiner (a, the, my), quantity (three, many), quality/opinion (beautiful, delicious), size (big, small), shape (round, square), and color (red, blue) — followed by the noun.",
+            "Example: \"my two lovely small round red balloons\" follows the correct order: determiner, quantity, quality, size, shape, color.",
+            "Commas are usually used to separate adjectives of the same type in a series, like \"a happy, playful puppy.\""
+          ],
+          }
+      ]}
+    ]
+  },
+  {
+    id:"e_q4", num:"Fourth Quarter", title:"Sentence Building", icon:"✍️",
+    color:"var(--q4)", colorSoft:"var(--q4-soft)",
+    chapters:[
+      {id:"e_q4c1", title:"Chapter 1: Writing", lessons:[
+        {id:"e_q4c1l1", title:"Parts of a Sentence", sub:"Subject and Predicate",
+          learn:[
+            "A sentence is a group of words that expresses a complete thought, and it has two main parts: the subject and the predicate.",
+            "The subject is who or what the sentence is about — usually a noun or pronoun.",
+            "The predicate tells what the subject does or is — it always contains the verb.",
+            "Example: in \"The little puppy barked loudly,\" the subject is \"the little puppy\" and the predicate is \"barked loudly.\""
+          ],
+          },
+        {id:"e_q4c1l2", title:"Active and Passive Voice", sub:"",
+          learn:[
+            "In the active voice, the subject performs the action of the verb — like \"The boy kicked the ball.\"",
+            "In the passive voice, the subject receives the action, and the doer is often introduced with \"by\" or left out entirely — like \"The ball was kicked by the boy.\"",
+            "Passive voice sentences often use a form of the verb \"to be\" (was, were, is, are) plus a past participle (like kicked, written, or made).",
+            "Active voice is usually clearer and more direct, while passive voice is useful when the doer of the action is unknown or unimportant."
+          ],
+          },
+        {id:"e_q4c1l3", title:"Simple Sentence", sub:"",
+          learn:[
+            "A simple sentence has just one independent clause — one subject and one predicate expressing a complete thought.",
+            "Example: \"The children played in the park.\"",
+            "A simple sentence can still have more than one subject or verb, as long as it has only one complete thought — like \"Anna and Ben played in the park.\"",
+            "Simple sentences are short and direct, making them useful for clear, easy-to-understand writing."
+          ],
+          },
+        {id:"e_q4c1l4", title:"Compound Sentence", sub:"",
+          learn:[
+            "A compound sentence joins two or more independent clauses (complete thoughts) that could each stand alone as their own sentence.",
+            "Independent clauses are usually joined using a comma and a coordinating conjunction — like and, but, or, so — or with a semicolon.",
+            "Example: \"I wanted to play outside, but it started to rain.\"",
+            "Compound sentences show a relationship between two equally important ideas, like addition, contrast, or cause and effect."
+          ],
+          },
+        {id:"e_q4c1l5", title:"Complex Sentence", sub:"",
+          learn:[
+            "A complex sentence has one independent clause (a complete thought) and at least one dependent clause (an incomplete thought that needs the rest of the sentence).",
+            "Dependent clauses often begin with words like because, although, since, when, if, or after.",
+            "Example: \"Because it started to rain, we stayed inside.\" — \"Because it started to rain\" is the dependent clause, and \"we stayed inside\" is the independent clause.",
+            "Complex sentences are useful for showing cause and effect, time relationships, or conditions between ideas."
+          ],
+          },
+        {id:"e_q4c1l6", title:"Compound-Complex Sentence", sub:"",
+          learn:[
+            "A compound-complex sentence combines at least two independent clauses and at least one dependent clause.",
+            "Example: \"Because it started to rain, we stayed inside, and we watched a movie.\" This has one dependent clause (\"Because it started to rain\") and two independent clauses (\"we stayed inside\" and \"we watched a movie\").",
+            "This type of sentence lets writers express more complex relationships between several ideas at once.",
+            "Compound-complex sentences should still be punctuated carefully, using commas to separate the dependent clause and coordinating conjunctions to join the independent clauses."
+          ],
+          }
+      ]}
+    ]
+  }
+];
 const SUBJECTS = [
-  {id:"science", name:"Science 4", shortName:"Science", icon:"\ud83d\udd2c", tagline:"Young Scientist's Passport", quarters: SCIENCE_QUARTERS, color:"#12B886", soft:"#D9F5EA"},
-  {id:"hele", name:"HELE 4", shortName:"HELE", icon:"\ud83e\uddf0", tagline:"Home & Livelihood Explorer's Passport", quarters: HELE_QUARTERS, color:"#FF9F1C", soft:"#FFEACC"},
-  {id:"mapeh", name:"MAPEH 4", shortName:"MAPEH", icon:"\ud83c\udfa8", tagline:"MAPEH Culture & Wellness Passport", quarters: MAPEH_QUARTERS, color:"#FF6FA8", soft:"#FFE1EE"},
-  {id:"computer", name:"Computer 4", shortName:"Computer", icon:"\ud83d\udcbb", tagline:"Digital Explorer's Passport", quarters: COMPUTER_QUARTERS, color:"#5B7FFF", soft:"#E5EAFF"},
-  {id:"ap", name:"AP 4", shortName:"AP", icon:"\ud83c\udde8\ud83c\udded", tagline:"Mapa ng Kaalamang Panlipunan", quarters: AP_QUARTERS, color:"#F4B400", soft:"#FFF3CC"},
-  {id:"math", name:"Math 4", shortName:"Math", icon:"\ud83d\udd22", tagline:"Number Explorer's Passport", quarters: MATH_QUARTERS, color:"#8C6BFC", soft:"#EBE4FF"},
-  {id:"gmrc", name:"GMRC 4", shortName:"GMRC", icon:"\ud83e\udded", tagline:"Good Manners Explorer's Passport", quarters: GMRC_QUARTERS, color:"#2EC4B6", soft:"#D9F5F2"},
-  {id:"filipino", name:"Filipino 4", shortName:"Filipino", icon:"\ud83d\udcda", tagline:"Daan Tungo sa Wikang Filipino", quarters: FILIPINO_QUARTERS, color:"#FF6B6B", soft:"#FFE3E3"}
+  {id:"science", name:"Science 4", shortName:"Science", icon:"\ud83d\udd2c", tagline:"Young Scientist's Passport", quarters: SCIENCE_QUARTERS, color:"#1FAB81", soft:"#DBF3EA"},
+  {id:"hele", name:"HELE 4", shortName:"HELE", icon:"\ud83e\uddf0", tagline:"Home & Livelihood Explorer's Passport", quarters: HELE_QUARTERS, color:"#ED9C2E", soft:"#FBE9D0"},
+  {id:"mapeh", name:"MAPEH 4", shortName:"MAPEH", icon:"\ud83c\udfa8", tagline:"MAPEH Culture & Wellness Passport", quarters: MAPEH_QUARTERS, color:"#F37BAA", soft:"#FDE3EE"},
+  {id:"computer", name:"Computer 4", shortName:"Computer", icon:"\ud83d\udcbb", tagline:"Digital Explorer's Passport", quarters: COMPUTER_QUARTERS, color:"#6886F2", soft:"#E7EBFD"},
+  {id:"ap", name:"AP 4", shortName:"AP", icon:"\ud83c\udde8\ud83c\udded", tagline:"Mapa ng Kaalamang Panlipunan", quarters: AP_QUARTERS, color:"#E0AB14", soft:"#FBF1D0"},
+  {id:"math", name:"Math 4", shortName:"Math", icon:"\ud83d\udd22", tagline:"Number Explorer's Passport", quarters: MATH_QUARTERS, color:"#9277F0", soft:"#ECE6FD"},
+  {id:"gmrc", name:"GMRC 4", shortName:"GMRC", icon:"\ud83e\udded", tagline:"Good Manners Explorer's Passport", quarters: GMRC_QUARTERS, color:"#3AB8AC", soft:"#DBF3F0"},
+  {id:"filipino", name:"Filipino 4", shortName:"Filipino", icon:"\ud83d\udcda", tagline:"Daan Tungo sa Wikang Filipino", quarters: FILIPINO_QUARTERS, color:"#F37777", soft:"#FDE5E5"},
+  {id:"english", name:"English 4", shortName:"English", icon:"\ud83d\udd24", tagline:"Young Wordsmith's Passport", quarters: ENGLISH_QUARTERS, color:"#3E9DC5", soft:"#DCF0F8"}
 ];
 /* =========================================================
    HELPERS
@@ -2428,7 +2835,7 @@ function saveMoves(m){
   queueCloudSync();
 }
 function defaultSettings(){
-  return {studentName:"George", dailyLessonGoal:2, dailyQuestionGoal:10, soundEnabled:true};
+  return {soundEnabled:true};
 }
 function loadSettings(){
   try{
@@ -2626,20 +3033,81 @@ function matchesFillAnswer(typed, acceptable){
   return acceptable.some(a => norm(a) === t);
 }
 
-function QuizRunner({questions, accent, onFinish, tagLabel}){
+// ---- Helpers for the new interactive question types ----
+function shuffledIndices(n){
+  const arr = Array.from({length:n}, (_,i)=>i);
+  return shuffle(arr);
+}
+function arraysEqual(a,b){
+  if(a.length !== b.length) return false;
+  for(let i=0;i<a.length;i++){ if(a[i] !== b[i]) return false; }
+  return true;
+}
+
+function QuizRunner({questions, accent, onFinish, tagLabel, onStop}){
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [fillText, setFillText] = useState("");
   const [fillChecked, setFillChecked] = useState(false);
   const [answers, setAnswers] = useState([]);
 
+  // Matching
+  const [matchRightOrder, setMatchRightOrder] = useState([]);
+  const [matchPicks, setMatchPicks] = useState({}); // leftIdx -> rightIdx (index into shuffled right order)
+  const [matchActiveLeft, setMatchActiveLeft] = useState(null);
+  const [matchChecked, setMatchChecked] = useState(false);
+
+  // Drag & drop (sort into categories)
+  const [ddAssign, setDdAssign] = useState({}); // itemIdx -> category name
+  const [ddActiveItem, setDdActiveItem] = useState(null);
+  const [ddChecked, setDdChecked] = useState(false);
+  const [dragOverCat, setDragOverCat] = useState(null);
+
+  // Ordering / sequencing
+  const [orderList, setOrderList] = useState([]); // array of original indices, in current display order
+  const [orderChecked, setOrderChecked] = useState(false);
+
   const q = questions[idx];
   const isLast = idx === questions.length - 1;
   const qType = q.type || "mcq";
   const isFill = qType === "fill";
-  const answered = isFill ? fillChecked : selected !== null;
+  const isMatch = qType === "match";
+  const isDragDrop = qType === "dragdrop";
+  const isOrder = qType === "order";
   const acceptable = isFill ? String(q.answer||"").split("|").map(a=>a.trim()).filter(Boolean) : [];
   const fillIsCorrect = isFill && matchesFillAnswer(fillText, acceptable);
+
+  // Reset/initialize per-question state whenever the question changes
+  useEffect(()=>{
+    if(isMatch){
+      setMatchRightOrder(shuffledIndices((q.pairs||[]).length));
+      setMatchPicks({});
+      setMatchActiveLeft(null);
+      setMatchChecked(false);
+    } else if(isDragDrop){
+      setDdAssign({});
+      setDdActiveItem(null);
+      setDdChecked(false);
+      setDragOverCat(null);
+    } else if(isOrder){
+      setOrderList(shuffledIndices((q.items||[]).length));
+      setOrderChecked(false);
+    }
+  }, [idx]);
+
+  const matchAllPicked = isMatch && (q.pairs||[]).length>0 && Object.keys(matchPicks).length === (q.pairs||[]).length;
+  const matchIsCorrect = isMatch && matchChecked && (q.pairs||[]).every((_,li)=> matchRightOrder[matchPicks[li]] === li);
+
+  const ddAllAssigned = isDragDrop && (q.items||[]).length>0 && Object.keys(ddAssign).length === (q.items||[]).length;
+  const ddIsCorrect = isDragDrop && ddChecked && (q.items||[]).every((it,ii)=> ddAssign[ii] === it.category);
+
+  const orderIsCorrect = isOrder && orderChecked && arraysEqual(orderList, (q.items||[]).map((_,i)=>i));
+
+  const answered = isFill ? fillChecked
+    : isMatch ? matchChecked
+    : isDragDrop ? ddChecked
+    : isOrder ? orderChecked
+    : selected !== null;
 
   function handleSelect(optIdx){
     if(selected !== null) return;
@@ -2651,11 +3119,96 @@ function QuizRunner({questions, accent, onFinish, tagLabel}){
     setFillChecked(true);
     if(matchesFillAnswer(fillText, acceptable)) Sound.correct(); else Sound.incorrect();
   }
+
+  // ---- Matching handlers ----
+  function handleMatchLeftClick(li){
+    if(matchChecked) return;
+    setMatchActiveLeft(li);
+  }
+  function handleMatchRightClick(ri){
+    if(matchChecked) return;
+    if(matchActiveLeft === null) return;
+    setMatchPicks(prev=>{
+      const next = {...prev};
+      // remove this right slot from any other left it was assigned to
+      Object.keys(next).forEach(k=>{ if(next[k]===ri) delete next[k]; });
+      next[matchActiveLeft] = ri;
+      return next;
+    });
+    setMatchActiveLeft(null);
+  }
+  function handleMatchCheck(){
+    if(matchChecked || !matchAllPicked) return;
+    setMatchChecked(true);
+    const allCorrect = (q.pairs||[]).every((_,li)=> matchRightOrder[matchPicks[li]] === li);
+    if(allCorrect) Sound.correct(); else Sound.incorrect();
+  }
+
+  // ---- Drag & drop handlers ----
+  function assignItem(ii, cat){
+    if(ddChecked) return;
+    setDdAssign(prev=>({...prev, [ii]:cat}));
+    setDdActiveItem(null);
+  }
+  function handleDdItemClick(ii){
+    if(ddChecked) return;
+    setDdActiveItem(prev => prev===ii ? null : ii);
+  }
+  function handleDdCategoryClick(cat){
+    if(ddChecked || ddActiveItem===null) return;
+    assignItem(ddActiveItem, cat);
+  }
+  function handleDdDragStart(e, ii){
+    if(ddChecked) return;
+    e.dataTransfer.setData("text/plain", String(ii));
+  }
+  function handleDdDrop(e, cat){
+    e.preventDefault();
+    setDragOverCat(null);
+    if(ddChecked) return;
+    const ii = parseInt(e.dataTransfer.getData("text/plain"), 10);
+    if(!Number.isNaN(ii)) assignItem(ii, cat);
+  }
+  function handleDdCheck(){
+    if(ddChecked || !ddAllAssigned) return;
+    setDdChecked(true);
+    const allCorrect = (q.items||[]).every((it,ii)=> ddAssign[ii] === it.category);
+    if(allCorrect) Sound.correct(); else Sound.incorrect();
+  }
+
+  // ---- Ordering handlers ----
+  function moveOrderItem(pos, dir){
+    if(orderChecked) return;
+    setOrderList(prev=>{
+      const next = prev.slice();
+      const target = pos + dir;
+      if(target < 0 || target >= next.length) return prev;
+      [next[pos], next[target]] = [next[target], next[pos]];
+      return next;
+    });
+  }
+  function handleOrderCheck(){
+    if(orderChecked) return;
+    setOrderChecked(true);
+    const correctOrder = (q.items||[]).map((_,i)=>i);
+    if(arraysEqual(orderList, correctOrder)) Sound.correct(); else Sound.incorrect();
+  }
+
   function handleNext(){
     Sound.tap();
-    const record = isFill
-      ? {type:"fill", question:q.q, answer:q.answer, chosen:fillText.trim(), isCorrect:fillIsCorrect, tag:q.tag || null}
-      : {type:qType, question:q.q, options:q.options, correct:q.correct, chosen:selected, isCorrect: selected===q.correct, tag:q.tag || null};
+    let record;
+    if(isFill){
+      record = {type:"fill", question:q.q, answer:q.answer, chosen:fillText.trim(), isCorrect:fillIsCorrect, tag:q.tag || null};
+    } else if(isMatch){
+      const chosenPairs = (q.pairs||[]).map((p,li)=>({left:p.left, right: q.pairs[matchRightOrder[matchPicks[li]]].right}));
+      record = {type:"match", question:q.q, pairs:q.pairs, chosen:chosenPairs, isCorrect:matchIsCorrect, tag:q.tag || null};
+    } else if(isDragDrop){
+      record = {type:"dragdrop", question:q.q, items:q.items, categories:q.categories, chosen:{...ddAssign}, isCorrect:ddIsCorrect, tag:q.tag || null};
+    } else if(isOrder){
+      record = {type:"order", question:q.q, items:q.items, chosen:orderList.map(i=>q.items[i]), isCorrect:orderIsCorrect, tag:q.tag || null};
+    } else {
+      record = {type:qType, question:q.q, options:q.options, correct:q.correct, chosen:selected, isCorrect: selected===q.correct, tag:q.tag || null};
+    }
     const newAnswers = [...answers, record];
     if(isLast){
       onFinish(newAnswers);
@@ -2677,12 +3230,25 @@ function QuizRunner({questions, accent, onFinish, tagLabel}){
             <div key={i} className={"quiz-dot" + (i<=idx ? " filled":"")}></div>
           ))}
         </div>
+        {onStop && (
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{marginLeft:10}}
+            title="Stop this quiz"
+            onClick={()=>{
+              if(window.confirm("Stop this quiz? Your progress on this attempt won't be saved.")){
+                Sound.back();
+                onStop();
+              }
+            }}
+          >✕ Stop Quiz</button>
+        )}
       </div>
       <div className="quiz-card" key={idx}>
         {q.tag && <div className="quiz-tag">{q.tag}</div>}
         <div className="quiz-q">{q.q}</div>
 
-        {!isFill && q.options.map((opt, i) => {
+        {!isFill && !isMatch && !isDragDrop && !isOrder && q.options.map((opt, i) => {
           let cls = "quiz-opt";
           if(selected !== null){
             if(i === q.correct) cls += " correct";
@@ -2715,10 +3281,137 @@ function QuizRunner({questions, accent, onFinish, tagLabel}){
           </React.Fragment>
         )}
 
+        {isMatch && (
+          <React.Fragment>
+            <p className="fill-hint">Tap a term on the left, then tap its match on the right.</p>
+            <div className="match-wrap">
+              <div className="match-col">
+                {(q.pairs||[]).map((p,li)=>{
+                  const pickedRi = matchPicks[li];
+                  const isPicked = pickedRi !== undefined;
+                  const isRightAnswer = matchChecked && matchRightOrder[pickedRi] === li;
+                  let cls = "match-item";
+                  if(matchActiveLeft===li) cls += " active";
+                  if(isPicked) cls += " linked";
+                  if(matchChecked) cls += isRightAnswer ? " correct" : " incorrect";
+                  return (
+                    <button key={li} className={cls} disabled={matchChecked} onClick={()=>handleMatchLeftClick(li)}>
+                      <span className="match-num">{li+1}</span> {p.left}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="match-col">
+                {matchRightOrder.map((origIdx, ri)=>{
+                  const linkedLeft = Object.keys(matchPicks).find(k=>matchPicks[k]===ri);
+                  const isPicked = linkedLeft !== undefined;
+                  const isRightAnswer = matchChecked && origIdx === Number(linkedLeft);
+                  let cls = "match-item match-item-right";
+                  if(isPicked) cls += " linked";
+                  if(matchChecked && isPicked) cls += isRightAnswer ? " correct" : " incorrect";
+                  return (
+                    <button key={ri} className={cls} disabled={matchChecked} onClick={()=>handleMatchRightClick(ri)}>
+                      {isPicked && <span className="match-num">{Number(linkedLeft)+1}</span>} {q.pairs[origIdx].right}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {!matchChecked && (
+              <div className="quiz-footer" style={{justifyContent:"flex-start", marginTop:6, marginBottom:10}}>
+                <button className="btn btn-ghost btn-sm" onClick={handleMatchCheck} disabled={!matchAllPicked}>✓ Check Matches</button>
+              </div>
+            )}
+          </React.Fragment>
+        )}
+
+        {isDragDrop && (
+          <React.Fragment>
+            <p className="fill-hint">Drag each item into its category (or tap an item, then tap a category).</p>
+            <div className="dd-items">
+              {(q.items||[]).map((it,ii)=>{
+                if(ddAssign[ii] !== undefined) return null;
+                return (
+                  <div
+                    key={ii}
+                    className={"dd-chip" + (ddActiveItem===ii ? " active" : "")}
+                    draggable={!ddChecked}
+                    onDragStart={e=>handleDdDragStart(e, ii)}
+                    onClick={()=>handleDdItemClick(ii)}
+                  >{it.label}</div>
+                );
+              })}
+              {(q.items||[]).every((it,ii)=>ddAssign[ii]!==undefined) && !ddChecked && (
+                <div className="fill-hint" style={{margin:0}}>All items placed — check your answers below.</div>
+              )}
+            </div>
+            <div className="dd-categories">
+              {(q.categories||[]).map(cat=>{
+                const itemsHere = (q.items||[]).map((it,ii)=>({it,ii})).filter(x=>ddAssign[x.ii]===cat);
+                return (
+                  <div
+                    key={cat}
+                    className={"dd-category" + (dragOverCat===cat ? " drag-over" : "")}
+                    onClick={()=>handleDdCategoryClick(cat)}
+                    onDragOver={e=>{ e.preventDefault(); if(!ddChecked) setDragOverCat(cat); }}
+                    onDragLeave={()=>setDragOverCat(prev=> prev===cat ? null : prev)}
+                    onDrop={e=>handleDdDrop(e, cat)}
+                  >
+                    <div className="dd-category-title">{cat}</div>
+                    {itemsHere.map(x=>{
+                      const isRightAnswer = ddChecked && x.it.category===cat;
+                      let cls = "dd-chip dd-chip-placed";
+                      if(ddChecked) cls += isRightAnswer ? " correct" : " incorrect";
+                      return <div key={x.ii} className={cls} onClick={(e)=>{e.stopPropagation(); handleDdItemClick(x.ii);}}>{x.it.label}</div>;
+                    })}
+                    {itemsHere.length===0 && <div className="dd-empty">Drop here</div>}
+                  </div>
+                );
+              })}
+            </div>
+            {!ddChecked && (
+              <div className="quiz-footer" style={{justifyContent:"flex-start", marginTop:6, marginBottom:10}}>
+                <button className="btn btn-ghost btn-sm" onClick={handleDdCheck} disabled={!ddAllAssigned}>✓ Check Answers</button>
+              </div>
+            )}
+          </React.Fragment>
+        )}
+
+        {isOrder && (
+          <React.Fragment>
+            <p className="fill-hint">Use the arrows to put the steps in the correct order.</p>
+            <div className="order-list">
+              {orderList.map((origIdx, pos)=>{
+                const isRightSpot = orderChecked && origIdx === pos;
+                let cls = "order-item";
+                if(orderChecked) cls += isRightSpot ? " correct" : " incorrect";
+                return (
+                  <div key={origIdx} className={cls}>
+                    <span className="order-num">{pos+1}</span>
+                    <span className="order-label">{q.items[origIdx]}</span>
+                    {!orderChecked && (
+                      <span className="order-btns">
+                        <button type="button" className="order-btn" disabled={pos===0} onClick={()=>moveOrderItem(pos,-1)}>▲</button>
+                        <button type="button" className="order-btn" disabled={pos===orderList.length-1} onClick={()=>moveOrderItem(pos,1)}>▼</button>
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {!orderChecked && (
+              <div className="quiz-footer" style={{justifyContent:"flex-start", marginTop:6, marginBottom:10}}>
+                <button className="btn btn-ghost btn-sm" onClick={handleOrderCheck}>✓ Check Order</button>
+              </div>
+            )}
+          </React.Fragment>
+        )}
+
         {answered && (
-          <div className={"feedback-box " + ((isFill ? fillIsCorrect : selected===q.correct) ? "good":"bad")}>
-            {(isFill ? fillIsCorrect : selected===q.correct) ? "✅ Correct! " : "❌ Not quite. "}
+          <div className={"feedback-box " + ((isFill ? fillIsCorrect : isMatch ? matchIsCorrect : isDragDrop ? ddIsCorrect : isOrder ? orderIsCorrect : selected===q.correct) ? "good":"bad")}>
+            {(isFill ? fillIsCorrect : isMatch ? matchIsCorrect : isDragDrop ? ddIsCorrect : isOrder ? orderIsCorrect : selected===q.correct) ? "✅ Correct! " : "❌ Not quite. "}
             {isFill && !fillIsCorrect && ("Correct answer: " + acceptable[0] + ". ")}
+            {isOrder && !orderIsCorrect && ("Correct order: " + q.items.join(" → ") + ". ")}
             {q.explain}
           </div>
         )}
@@ -2735,16 +3428,18 @@ function QuizRunner({questions, accent, onFinish, tagLabel}){
 }
 
 const CONFETTI_COLORS = ["var(--q1)","var(--q2)","var(--q3)","var(--q4)","var(--gold)"];
-function Confetti(){
+const REWARD_CONFETTI_COLORS = ["var(--aw-cyan)","var(--aw-magenta)","var(--aw-purple)","var(--gold)","#ffffff"];
+function Confetti({variant}){
+  const palette = variant === "reward" ? REWARD_CONFETTI_COLORS : CONFETTI_COLORS;
   const pieces = React.useMemo(()=>Array.from({length:18}, (_,i)=>({
     left: 4 + Math.random()*92,
     dx: (Math.random()*120-60)+"px",
     rot: (Math.random()*520+180)+"deg",
     delay: (Math.random()*0.25)+"s",
     dur: (1.1 + Math.random()*0.6)+"s",
-    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    color: palette[i % palette.length],
     round: Math.random()>0.5
-  })), []);
+  })), [variant]);
   return (
     <div className="confetti-wrap" aria-hidden="true">
       {pieces.map((p,i)=>(
@@ -2765,10 +3460,11 @@ function ResultsView({answers, accent, onRetry, onDone, title}){
   const passed = pct >= 70;
   React.useEffect(()=>{ passed ? Sound.pass() : Sound.tryAgain(); }, []);
   return (
-    <div className="results-card">
-      {passed && <Confetti/>}
+    <div className={"results-card" + (passed ? " reward" : "")}>
+      {passed && <Confetti variant="reward"/>}
+      {passed && <div className="levelup-badge">⚡ Level Up!</div>}
       <div className="results-emoji">{passed ? "🌟" : "🔍"}</div>
-      <div className="results-score" style={{color:accent}}>{correct} / {total}</div>
+      <div className="results-score" style={{color: passed ? undefined : accent}}>{correct} / {total}</div>
       <div className="results-sub">
         {passed ? "Great work! You passed " + title + "." : "Keep practicing — review " + title + " and try again."}
       </div>
@@ -2783,6 +3479,27 @@ function ResultsView({answers, accent, onRetry, onDone, title}){
                   Your answer: {a.chosen || "(blank)"} {a.isCorrect ? "✓" : "✗"}
                 </div>
                 {!a.isCorrect && <div className="ra right">Correct answer: {String(a.answer||"").split("|")[0].trim()}</div>}
+              </React.Fragment>
+            ) : a.type === "match" ? (
+              <React.Fragment>
+                <div className={"ra " + (a.isCorrect ? "right":"wrong")}>
+                  {a.isCorrect ? "All matched correctly ✓" : "Some matches were wrong ✗"}
+                </div>
+                {!a.isCorrect && a.pairs.map((p,pi)=>(<div key={pi} className="ra right">{p.left} → {p.right}</div>))}
+              </React.Fragment>
+            ) : a.type === "dragdrop" ? (
+              <React.Fragment>
+                <div className={"ra " + (a.isCorrect ? "right":"wrong")}>
+                  {a.isCorrect ? "All items sorted correctly ✓" : "Some items were in the wrong category ✗"}
+                </div>
+                {!a.isCorrect && a.items.map((it,ii)=>(<div key={ii} className="ra right">{it.label} → {it.category}</div>))}
+              </React.Fragment>
+            ) : a.type === "order" ? (
+              <React.Fragment>
+                <div className={"ra " + (a.isCorrect ? "right":"wrong")}>
+                  Your order: {a.chosen.join(" → ")} {a.isCorrect ? "✓" : "✗"}
+                </div>
+                {!a.isCorrect && <div className="ra right">Correct order: {a.items.join(" → ")}</div>}
               </React.Fragment>
             ) : (
               <React.Fragment>
@@ -2858,10 +3575,6 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
 /* =========================================================
    QUESTION BANK MANAGER — teacher inputs MCQs per topic
    ========================================================= */
-function emptyQuestionForm(){
-  return {type:"mcq", q:"", options:["","","",""], correct:0, answer:"", explain:"", topic:""};
-}
-
 const TOPIC_ALL = "__all__";
 function normTopic(t){
   return (t || "").trim();
@@ -2903,107 +3616,126 @@ function TopicPicker({topics, totalCount, selected, onToggle}){
 const QUESTION_TYPES = [
   {id:"mcq", label:"🔤 Multiple Choice"},
   {id:"tf", label:"✅ True / False"},
-  {id:"fill", label:"✍️ Fill in the Blank"}
+  {id:"fill", label:"✍️ Fill in the Blank"},
+  {id:"match", label:"🔗 Matching"},
+  {id:"dragdrop", label:"🧩 Drag and Drop"},
+  {id:"order", label:"📋 Ordering / Sequencing"}
 ];
 
+// ---- Quiz-start question-type filter (pure MCQ / pure True-False / pure Fill-in / all types) ----
+const TYPE_ALL = "__all__";
+const QUIZ_TYPE_OPTIONS = [
+  {id:TYPE_ALL, label:"🎲 All Types"},
+  {id:"mcq", label:"🔤 Multiple Choice"},
+  {id:"tf", label:"✅ True / False"},
+  {id:"fill", label:"✍️ Fill in the Blank"},
+  {id:"match", label:"🔗 Matching"},
+  {id:"dragdrop", label:"🧩 Drag and Drop"},
+  {id:"order", label:"📋 Ordering / Sequencing"}
+];
+function filterByType(questions, selectedType){
+  if(!selectedType || selectedType === TYPE_ALL) return questions;
+  return questions.filter(q => (q.type || "mcq") === selectedType);
+}
+// Reusable single-select pill row for choosing which question type(s) a quiz should draw from.
+// Only shows pills for types that actually have questions in the pool, plus "All Types".
+function QuizTypePicker({pool, selected, onSelect}){
+  const availTypes = QUESTION_TYPES.filter(t => pool.some(q => (q.type || "mcq") === t.id));
+  if(availTypes.length < 2) return null; // nothing to choose between
+  const options = [QUIZ_TYPE_OPTIONS[0], ...QUIZ_TYPE_OPTIONS.slice(1).filter(o => availTypes.some(t=>t.id===o.id))];
+  return (
+    <div className="type-picker">
+      {options.map(o=>(
+        <button
+          type="button"
+          key={o.id}
+          className={"type-pill" + (selected===o.id ? " active" : "")}
+          onClick={()=>onSelect(o.id)}
+        >{o.label}</button>
+      ))}
+    </div>
+  );
+}
+
 function QuestionBankManager({lessonId, questions, accent, onChange}){
-  const [form, setForm] = useState(emptyQuestionForm());
-  const [editIdx, setEditIdx] = useState(null);
   const [bulkText, setBulkText] = useState("");
-  const [showBulk, setShowBulk] = useState(false);
   const [bulkTopic, setBulkTopic] = useState("");
+  const [selected, setSelected] = useState(new Set());
 
-  function updateOption(i, val){
-    const opts = form.options.slice();
-    opts[i] = val;
-    setForm({...form, options:opts});
-  }
+  const topics = bankTopics(questions);
+  const noTopicCount = questions.filter(q=>!normTopic(q.topic)).length;
+  const allSelected = questions.length > 0 && selected.size === questions.length;
 
-  function addOption(){
-    if(form.options.length >= 6) return;
-    setForm({...form, options:[...form.options, ""]});
-  }
-
-  function removeOption(i){
-    if(form.options.length <= 2) return;
-    const opts = form.options.slice();
-    opts.splice(i,1);
-    let correct = form.correct;
-    if(correct === i) correct = 0;
-    else if(correct > i) correct -= 1;
-    setForm({...form, options:opts, correct});
-  }
-
-  function switchType(type){
-    if(type === "mcq"){
-      setForm({...emptyQuestionForm(), type:"mcq", q:form.q, explain:form.explain, topic:form.topic});
-    } else if(type === "tf"){
-      setForm({...form, type:"tf", options:["True","False"], correct: form.correct===1?1:0});
-    } else if(type === "fill"){
-      setForm({...form, type:"fill", options:["","","",""], answer:form.answer||""});
-    }
-  }
-
-  function resetForm(){
-    setForm(emptyQuestionForm());
-    setEditIdx(null);
-  }
-
-  function handleSubmit(){
-    const type = form.type || "mcq";
-    if(!form.q.trim()){
-      alert("Please fill in the question.");
-      return;
-    }
-    const topic = normTopic(form.topic);
-    let clean;
-    if(type === "fill"){
-      if(!form.answer.trim()){
-        alert("Please fill in the correct answer.");
-        return;
-      }
-      clean = {type:"fill", q:form.q.trim(), answer:form.answer.trim(), explain:form.explain.trim(), topic};
-    } else if(type === "tf"){
-      clean = {type:"tf", q:form.q.trim(), options:["True","False"], correct:form.correct, explain:form.explain.trim(), topic};
-    } else {
-      if(form.options.length < 2 || form.options.some(o=>!o.trim())){
-        alert("Please fill in the question and all options (at least 2).");
-        return;
-      }
-      clean = {type:"mcq", q:form.q.trim(), options:form.options.map(o=>o.trim()), correct:form.correct, explain:form.explain.trim(), topic};
-    }
-    let next;
-    if(editIdx !== null){
-      next = questions.slice();
-      next[editIdx] = clean;
-    } else {
-      next = [...questions, clean];
-    }
-    onChange(next);
-    resetForm();
-  }
-
-  function handleEdit(i){
-    const src = questions[i];
-    const type = src.type || "mcq";
-    setForm({
-      type,
-      q: src.q,
-      options: type === "fill" ? ["","","",""] : (src.options || ["","","",""]).slice(),
-      correct: type === "fill" ? 0 : (src.correct || 0),
-      answer: type === "fill" ? (src.answer || "") : "",
-      explain: src.explain || "",
-      topic: src.topic || ""
+  function toggleSelect(i){
+    setSelected(prev=>{
+      const next = new Set(prev);
+      if(next.has(i)) next.delete(i); else next.add(i);
+      return next;
     });
-    setEditIdx(i);
+  }
+  function toggleSelectAll(){
+    setSelected(allSelected ? new Set() : new Set(questions.map((_,i)=>i)));
   }
 
-  function handleDelete(i){
+  function handleDeleteOne(i){
     if(!confirm("Delete this question?")) return;
     const next = questions.slice();
     next.splice(i,1);
     onChange(next);
-    if(editIdx === i) resetForm();
+    setSelected(prev=>{
+      const shifted = new Set();
+      prev.forEach(idx=>{ if(idx!==i) shifted.add(idx>i ? idx-1 : idx); });
+      return shifted;
+    });
+  }
+
+  function handleDeleteSelected(){
+    if(selected.size===0) return;
+    if(!confirm("Delete " + selected.size + " selected question(s)?")) return;
+    onChange(questions.filter((_,i)=>!selected.has(i)));
+    setSelected(new Set());
+  }
+
+  function handleDeleteAll(){
+    if(questions.length===0) return;
+    if(!confirm("Delete all " + questions.length + " questions in this bank? This can't be undone.")) return;
+    onChange([]);
+    setSelected(new Set());
+  }
+
+  function handleDeleteTopic(topic){
+    const label = topic ? topic : "No topic";
+    const count = questions.filter(q=>normTopic(q.topic)===topic).length;
+    if(count===0) return;
+    if(!confirm("Delete all " + count + " question(s) in \"" + label + "\"?")) return;
+    onChange(questions.filter(q=>normTopic(q.topic)!==topic));
+    setSelected(new Set());
+  }
+
+  function triggerDownload(filename, data){
+    try{
+      const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url), 200);
+    }catch(e){ alert("Couldn't create that download."); }
+  }
+
+  function slugify(s){
+    return String(s||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"") || "questions";
+  }
+
+  function handleDownloadTopic(topic){
+    const list = questions.filter(q=>normTopic(q.topic)===topic);
+    if(!list.length) return;
+    triggerDownload(slugify(lessonId) + "-" + slugify(topic || "no-topic") + ".json", list);
+  }
+
+  function handleDownloadAll(){
+    if(!questions.length) return;
+    triggerDownload(slugify(lessonId) + "-all-questions.json", questions);
   }
 
   function handleBulkImport(mode){
@@ -3012,7 +3744,7 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
       parsed = JSON.parse(bulkText);
       if(!Array.isArray(parsed)) throw new Error("not an array");
     }catch(e){
-      alert("Couldn't read that as a JSON list of questions. Expected format:\n[{\"q\":\"...\", \"options\":[\"A\",\"B\",\"C\",\"D\"], \"correct\":0, \"explain\":\"...\"}]\nAlso supports {\"type\":\"tf\", \"q\":\"...\", \"correct\":0} and {\"type\":\"fill\", \"q\":\"...\", \"answer\":\"...\"}");
+      alert("Couldn't read that as a JSON list of questions. Expected format:\n[{\"q\":\"...\", \"options\":[\"A\",\"B\",\"C\",\"D\"], \"correct\":0, \"explain\":\"...\"}]\nAlso supports tf, fill, match, dragdrop, and order types — see the format notes below the bank.");
       return;
     }
     const fallbackTopic = normTopic(bulkTopic);
@@ -3021,6 +3753,12 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
       const t = String(p.type||"mcq").toLowerCase();
       if(t === "fill" || t === "fillblank" || t === "fill_in_the_blank") return !!p.answer;
       if(t === "tf" || t === "truefalse" || t === "true_false") return true;
+      if(t === "match" || t === "matching") return Array.isArray(p.pairs) && p.pairs.length >= 2 && p.pairs.every(pr=>pr && pr.left && pr.right);
+      if(t === "dragdrop" || t === "drag_and_drop" || t === "drag-drop" || t === "sort"){
+        return Array.isArray(p.categories) && p.categories.length >= 2 && Array.isArray(p.items) && p.items.length >= 2
+          && p.items.every(it=>it && it.label && p.categories.includes(it.category));
+      }
+      if(t === "order" || t === "sequence" || t === "sequencing" || t === "ordering") return Array.isArray(p.items) && p.items.length >= 2;
       return Array.isArray(p.options) && p.options.length >= 2;
     }).map(p=>{
       const t = String(p.type||"mcq").toLowerCase();
@@ -3035,6 +3773,15 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
         else if(typeof p.correct === "string") correct = /^false$/i.test(p.correct.trim()) ? 1 : 0;
         return {type:"tf", q:String(p.q), options:["True","False"], correct, explain: p.explain ? String(p.explain) : "", topic};
       }
+      if(t === "match" || t === "matching"){
+        return {type:"match", q:String(p.q), pairs:p.pairs.map(pr=>({left:String(pr.left), right:String(pr.right)})), explain: p.explain ? String(p.explain) : "", topic};
+      }
+      if(t === "dragdrop" || t === "drag_and_drop" || t === "drag-drop" || t === "sort"){
+        return {type:"dragdrop", q:String(p.q), categories:p.categories.map(c=>String(c)), items:p.items.map(it=>({label:String(it.label), category:String(it.category)})), explain: p.explain ? String(p.explain) : "", topic};
+      }
+      if(t === "order" || t === "sequence" || t === "sequencing" || t === "ordering"){
+        return {type:"order", q:String(p.q), items:p.items.map(it=>String(it)), explain: p.explain ? String(p.explain) : "", topic};
+      }
       return {type:"mcq", q:String(p.q), options:p.options.map(o=>String(o)), correct: Number.isInteger(p.correct)?p.correct:0, explain: p.explain ? String(p.explain) : "", topic};
     });
     if(!cleaned.length){ alert("No valid questions found in that JSON."); return; }
@@ -3042,124 +3789,132 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
     onChange(next);
     setBulkText("");
     setBulkTopic("");
-    setShowBulk(false);
+    setSelected(new Set());
   }
-
-  const formType = form.type || "mcq";
 
   return (
     <div className="journal-page">
       <h3>Question Bank {questions.length ? "(" + questions.length + ")" : ""}</h3>
-      {questions.length === 0 && <p className="sub">No questions yet for this topic. Add multiple choice, true/false, or fill-in-the-blank questions below, one at a time or as a bulk JSON import.</p>}
+      {questions.length === 0 && <p className="sub">No questions yet. Paste a JSON list below to add multiple choice, true/false, fill-in-the-blank, matching, drag-and-drop, or ordering questions.</p>}
+
+      {questions.length > 0 && (
+        <div className="bank-toolbar">
+          <label className="bank-selectall">
+            <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
+            <span>{selected.size>0 ? selected.size + " selected" : "Select all"}</span>
+          </label>
+          <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
+            {selected.size>0 && (
+              <button className="btn btn-ghost btn-sm" onClick={handleDeleteSelected}>🗑️ Delete Selected ({selected.size})</button>
+            )}
+            <button className="btn btn-ghost btn-sm" onClick={handleDownloadAll}>⬇️ Download All JSON</button>
+            <button className="btn btn-ghost btn-sm" style={{color:"var(--bad)"}} onClick={handleDeleteAll}>🗑️ Delete All</button>
+          </div>
+        </div>
+      )}
+
+      {(topics.length > 0 || noTopicCount > 0) && (
+        <div className="bank-topic-tools">
+          <label className="field-label" style={{marginTop:0}}>Manage by topic</label>
+          {topics.map(t=>{
+            const count = questions.filter(q=>normTopic(q.topic)===t).length;
+            return (
+              <div key={t} className="bank-topic-row">
+                <span className="bank-topic-name">🏷️ {t} ({count})</span>
+                <div style={{display:"flex", gap:8}}>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>handleDownloadTopic(t)}>⬇️ Download</button>
+                  <button className="btn btn-ghost btn-sm" style={{color:"var(--bad)"}} onClick={()=>handleDeleteTopic(t)}>🗑️ Delete All</button>
+                </div>
+              </div>
+            );
+          })}
+          {noTopicCount > 0 && (
+            <div className="bank-topic-row">
+              <span className="bank-topic-name">No topic ({noTopicCount})</span>
+              <div style={{display:"flex", gap:8}}>
+                <button className="btn btn-ghost btn-sm" onClick={()=>handleDownloadTopic("")}>⬇️ Download</button>
+                <button className="btn btn-ghost btn-sm" style={{color:"var(--bad)"}} onClick={()=>handleDeleteTopic("")}>🗑️ Delete All</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {questions.map((q,i)=>{
         const t = q.type || "mcq";
-        const typeLabel = t === "fill" ? "✍️ Fill in the Blank" : t === "tf" ? "✅ True / False" : "🔤 Multiple Choice";
+        const typeLabel = t === "fill" ? "✍️ Fill in the Blank"
+          : t === "tf" ? "✅ True / False"
+          : t === "match" ? "🔗 Matching"
+          : t === "dragdrop" ? "🧩 Drag and Drop"
+          : t === "order" ? "📋 Ordering / Sequencing"
+          : "🔤 Multiple Choice";
         return (
-          <div key={i} className="bank-item">
-            <div className="bank-item-type">{typeLabel}{normTopic(q.topic) ? " · 🏷️ " + normTopic(q.topic) : ""}</div>
-            <div className="bank-item-q">{i+1}. {q.q}</div>
-            {t === "fill" ? (
-              <div className="bank-item-opts">
-                <span className="bank-opt bank-opt-correct">{q.answer}</span>
+          <div key={i} className={"bank-item" + (selected.has(i) ? " bank-item-selected" : "")}>
+            <label className="bank-item-select">
+              <input type="checkbox" checked={selected.has(i)} onChange={()=>toggleSelect(i)} />
+            </label>
+            <div className="bank-item-body">
+              <div className="bank-item-type">{typeLabel}{normTopic(q.topic) ? " · 🏷️ " + normTopic(q.topic) : ""}</div>
+              <div className="bank-item-q">{i+1}. {q.q}</div>
+              {t === "fill" && (
+                <div className="bank-item-opts">
+                  <span className="bank-opt bank-opt-correct">{q.answer}</span>
+                </div>
+              )}
+              {t === "match" && (
+                <div className="bank-item-opts">
+                  {q.pairs.map((p,pi)=>(
+                    <span key={pi} className="bank-opt bank-opt-correct">{p.left} → {p.right}</span>
+                  ))}
+                </div>
+              )}
+              {t === "dragdrop" && (
+                <div className="bank-item-opts">
+                  {q.items.map((it,ii)=>(
+                    <span key={ii} className="bank-opt bank-opt-correct">{it.label} → {it.category}</span>
+                  ))}
+                </div>
+              )}
+              {t === "order" && (
+                <div className="bank-item-opts">
+                  <span className="bank-opt bank-opt-correct">{q.items.join(" → ")}</span>
+                </div>
+              )}
+              {(t === "mcq" || t === "tf") && (
+                <div className="bank-item-opts">
+                  {q.options.map((o,oi)=>(
+                    <span key={oi} className={"bank-opt" + (oi===q.correct ? " bank-opt-correct":"")}>{o}</span>
+                  ))}
+                </div>
+              )}
+              <div className="bank-item-actions">
+                <button className="btn btn-ghost btn-sm" onClick={()=>handleDeleteOne(i)}>🗑️ Delete</button>
               </div>
-            ) : (
-              <div className="bank-item-opts">
-                {q.options.map((o,oi)=>(
-                  <span key={oi} className={"bank-opt" + (oi===q.correct ? " bank-opt-correct":"")}>{o}</span>
-                ))}
-              </div>
-            )}
-            <div className="bank-item-actions">
-              <button className="btn btn-ghost btn-sm" onClick={()=>handleEdit(i)}>✏️ Edit</button>
-              <button className="btn btn-ghost btn-sm" onClick={()=>handleDelete(i)}>🗑️ Delete</button>
             </div>
           </div>
         );
       })}
 
-      <h3 style={{marginTop:24}}>{editIdx!==null ? "Edit Question" : "Add a Question"}</h3>
-
-      <label className="field-label">Question Type</label>
-      <div className="type-tabs">
-        {QUESTION_TYPES.map(t=>(
-          <button key={t.id} className={"type-tab btn" + (formType===t.id ? " active":"")} onClick={()=>switchType(t.id)}>{t.label}</button>
-        ))}
-      </div>
-
-      <label className="field-label">Topic (optional — e.g. Comparing, Ordering, Rounding)</label>
-      <input className="text-input" list="topic-suggestions" value={form.topic} onChange={e=>setForm({...form, topic:e.target.value})} placeholder="Type a topic to group this question..." />
-      <datalist id="topic-suggestions">
-        {bankTopics(questions).map(t=>(<option key={t} value={t} />))}
-      </datalist>
-      <p className="fill-hint">Group questions by topic (e.g. Comparing, Ordering, Rounding) so students can quiz on one topic at a time. Leave blank for no topic.</p>
-
-      <label className="field-label">Question</label>
-      <input className="text-input" value={form.q} onChange={e=>setForm({...form, q:e.target.value})} placeholder={formType==="tf" ? "Type the statement..." : "Type the question..."} />
-
-      {formType === "mcq" && (
-        <React.Fragment>
-          {form.options.map((opt,i)=>(
-            <div key={i} className="option-row">
-              <input type="radio" name="correctOpt" checked={form.correct===i} onChange={()=>setForm({...form, correct:i})} />
-              <input className="text-input" value={opt} onChange={e=>updateOption(i,e.target.value)} placeholder={"Option " + (i+1)} />
-              {form.options.length > 2 && <button className="btn quiz-opt-remove" onClick={()=>removeOption(i)} title="Remove option">✕</button>}
-            </div>
-          ))}
-          {form.options.length < 6 && (
-            <button className="btn btn-ghost btn-sm quiz-opt-add" onClick={addOption}>➕ Add another option</button>
-          )}
-          <p className="fill-hint">Tap the circle next to the correct option.</p>
-        </React.Fragment>
-      )}
-
-      {formType === "tf" && (
-        <React.Fragment>
-          <div className="option-row">
-            <input type="radio" name="correctOpt" checked={form.correct===0} onChange={()=>setForm({...form, correct:0})} />
-            <span>True</span>
-          </div>
-          <div className="option-row">
-            <input type="radio" name="correctOpt" checked={form.correct===1} onChange={()=>setForm({...form, correct:1})} />
-            <span>False</span>
-          </div>
-          <p className="fill-hint">Tap the circle next to the correct answer.</p>
-        </React.Fragment>
-      )}
-
-      {formType === "fill" && (
-        <React.Fragment>
-          <label className="field-label">Correct Answer</label>
-          <input className="text-input" value={form.answer} onChange={e=>setForm({...form, answer:e.target.value})} placeholder="Type the correct answer..." />
-          <p className="fill-hint">Accept more than one wording by separating them with a "|" — e.g. Rizal|Jose Rizal. Answers are checked without regard to capitalization.</p>
-        </React.Fragment>
-      )}
-
-      <label className="field-label">Explanation (optional, shown after answering)</label>
-      <input className="text-input" value={form.explain} onChange={e=>setForm({...form, explain:e.target.value})} placeholder="Why is this the correct answer?" />
-      <div className="learn-footer" style={{gap:10}}>
-        {editIdx!==null && <button className="btn btn-ghost" onClick={resetForm}>Cancel Edit</button>}
-        <button className="btn btn-primary" style={{background:accent}} onClick={handleSubmit}>{editIdx!==null ? "💾 Update Question" : "➕ Add Question"}</button>
-      </div>
-
       <div style={{marginTop:24}}>
-        <button className="btn btn-ghost btn-sm" onClick={()=>setShowBulk(!showBulk)}>{showBulk ? "▲ Hide bulk JSON import" : "▼ Bulk import from JSON"}</button>
-        {showBulk && (
-          <div style={{marginTop:10}}>
-            <p className="sub">Paste an array of questions. Multiple choice: {"[{\"q\":\"...\",\"options\":[\"A\",\"B\",\"C\",\"D\"],\"correct\":0,\"explain\":\"...\",\"topic\":\"Comparing\"}]"}</p>
-            <p className="sub">True/False: {"[{\"type\":\"tf\",\"q\":\"...\",\"correct\":0,\"explain\":\"...\",\"topic\":\"Ordering\"}]"} (correct: 0 = True, 1 = False)</p>
-            <p className="sub">Fill in the blank: {"[{\"type\":\"fill\",\"q\":\"...\",\"answer\":\"...\",\"explain\":\"...\",\"topic\":\"Rounding\"}]"}</p>
-            <p className="sub">"topic" is optional on all types — leave it out (or empty) for questions with no topic.</p>
-            <label className="field-label">Topic for this batch (optional)</label>
-            <input className="text-input" list="topic-suggestions" value={bulkTopic} onChange={e=>setBulkTopic(e.target.value)} placeholder="e.g. Comparing — applied to any question below with no topic of its own" />
-            <p className="fill-hint">If a question in the JSON already has its own "topic", that's kept. Otherwise this batch topic is used. Leave blank for no topic.</p>
-            <textarea className="text-area" rows={8} value={bulkText} onChange={e=>setBulkText(e.target.value)} placeholder="Paste JSON array here..."></textarea>
-            <div className="learn-footer" style={{gap:10}}>
-              <button className="btn btn-ghost" onClick={()=>handleBulkImport("append")}>➕ Append to Bank</button>
-              <button className="btn btn-primary" style={{background:accent}} onClick={()=>handleBulkImport("replace")}>♻️ Replace Entire Bank</button>
-            </div>
-          </div>
-        )}
+        <h3>➕ Bulk Import from JSON</h3>
+        <p className="sub">Paste an array of questions. Multiple choice: {"[{\"q\":\"...\",\"options\":[\"A\",\"B\",\"C\",\"D\"],\"correct\":0,\"explain\":\"...\",\"topic\":\"Comparing\"}]"}</p>
+        <p className="sub">True/False: {"[{\"type\":\"tf\",\"q\":\"...\",\"correct\":0,\"explain\":\"...\",\"topic\":\"Ordering\"}]"} (correct: 0 = True, 1 = False)</p>
+        <p className="sub">Fill in the blank: {"[{\"type\":\"fill\",\"q\":\"...\",\"answer\":\"...\",\"explain\":\"...\",\"topic\":\"Rounding\"}]"}</p>
+        <p className="sub">🔗 Matching: {"[{\"type\":\"match\",\"q\":\"Match the scientist to their invention\",\"pairs\":[{\"left\":\"Edison\",\"right\":\"Light bulb\"},{\"left\":\"Bell\",\"right\":\"Telephone\"}],\"explain\":\"...\",\"topic\":\"Inventors\"}]"}</p>
+        <p className="sub">🧩 Drag and Drop: {"[{\"type\":\"dragdrop\",\"q\":\"Sort into Solid, Liquid, Gas\",\"categories\":[\"Solid\",\"Liquid\",\"Gas\"],\"items\":[{\"label\":\"Ice\",\"category\":\"Solid\"},{\"label\":\"Water\",\"category\":\"Liquid\"},{\"label\":\"Steam\",\"category\":\"Gas\"}],\"explain\":\"...\",\"topic\":\"Matter\"}]"} (each item's "category" must exactly match one of the "categories")</p>
+        <p className="sub">📋 Ordering / Sequencing: {"[{\"type\":\"order\",\"q\":\"Arrange the butterfly life cycle\",\"items\":[\"Egg\",\"Larva\",\"Pupa\",\"Adult\"],\"explain\":\"...\",\"topic\":\"Life Cycles\"}]"} (list "items" in the correct order — they'll be shuffled for the student)</p>
+        <p className="sub">"topic" is optional on all types — leave it out (or empty) for questions with no topic.</p>
+        <label className="field-label">Topic for this batch (optional)</label>
+        <input className="text-input" list="topic-suggestions" value={bulkTopic} onChange={e=>setBulkTopic(e.target.value)} placeholder="e.g. Comparing — applied to any question below with no topic of its own" />
+        <datalist id="topic-suggestions">
+          {topics.map(t=>(<option key={t} value={t} />))}
+        </datalist>
+        <p className="fill-hint">If a question in the JSON already has its own "topic", that's kept. Otherwise this batch topic is used. Leave blank for no topic.</p>
+        <textarea className="text-area" rows={8} value={bulkText} onChange={e=>setBulkText(e.target.value)} placeholder="Paste JSON array here..."></textarea>
+        <div className="learn-footer" style={{gap:10}}>
+          <button className="btn btn-ghost" onClick={()=>handleBulkImport("append")}>➕ Append to Bank</button>
+          <button className="btn btn-primary" style={{background:accent}} onClick={()=>handleBulkImport("replace")}>♻️ Replace Entire Bank</button>
+        </div>
       </div>
     </div>
   );
@@ -3240,7 +3995,6 @@ function App(){
 
   function goDashboard(){ Sound.back(); setNav({screen:"dashboard"}); setQuizSession(null); }
   function goNotes(){ Sound.nav(); setNav({screen:"notes"}); setQuizSession(null); }
-  function goSettings(){ Sound.nav(); setNav({screen:"settings"}); setQuizSession(null); }
   function goSubjects(){ Sound.back(); setNav({screen:"subjects"}); setQuizSession(null); }
   function goSubjectHome(sid){ Sound.nav(); setNav({screen:"home", subjectId:sid}); setQuizSession(null); }
   function goQuarter(sid, qid){ Sound.nav(); setNav({screen:"quarter", subjectId:sid, quarterId:qid}); setQuizSession(null); }
@@ -3258,21 +4012,23 @@ function App(){
     logLessonLearned(lessonId);
   }
 
-  function startLessonQuiz(quarter, lesson, count, topics){
+  function startLessonQuiz(quarter, lesson, count, topics, qType){
     Sound.nav();
     let pool = filterByTopics(getQuestions(lesson.id), topics);
+    pool = filterByType(pool, qType);
     const n = Math.max(1, Math.min(count || pool.length, pool.length));
     setQuizSession({
       kind:"lesson", key:lesson.id, accent:quarter.color, title: lesson.title,
       questions: shuffle(pool).slice(0, n)
     });
   }
-  function startLongQuiz(quarter, count, topics){
+  function startLongQuiz(quarter, count, topics, qType){
     Sound.nav();
     const subject = currentSubject();
     const lessons = quarterLessons(subject, quarter, moves);
     let pool = lessons.flatMap(l => getQuestions(l.id).map(q => ({...q, tag: mergeLesson(l, edits).title})));
     pool = filterByTopics(pool, topics);
+    pool = filterByType(pool, qType);
     const n = Math.max(1, Math.min(count || pool.length, pool.length));
     setQuizSession({
       kind:"long", key:quarter.id, accent:quarter.color, title: quarter.title + " Long Quiz",
@@ -3340,10 +4096,10 @@ function App(){
       <React.Fragment>
         <div className="passport">
           <div className="passport-title">Welcome back</div>
-          <div className="passport-name">👋 Hi, {settings.studentName}!</div>
+          <div className="passport-name">👋 Hi, George!</div>
           <div className="field-label" style={{color:"#C9C2FF", margin:"0 0 6px"}}>Overall Progress — {overallPct}%</div>
-          <div className="progress-track" style={{background:"rgba(237,231,214,0.18)"}}>
-            <div className="progress-fill" style={{width:overallPct+"%", background:"linear-gradient(90deg, var(--gold), #FFE18A)"}}></div>
+          <div className="progress-track" style={{background:"rgba(237,231,214,0.14)", boxShadow:"inset 0 1px 3px rgba(0,0,0,0.3), 0 0 10px rgba(53,242,224,0.25)"}}>
+            <div className="progress-fill" style={{width:overallPct+"%", background:"linear-gradient(90deg, var(--aw-cyan), var(--aw-magenta))", boxShadow:"0 0 10px rgba(53,242,224,0.6)"}}></div>
           </div>
           <div className="smeta" style={{color:"#C9C2FF", marginTop:8}}>{totals.learned}/{totals.total} topics learned across all subjects</div>
         </div>
@@ -3398,63 +4154,6 @@ function App(){
             </div>
           </div>
         ))}
-        <div className="footer-note">SACRED HEART ACADEMY OF PASIG · GRADE SCHOOL DEPARTMENT</div>
-      </React.Fragment>
-    );
-  }
-
-  /* ---------------- SETTINGS SCREEN ---------------- */
-  function SettingsScreen(){
-    const [name, setName] = useState(settings.studentName);
-    const [lg, setLg] = useState(settings.dailyLessonGoal);
-    const [qg, setQg] = useState(settings.dailyQuestionGoal);
-    return (
-      <React.Fragment>
-        <div className="backbar">
-          <button className="backbtn" onClick={goDashboard}>←</button>
-          <div>
-            <div className="qnum">Preferences</div>
-            <h1 style={{margin:0, fontSize:"22px"}}>⚙️ Settings</h1>
-          </div>
-        </div>
-        <div className="journal-page">
-          <label className="field-label">Student Name</label>
-          <input className="text-input" value={name} onChange={e=>setName(e.target.value)} placeholder="Student name" />
-          <label className="field-label">Daily Lesson Goal</label>
-          <input className="text-input" type="number" min="1" value={lg} onChange={e=>setLg(Math.max(1, parseInt(e.target.value)||1))} />
-          <label className="field-label">Daily Question Goal</label>
-          <input className="text-input" type="number" min="1" value={qg} onChange={e=>setQg(Math.max(1, parseInt(e.target.value)||1))} />
-          <div className="learn-footer" style={{gap:10}}>
-            <button className="btn btn-primary" onClick={()=>{ updateSettings({studentName:name.trim()||"George", dailyLessonGoal:lg, dailyQuestionGoal:qg}); goDashboard(); }}>💾 Save Settings</button>
-          </div>
-        </div>
-        <div className="section-title">Sound</div>
-        <div className="journal-page">
-          <div className="sound-toggle-row">
-            <div>
-              <div className="stl">🔊 Sound Effects</div>
-              <div className="std">Chimes for correct answers, quiz results, and navigation</div>
-            </div>
-            <button
-              className={"switch" + (settings.soundEnabled !== false ? " on" : "")}
-              onClick={()=>{
-                const next = settings.soundEnabled === false;
-                updateSettings({soundEnabled: next});
-                if(next) setTimeout(()=>Sound.tap(), 30);
-              }}
-              aria-label="Toggle sound effects"
-            />
-          </div>
-        </div>
-
-        <div className="section-title">Data</div>
-        <div className="subject-card" style={{cursor:"default"}}>
-          <div className="smeta">All lessons, quizzes, scores, notes, and settings are saved automatically to this device's local storage as you go — nothing is lost on refresh.</div>
-          <div className="learn-footer" style={{gap:10, marginTop:10}}>
-            <button className="btn btn-ghost" onClick={saveEverythingNow}>💾 Save Everything Now</button>
-            <button className="btn btn-ghost" onClick={resetAll}>⟳ Reset Progress</button>
-          </div>
-        </div>
         <div className="footer-note">SACRED HEART ACADEMY OF PASIG · GRADE SCHOOL DEPARTMENT</div>
       </React.Fragment>
     );
@@ -3541,13 +4240,16 @@ function App(){
     const totalBankQ = lessons.reduce((sum,l)=>sum+getQuestions(l.id).length, 0);
     const [longCount, setLongCount] = useState(Math.min(10, totalBankQ) || 1);
     const [longTopics, setLongTopics] = useState([TOPIC_ALL]);
+    const [longType, setLongType] = useState(TYPE_ALL);
     const longFullPool = lessons.flatMap(l=>getQuestions(l.id));
     const longAvailTopics = bankTopics(longFullPool);
     const longAvailTopicsWithCounts = longAvailTopics.map(t=>({name:t, count: longFullPool.filter(q=>normTopic(q.topic)===t).length}));
-    const longFilteredCount = filterByTopics(longFullPool, longTopics).length;
+    const longTopicPool = filterByTopics(longFullPool, longTopics);
+    const longFilteredCount = filterByType(longTopicPool, longType).length;
     let counter = 0;
 
-    useEffect(()=>{ setLongCount(Math.min(10, longFilteredCount) || 1); }, [longTopics, longFilteredCount]);
+    useEffect(()=>{ setLongCount(Math.min(10, longFilteredCount) || 1); }, [longTopics, longType, longFilteredCount]);
+    useEffect(()=>{ setLongType(TYPE_ALL); }, [longTopics]);
 
     function renderLessonCard(l0, moved){
       counter++;
@@ -3638,22 +4340,32 @@ function App(){
                   </div>
                 </React.Fragment>
               )}
+              <label className="field-label">Question type?</label>
+              <div style={{marginBottom:14}}>
+                <QuizTypePicker pool={longTopicPool} selected={longType} onSelect={setLongType} />
+              </div>
               {longFilteredCount === 0 ? (
-                <p className="sub">No questions for this topic yet.</p>
+                <p className="sub">No questions of this type for this topic yet.</p>
               ) : (
                 <React.Fragment>
                   <label className="field-label">How many questions would you like to take? (1–{longFilteredCount})</label>
                   <input type="number" className="text-input" min={1} max={longFilteredCount} value={longCount}
                     onChange={e=>{
-                      const v = parseInt(e.target.value,10);
-                      setLongCount(Number.isNaN(v) ? 1 : Math.max(1, Math.min(v, longFilteredCount)));
+                      const raw = e.target.value;
+                      if(raw === ""){ setLongCount(""); return; }
+                      const v = parseInt(raw,10);
+                      if(Number.isNaN(v)) return;
+                      setLongCount(Math.max(1, Math.min(v, longFilteredCount)));
+                    }}
+                    onBlur={()=>{
+                      if(longCount === "" || Number.isNaN(longCount)) setLongCount(1);
                     }} />
                 </React.Fragment>
               )}
               <div className="learn-footer" style={{gap:10}}>
                 <button className="btn btn-ghost" onClick={()=>setShowSetup(false)}>Cancel</button>
                 {longFilteredCount > 0 && (
-                  <button className="btn btn-primary" style={{background:quarter.color}} onClick={()=>startLongQuiz(quarter, longCount, longTopics)}>Start Long Quiz →</button>
+                  <button className="btn btn-primary" style={{background:quarter.color}} onClick={()=>startLongQuiz(quarter, longCount, longTopics, longType)}>Start Long Quiz →</button>
                 )}
               </div>
             </div>
@@ -3669,20 +4381,24 @@ function App(){
     const quarter = subject.quarters.find(q=>q.id===nav.quarterId);
     const rawLesson = allSubjectLessons(subject).find(l=>l.id===nav.lessonId);
     const lesson = mergeLesson(rawLesson, edits);
-    const [tab, setTab] = useState(nav.tab || "learn");
+    const tab = nav.tab || "learn";
+    function setTab(t){ setNav(prev => ({...prev, tab:t})); }
     const [editingLesson, setEditingLesson] = useState(false);
     const [movingLesson, setMovingLesson] = useState(false);
     const [moveTarget, setMoveTarget] = useState("");
     const [quizCount, setQuizCount] = useState(1);
     const [quizTopics, setQuizTopics] = useState([TOPIC_ALL]);
+    const [quizType, setQuizType] = useState(TYPE_ALL);
     const rec = progress.lessons[lesson.id];
     const qBank = getQuestions(lesson.id);
     const otherQuarters = subject.quarters.filter(q=>q.id !== quarter.id);
     const availTopics = bankTopics(qBank);
     const availTopicsWithCounts = availTopics.map(t=>({name:t, count: qBank.filter(q=>normTopic(q.topic)===t).length}));
-    const filteredBank = filterByTopics(qBank, quizTopics);
+    const topicFilteredBank = filterByTopics(qBank, quizTopics);
+    const filteredBank = filterByType(topicFilteredBank, quizType);
 
     useEffect(()=>{ setQuizCount(Math.min(10, filteredBank.length) || 1); }, [lesson.id, filteredBank.length]);
+    useEffect(()=>{ setQuizType(TYPE_ALL); }, [quizTopics, lesson.id]);
 
     return (
       <React.Fragment>
@@ -3771,7 +4487,7 @@ function App(){
                 answers={quizSession.finalAnswers}
                 accent={quarter.color}
                 title={lesson.title}
-                onRetry={()=>startLessonQuiz(quarter, lesson, quizCount, quizTopics)}
+                onRetry={()=>startLessonQuiz(quarter, lesson, quizCount, quizTopics, quizType)}
                 onDone={()=>{setQuizSession(null);}}
               />
             ) : (
@@ -3779,6 +4495,7 @@ function App(){
                 questions={quizSession.questions}
                 accent={quarter.color}
                 onFinish={handleQuizFinish}
+                onStop={()=>{setQuizSession(null);}}
               />
             )
           ) : (
@@ -3804,18 +4521,28 @@ function App(){
                       </div>
                     </React.Fragment>
                   )}
+                  <label className="field-label">Question type?</label>
+                  <div style={{maxWidth:320, margin:"0 auto 14px"}}>
+                    <QuizTypePicker pool={topicFilteredBank} selected={quizType} onSelect={setQuizType} />
+                  </div>
                   {filteredBank.length === 0 ? (
-                    <p className="sub">No questions for this topic yet.</p>
+                    <p className="sub">No questions of this type for this topic yet.</p>
                   ) : (
                     <React.Fragment>
                       <label className="field-label">How many questions would you like to take? (1–{filteredBank.length})</label>
                       <input type="number" className="text-input" style={{maxWidth:120, margin:"0 auto 14px"}} min={1} max={filteredBank.length} value={quizCount}
                         onChange={e=>{
-                          const v = parseInt(e.target.value,10);
-                          setQuizCount(Number.isNaN(v) ? 1 : Math.max(1, Math.min(v, filteredBank.length)));
+                          const raw = e.target.value;
+                          if(raw === ""){ setQuizCount(""); return; }
+                          const v = parseInt(raw,10);
+                          if(Number.isNaN(v)) return;
+                          setQuizCount(Math.max(1, Math.min(v, filteredBank.length)));
+                        }}
+                        onBlur={()=>{
+                          if(quizCount === "" || Number.isNaN(quizCount)) setQuizCount(1);
                         }} />
                       <div>
-                        <button className="btn btn-primary" style={{background:quarter.color}} onClick={()=>startLessonQuiz(quarter, lesson, quizCount, quizTopics)}>
+                        <button className="btn btn-primary" style={{background:quarter.color}} onClick={()=>startLessonQuiz(quarter, lesson, quizCount, quizTopics, quizType)}>
                           {rec && rec.best ? "Retake Quiz" : "Start Quiz"}
                         </button>
                       </div>
@@ -3865,6 +4592,7 @@ function App(){
             questions={quizSession.questions}
             accent={quarter.color}
             onFinish={handleQuizFinish}
+            onStop={()=>{setQuizSession(null); goQuarter(subject.id, quarter.id);}}
           />
         )}
       </React.Fragment>
@@ -3882,8 +4610,6 @@ function App(){
     content = <SubjectHomeScreen/>;
   } else if(nav.screen==="notes"){
     content = <NotesScreen/>;
-  } else if(nav.screen==="settings"){
-    content = <SettingsScreen/>;
   } else if(nav.screen==="subjects"){
     content = <SubjectsScreen/>;
   } else {
