@@ -2380,7 +2380,13 @@ const ACTIVITY_KEY = "gs4_activity_log_v1";
 function loadProgress(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw) return JSON.parse(raw);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      return {
+        lessons: parsed.lessons || {},
+        longQuiz: parsed.longQuiz || {}
+      };
+    }
   }catch(e){}
   return {lessons:{}, longQuiz:{}};
 }
