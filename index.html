@@ -9,6 +9,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
   :root{
     --paper: #F3F5FF;
@@ -561,12 +563,134 @@
   .quiz-fill-input.incorrect{border-color:var(--bad);background:#FFE1E4;}
   .quiz-opt-remove{flex:none;background:none;border:none;color:var(--bad);font-weight:800;font-size:16px;box-shadow:none;padding:4px 8px;}
   .quiz-opt-add{margin-bottom:12px;}
+  /* ---------- LOGIN GATE ---------- */
+  .login-gate{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:
+      radial-gradient(circle at 12% 8%, rgba(255,201,60,0.16), transparent 40%),
+      radial-gradient(circle at 88% 4%, rgba(91,127,255,0.14), transparent 38%),
+      var(--paper);
+    padding:20px;
+  }
+  .login-card{
+    background:var(--card);border:2.5px solid var(--line);border-radius:var(--radius-lg);
+    padding:32px 28px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px;
+    text-align:center;box-shadow:var(--shadow-lg);
+  }
+  .login-badge{
+    width:56px;height:56px;border-radius:18px;margin:0 auto 4px;
+    background:linear-gradient(150deg, var(--night), var(--night-deep));
+    color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:28px;
+    box-shadow:var(--shadow);
+  }
+  .login-card h1{font-family:'Fredoka';font-size:1.3rem;margin:0;color:var(--ink);}
+  .login-sub{color:var(--ink-soft);margin:0 0 8px;font-size:0.9rem;}
+  .login-card input{
+    background:var(--paper);border:2px solid var(--line);border-radius:var(--radius-sm);
+    color:var(--ink);padding:11px 12px;font-size:0.95rem;font-family:'Nunito';
+  }
+  .login-card button{margin-top:4px;}
+  .login-error{color:var(--bad);font-size:0.85rem;min-height:1.1em;margin:0;font-weight:600;}
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="loginGate" class="login-gate">
+  <form id="loginForm" class="login-card">
+    <div class="login-badge">🎓</div>
+    <h1>Grade 4 Learning Passport</h1>
+    <p class="login-sub">Sign in to continue</p>
+    <input type="email" id="loginEmail" placeholder="Email" autocomplete="username" required>
+    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" required>
+    <button type="submit" id="loginBtn" class="btn btn-primary">Sign In</button>
+    <p class="login-error" id="loginError"></p>
+  </form>
+</div>
+<div id="root" style="display:none;"></div>
 <script type="text/babel" data-presets="env,react">
 const {useState, useEffect, useMemo} = React;
+
+/* =========================================================
+   FIREBASE — cloud sync + login gate
+   Same Firebase project as the daily-ledger app (shared account,
+   same sign-in), but its own database path ("grade4_passport") so
+   the two apps' data never collide.
+   ========================================================= */
+const firebaseConfig = {
+
+  apiKey: "AIzaSyDIeayv_HtmrXC-ZtegLC1VFjZbT2zU31k",
+  authDomain: "grade4-1064f.firebaseapp.com",
+  databaseURL: "https://grade4-1064f-default-rtdb.firebaseio.com",
+  projectId: "grade4-1064f",
+  storageBucket: "grade4-1064f.firebasestorage.app",
+  messagingSenderId: "626501686100",
+  appId: "1:626501686100:web:9eb753458f3a606c842ec1"
+
+};
+firebase.initializeApp(firebaseConfig);
+const fbAuth = firebase.auth();
+
+const FIREBASE_DB_URL = "https://grade4-1064f-default-rtdb.firebaseio.com/";
+const CLOUD_URL = FIREBASE_DB_URL + "grade4_passport.json";
+const LS_PREFIX = "gs4_"; // every localStorage key this app uses starts with this
+
+// Bundles every gs4_ localStorage key into one JSON blob for Firebase.
+function buildLocalSnapshot(){
+  const out = {};
+  for(let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    if(k && k.indexOf(LS_PREFIX)===0){
+      try{ out[k] = JSON.parse(localStorage.getItem(k)); }catch(e){}
+    }
+  }
+  return out;
+}
+
+let cloudSyncTimer = null;
+function queueCloudSync(){
+  // Debounce so rapid edits (typing, toggles) don't fire a request per keystroke.
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(pushToCloud, 600);
+}
+
+async function pushToCloud(){
+  try{
+    const user = fbAuth.currentUser;
+    if(!user) throw new Error("not signed in");
+    const token = await user.getIdToken();
+    const res = await fetch(CLOUD_URL.replace(".json", ".json?auth=" + token), {
+      method: "PUT",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(buildLocalSnapshot())
+    });
+    if(!res.ok) throw new Error("bad response");
+    return true;
+  }catch(e){
+    // Offline, or not signed in yet — local copy is still safe.
+    console.warn("Firebase sync skipped:", e.message);
+    return false;
+  }
+}
+
+async function loadFromCloud(){
+  // Pull the shared save down before the app renders, so this device
+  // picks up progress made on any other device. Falls back silently
+  // to whatever is already in localStorage if the cloud isn't reachable.
+  try{
+    const user = fbAuth.currentUser;
+    if(!user) throw new Error("not signed in");
+    const token = await user.getIdToken();
+    const res = await fetch(CLOUD_URL.replace(".json", ".json?auth=" + token));
+    if(!res.ok) throw new Error("bad response");
+    const remote = await res.json();
+    if(remote && typeof remote === "object"){
+      Object.keys(remote).forEach(k=>{
+        try{ localStorage.setItem(k, JSON.stringify(remote[k])); }catch(e){}
+      });
+    }
+  }catch(e){
+    console.warn("Firebase load skipped (offline, or not signed in yet):", e.message);
+  }
+}
 
 /* =========================================================
    CONTENT DATA — Science 4, SY 2026-2027 (Sacred Heart Academy of Pasig)
@@ -2320,6 +2444,7 @@ function loadProgress(){
 }
 function saveProgress(p){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); }catch(e){}
+  queueCloudSync();
 }
 function loadEdits(){
   try{
@@ -2330,6 +2455,7 @@ function loadEdits(){
 }
 function saveEdits(e){
   try{ localStorage.setItem(EDITS_KEY, JSON.stringify(e)); }catch(e){}
+  queueCloudSync();
 }
 function loadBank(){
   try{
@@ -2340,6 +2466,7 @@ function loadBank(){
 }
 function saveBank(b){
   try{ localStorage.setItem(BANK_KEY, JSON.stringify(b)); }catch(e){}
+  queueCloudSync();
 }
 function loadMoves(){
   try{
@@ -2350,6 +2477,7 @@ function loadMoves(){
 }
 function saveMoves(m){
   try{ localStorage.setItem(MOVES_KEY, JSON.stringify(m)); }catch(e){}
+  queueCloudSync();
 }
 function defaultSettings(){
   return {studentName:"George", dailyLessonGoal:2, dailyQuestionGoal:10, soundEnabled:true};
@@ -2363,6 +2491,7 @@ function loadSettings(){
 }
 function saveSettings(s){
   try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }catch(e){}
+  queueCloudSync();
 }
 function loadNotes(){
   try{
@@ -2373,6 +2502,7 @@ function loadNotes(){
 }
 function saveNotes(n){
   try{ localStorage.setItem(NOTES_KEY, JSON.stringify(n)); }catch(e){}
+  queueCloudSync();
 }
 function loadActivity(){
   try{
@@ -2383,6 +2513,7 @@ function loadActivity(){
 }
 function saveActivity(a){
   try{ localStorage.setItem(ACTIVITY_KEY, JSON.stringify(a)); }catch(e){}
+  queueCloudSync();
 }
 function todayStr(){
   const d = new Date();
@@ -2780,7 +2911,17 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
    QUESTION BANK MANAGER — teacher inputs MCQs per topic
    ========================================================= */
 function emptyQuestionForm(){
-  return {type:"mcq", q:"", options:["","","",""], correct:0, answer:"", explain:""};
+  return {type:"mcq", q:"", options:["","","",""], correct:0, answer:"", explain:"", topic:""};
+}
+
+const TOPIC_ALL = "__all__";
+function normTopic(t){
+  return (t || "").trim();
+}
+function bankTopics(questions){
+  const set = new Set();
+  (questions||[]).forEach(q=>{ if(normTopic(q.topic)) set.add(normTopic(q.topic)); });
+  return Array.from(set).sort((a,b)=>a.localeCompare(b));
 }
 
 const QUESTION_TYPES = [
@@ -2818,7 +2959,7 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
 
   function switchType(type){
     if(type === "mcq"){
-      setForm({...emptyQuestionForm(), type:"mcq", q:form.q, explain:form.explain});
+      setForm({...emptyQuestionForm(), type:"mcq", q:form.q, explain:form.explain, topic:form.topic});
     } else if(type === "tf"){
       setForm({...form, type:"tf", options:["True","False"], correct: form.correct===1?1:0});
     } else if(type === "fill"){
@@ -2837,21 +2978,22 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
       alert("Please fill in the question.");
       return;
     }
+    const topic = normTopic(form.topic);
     let clean;
     if(type === "fill"){
       if(!form.answer.trim()){
         alert("Please fill in the correct answer.");
         return;
       }
-      clean = {type:"fill", q:form.q.trim(), answer:form.answer.trim(), explain:form.explain.trim()};
+      clean = {type:"fill", q:form.q.trim(), answer:form.answer.trim(), explain:form.explain.trim(), topic};
     } else if(type === "tf"){
-      clean = {type:"tf", q:form.q.trim(), options:["True","False"], correct:form.correct, explain:form.explain.trim()};
+      clean = {type:"tf", q:form.q.trim(), options:["True","False"], correct:form.correct, explain:form.explain.trim(), topic};
     } else {
       if(form.options.length < 2 || form.options.some(o=>!o.trim())){
         alert("Please fill in the question and all options (at least 2).");
         return;
       }
-      clean = {type:"mcq", q:form.q.trim(), options:form.options.map(o=>o.trim()), correct:form.correct, explain:form.explain.trim()};
+      clean = {type:"mcq", q:form.q.trim(), options:form.options.map(o=>o.trim()), correct:form.correct, explain:form.explain.trim(), topic};
     }
     let next;
     if(editIdx !== null){
@@ -2873,7 +3015,8 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
       options: type === "fill" ? ["","","",""] : (src.options || ["","","",""]).slice(),
       correct: type === "fill" ? 0 : (src.correct || 0),
       answer: type === "fill" ? (src.answer || "") : "",
-      explain: src.explain || ""
+      explain: src.explain || "",
+      topic: src.topic || ""
     });
     setEditIdx(i);
   }
@@ -2903,17 +3046,18 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
       return Array.isArray(p.options) && p.options.length >= 2;
     }).map(p=>{
       const t = String(p.type||"mcq").toLowerCase();
+      const topic = normTopic(p.topic);
       if(t === "fill" || t === "fillblank" || t === "fill_in_the_blank"){
-        return {type:"fill", q:String(p.q), answer:String(p.answer), explain: p.explain ? String(p.explain) : ""};
+        return {type:"fill", q:String(p.q), answer:String(p.answer), explain: p.explain ? String(p.explain) : "", topic};
       }
       if(t === "tf" || t === "truefalse" || t === "true_false"){
         let correct = 0;
         if(typeof p.correct === "boolean") correct = p.correct ? 0 : 1;
         else if(Number.isInteger(p.correct)) correct = p.correct;
         else if(typeof p.correct === "string") correct = /^false$/i.test(p.correct.trim()) ? 1 : 0;
-        return {type:"tf", q:String(p.q), options:["True","False"], correct, explain: p.explain ? String(p.explain) : ""};
+        return {type:"tf", q:String(p.q), options:["True","False"], correct, explain: p.explain ? String(p.explain) : "", topic};
       }
-      return {type:"mcq", q:String(p.q), options:p.options.map(o=>String(o)), correct: Number.isInteger(p.correct)?p.correct:0, explain: p.explain ? String(p.explain) : ""};
+      return {type:"mcq", q:String(p.q), options:p.options.map(o=>String(o)), correct: Number.isInteger(p.correct)?p.correct:0, explain: p.explain ? String(p.explain) : "", topic};
     });
     if(!cleaned.length){ alert("No valid questions found in that JSON."); return; }
     const next = mode === "replace" ? cleaned : [...questions, ...cleaned];
@@ -2934,7 +3078,7 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
         const typeLabel = t === "fill" ? "✍️ Fill in the Blank" : t === "tf" ? "✅ True / False" : "🔤 Multiple Choice";
         return (
           <div key={i} className="bank-item">
-            <div className="bank-item-type">{typeLabel}</div>
+            <div className="bank-item-type">{typeLabel}{normTopic(q.topic) ? " · 🏷️ " + normTopic(q.topic) : ""}</div>
             <div className="bank-item-q">{i+1}. {q.q}</div>
             {t === "fill" ? (
               <div className="bank-item-opts">
@@ -2963,6 +3107,13 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
           <button key={t.id} className={"type-tab btn" + (formType===t.id ? " active":"")} onClick={()=>switchType(t.id)}>{t.label}</button>
         ))}
       </div>
+
+      <label className="field-label">Topic (optional — e.g. Comparing, Ordering, Rounding)</label>
+      <input className="text-input" list="topic-suggestions" value={form.topic} onChange={e=>setForm({...form, topic:e.target.value})} placeholder="Type a topic to group this question..." />
+      <datalist id="topic-suggestions">
+        {bankTopics(questions).map(t=>(<option key={t} value={t} />))}
+      </datalist>
+      <p className="fill-hint">Group questions by topic (e.g. Comparing, Ordering, Rounding) so students can quiz on one topic at a time. Leave blank for no topic.</p>
 
       <label className="field-label">Question</label>
       <input className="text-input" value={form.q} onChange={e=>setForm({...form, q:e.target.value})} placeholder={formType==="tf" ? "Type the statement..." : "Type the question..."} />
@@ -3016,9 +3167,10 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
         <button className="btn btn-ghost btn-sm" onClick={()=>setShowBulk(!showBulk)}>{showBulk ? "▲ Hide bulk JSON import" : "▼ Bulk import from JSON"}</button>
         {showBulk && (
           <div style={{marginTop:10}}>
-            <p className="sub">Paste an array of questions. Multiple choice: {"[{\"q\":\"...\",\"options\":[\"A\",\"B\",\"C\",\"D\"],\"correct\":0,\"explain\":\"...\"}]"}</p>
-            <p className="sub">True/False: {"[{\"type\":\"tf\",\"q\":\"...\",\"correct\":0,\"explain\":\"...\"}]"} (correct: 0 = True, 1 = False)</p>
-            <p className="sub">Fill in the blank: {"[{\"type\":\"fill\",\"q\":\"...\",\"answer\":\"...\",\"explain\":\"...\"}]"}</p>
+            <p className="sub">Paste an array of questions. Multiple choice: {"[{\"q\":\"...\",\"options\":[\"A\",\"B\",\"C\",\"D\"],\"correct\":0,\"explain\":\"...\",\"topic\":\"Comparing\"}]"}</p>
+            <p className="sub">True/False: {"[{\"type\":\"tf\",\"q\":\"...\",\"correct\":0,\"explain\":\"...\",\"topic\":\"Ordering\"}]"} (correct: 0 = True, 1 = False)</p>
+            <p className="sub">Fill in the blank: {"[{\"type\":\"fill\",\"q\":\"...\",\"answer\":\"...\",\"explain\":\"...\",\"topic\":\"Rounding\"}]"}</p>
+            <p className="sub">"topic" is optional on all types — leave it out (or empty) for questions with no topic.</p>
             <textarea className="text-area" rows={8} value={bulkText} onChange={e=>setBulkText(e.target.value)} placeholder="Paste JSON array here..."></textarea>
             <div className="learn-footer" style={{gap:10}}>
               <button className="btn btn-ghost" onClick={()=>handleBulkImport("append")}>➕ Append to Bank</button>
@@ -3056,11 +3208,14 @@ function App(){
   useEffect(()=>{ saveActivity(activity); }, [activity]);
   useEffect(()=>{ setSoundEnabled(settings.soundEnabled !== false); }, [settings.soundEnabled]);
 
-  function saveEverythingNow(){
+  async function saveEverythingNow(){
     Sound.save();
     saveProgress(progress); saveEdits(edits); saveBank(bank); saveMoves(moves);
     saveSettings(settings); saveNotes(notes); saveActivity(activity);
-    setSaveFlash(true);
+    // Skip the debounce and push the full snapshot to Firebase right away.
+    clearTimeout(cloudSyncTimer);
+    const cloudOk = await pushToCloud();
+    setSaveFlash(cloudOk ? "✅ Saved to Firebase!" : "⚠️ Saved on this device only (offline)");
     setTimeout(()=>setSaveFlash(false), 1800);
   }
 
@@ -3121,20 +3276,22 @@ function App(){
     logLessonLearned(lessonId);
   }
 
-  function startLessonQuiz(quarter, lesson, count){
+  function startLessonQuiz(quarter, lesson, count, topic){
     Sound.nav();
-    const pool = getQuestions(lesson.id);
+    let pool = getQuestions(lesson.id);
+    if(topic && topic !== TOPIC_ALL) pool = pool.filter(q=>normTopic(q.topic)===topic);
     const n = Math.max(1, Math.min(count || pool.length, pool.length));
     setQuizSession({
       kind:"lesson", key:lesson.id, accent:quarter.color, title: lesson.title,
       questions: shuffle(pool).slice(0, n)
     });
   }
-  function startLongQuiz(quarter, count){
+  function startLongQuiz(quarter, count, topic){
     Sound.nav();
     const subject = currentSubject();
     const lessons = quarterLessons(subject, quarter, moves);
-    const pool = lessons.flatMap(l => getQuestions(l.id).map(q => ({...q, tag: mergeLesson(l, edits).title})));
+    let pool = lessons.flatMap(l => getQuestions(l.id).map(q => ({...q, tag: mergeLesson(l, edits).title})));
+    if(topic && topic !== TOPIC_ALL) pool = pool.filter(q=>normTopic(q.topic)===topic);
     const n = Math.max(1, Math.min(count || pool.length, pool.length));
     setQuizSession({
       kind:"long", key:quarter.id, accent:quarter.color, title: quarter.title + " Long Quiz",
@@ -3402,7 +3559,13 @@ function App(){
     const movedInLessons = lessons.filter(l=>l.homeQuarterId!==quarter.id);
     const totalBankQ = lessons.reduce((sum,l)=>sum+getQuestions(l.id).length, 0);
     const [longCount, setLongCount] = useState(Math.min(10, totalBankQ) || 1);
+    const [longTopic, setLongTopic] = useState(TOPIC_ALL);
+    const longFullPool = lessons.flatMap(l=>getQuestions(l.id));
+    const longAvailTopics = bankTopics(longFullPool);
+    const longFilteredCount = longTopic === TOPIC_ALL ? totalBankQ : longFullPool.filter(q=>normTopic(q.topic)===longTopic).length;
     let counter = 0;
+
+    useEffect(()=>{ setLongCount(Math.min(10, longFilteredCount) || 1); }, [longTopic, longFilteredCount]);
 
     function renderLessonCard(l0, moved){
       counter++;
@@ -3480,15 +3643,34 @@ function App(){
           </div>
           {showSetup && (
             <div style={{marginTop:14}}>
-              <label className="field-label">How many questions would you like to take? (1–{totalBankQ})</label>
-              <input type="number" className="text-input" min={1} max={totalBankQ} value={longCount}
-                onChange={e=>{
-                  const v = parseInt(e.target.value,10);
-                  setLongCount(Number.isNaN(v) ? 1 : Math.max(1, Math.min(v, totalBankQ)));
-                }} />
+              {longAvailTopics.length > 0 && (
+                <React.Fragment>
+                  <label className="field-label">Which topic?</label>
+                  <select className="text-input" style={{maxWidth:260}} value={longTopic} onChange={e=>setLongTopic(e.target.value)}>
+                    <option value={TOPIC_ALL}>All Topics ({totalBankQ})</option>
+                    {longAvailTopics.map(t=>(
+                      <option key={t} value={t}>{t} ({longFullPool.filter(q=>normTopic(q.topic)===t).length})</option>
+                    ))}
+                  </select>
+                </React.Fragment>
+              )}
+              {longFilteredCount === 0 ? (
+                <p className="sub">No questions for this topic yet.</p>
+              ) : (
+                <React.Fragment>
+                  <label className="field-label">How many questions would you like to take? (1–{longFilteredCount})</label>
+                  <input type="number" className="text-input" min={1} max={longFilteredCount} value={longCount}
+                    onChange={e=>{
+                      const v = parseInt(e.target.value,10);
+                      setLongCount(Number.isNaN(v) ? 1 : Math.max(1, Math.min(v, longFilteredCount)));
+                    }} />
+                </React.Fragment>
+              )}
               <div className="learn-footer" style={{gap:10}}>
                 <button className="btn btn-ghost" onClick={()=>setShowSetup(false)}>Cancel</button>
-                <button className="btn btn-primary" style={{background:quarter.color}} onClick={()=>startLongQuiz(quarter, longCount)}>Start Long Quiz →</button>
+                {longFilteredCount > 0 && (
+                  <button className="btn btn-primary" style={{background:quarter.color}} onClick={()=>startLongQuiz(quarter, longCount, longTopic)}>Start Long Quiz →</button>
+                )}
               </div>
             </div>
           )}
@@ -3508,11 +3690,14 @@ function App(){
     const [movingLesson, setMovingLesson] = useState(false);
     const [moveTarget, setMoveTarget] = useState("");
     const [quizCount, setQuizCount] = useState(1);
+    const [quizTopic, setQuizTopic] = useState(TOPIC_ALL);
     const rec = progress.lessons[lesson.id];
     const qBank = getQuestions(lesson.id);
     const otherQuarters = subject.quarters.filter(q=>q.id !== quarter.id);
+    const availTopics = bankTopics(qBank);
+    const filteredBank = quizTopic === TOPIC_ALL ? qBank : qBank.filter(q=>normTopic(q.topic)===quizTopic);
 
-    useEffect(()=>{ setQuizCount(Math.min(10, qBank.length) || 1); }, [lesson.id, qBank.length]);
+    useEffect(()=>{ setQuizCount(Math.min(10, filteredBank.length) || 1); }, [lesson.id, filteredBank.length]);
 
     return (
       <React.Fragment>
@@ -3601,7 +3786,7 @@ function App(){
                 answers={quizSession.finalAnswers}
                 accent={quarter.color}
                 title={lesson.title}
-                onRetry={()=>startLessonQuiz(quarter, lesson, quizCount)}
+                onRetry={()=>startLessonQuiz(quarter, lesson, quizCount, quizTopic)}
                 onDone={()=>{setQuizSession(null);}}
               />
             ) : (
@@ -3621,17 +3806,34 @@ function App(){
               ) : (
                 <React.Fragment>
                   <p style={{marginTop:0}}>Ready to test what you learned about <strong>{lesson.title}</strong>?</p>
-                  <label className="field-label">How many questions would you like to take? (1–{qBank.length})</label>
-                  <input type="number" className="text-input" style={{maxWidth:120, margin:"0 auto 14px"}} min={1} max={qBank.length} value={quizCount}
-                    onChange={e=>{
-                      const v = parseInt(e.target.value,10);
-                      setQuizCount(Number.isNaN(v) ? 1 : Math.max(1, Math.min(v, qBank.length)));
-                    }} />
-                  <div>
-                    <button className="btn btn-primary" style={{background:quarter.color}} onClick={()=>startLessonQuiz(quarter, lesson, quizCount)}>
-                      {rec && rec.best ? "Retake Quiz" : "Start Quiz"}
-                    </button>
-                  </div>
+                  {availTopics.length > 0 && (
+                    <React.Fragment>
+                      <label className="field-label">Which topic?</label>
+                      <select className="text-input" style={{maxWidth:260, margin:"0 auto 14px"}} value={quizTopic} onChange={e=>setQuizTopic(e.target.value)}>
+                        <option value={TOPIC_ALL}>All Topics ({qBank.length})</option>
+                        {availTopics.map(t=>(
+                          <option key={t} value={t}>{t} ({qBank.filter(q=>normTopic(q.topic)===t).length})</option>
+                        ))}
+                      </select>
+                    </React.Fragment>
+                  )}
+                  {filteredBank.length === 0 ? (
+                    <p className="sub">No questions for this topic yet.</p>
+                  ) : (
+                    <React.Fragment>
+                      <label className="field-label">How many questions would you like to take? (1–{filteredBank.length})</label>
+                      <input type="number" className="text-input" style={{maxWidth:120, margin:"0 auto 14px"}} min={1} max={filteredBank.length} value={quizCount}
+                        onChange={e=>{
+                          const v = parseInt(e.target.value,10);
+                          setQuizCount(Number.isNaN(v) ? 1 : Math.max(1, Math.min(v, filteredBank.length)));
+                        }} />
+                      <div>
+                        <button className="btn btn-primary" style={{background:quarter.color}} onClick={()=>startLessonQuiz(quarter, lesson, quizCount, quizTopic)}>
+                          {rec && rec.best ? "Retake Quiz" : "Start Quiz"}
+                        </button>
+                      </div>
+                    </React.Fragment>
+                  )}
                 </React.Fragment>
               )}
             </div>
@@ -3728,15 +3930,56 @@ function App(){
           >{settings.soundEnabled !== false ? "🔊" : "🔇"}</button>
           <button className="settings-btn" title="Save everything now" onClick={saveEverythingNow}>💾</button>
           <button className="settings-btn" title="Reset progress" onClick={resetAll}>⟳</button>
+          <button className="settings-btn" title="Sign out" onClick={()=>fbAuth.signOut()}>🚪</button>
         </div>
       </div>
-      {saveFlash && <div className="save-toast">✅ All progress saved</div>}
+      {saveFlash && <div className="save-toast">{saveFlash}</div>}
       <div key={screenKey} className="screen-enter">{content}</div>
     </React.Fragment>
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+/* =========================================================
+   AUTH GATE — sign in before the app mounts, hydrate from
+   Firebase first so this device sees the latest saved progress.
+   ========================================================= */
+const loginGateEl = document.getElementById("loginGate");
+const rootEl = document.getElementById("root");
+const loginForm = document.getElementById("loginForm");
+const loginError = document.getElementById("loginError");
+const loginBtn = document.getElementById("loginBtn");
+
+loginForm.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  loginError.textContent = "";
+  loginBtn.disabled = true; loginBtn.textContent = "Signing in…";
+  try{
+    await fbAuth.signInWithEmailAndPassword(
+      document.getElementById("loginEmail").value.trim(),
+      document.getElementById("loginPassword").value
+    );
+  }catch(err){
+    loginError.textContent = "Sign-in failed — check your email and password.";
+  }finally{
+    loginBtn.disabled = false; loginBtn.textContent = "Sign In";
+  }
+});
+
+let appStarted = false;
+fbAuth.onAuthStateChanged(async (user)=>{
+  if(user){
+    loginGateEl.style.display = "none";
+    rootEl.style.display = "";
+    if(!appStarted){
+      appStarted = true;
+      await loadFromCloud(); // pull the shared save down before first render
+      ReactDOM.createRoot(rootEl).render(<App/>);
+    }
+  } else {
+    rootEl.style.display = "none";
+    loginGateEl.style.display = "";
+  }
+});
 </script>
 </body>
 </html>
