@@ -349,6 +349,58 @@
   .journal-page li::marker{color:var(--night);font-weight:800;}
   .learn-footer{display:flex;justify-content:flex-end;margin-top:18px;}
 
+  /* ---------- LESSON NOTES (rich text) ---------- */
+  .note-block{
+    border:2.5px solid var(--line);border-radius:var(--radius-md);
+    background:var(--paper);margin-bottom:14px;overflow:hidden;
+  }
+  .note-block-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:9px 12px;background:var(--paper-dark);
+  }
+  .note-block-num{font-family:'Fredoka';font-weight:700;font-size:13px;color:var(--ink-soft);}
+  .note-remove-btn{
+    background:none;border:none;color:var(--bad);font-weight:800;font-size:12.5px;
+    font-family:'Fredoka';padding:4px 8px;border-radius:8px;
+  }
+  @media (hover:hover){ .note-remove-btn:hover{background:#FDE3E6;} }
+  .rt-toolbar{
+    display:flex;align-items:center;flex-wrap:wrap;gap:4px;
+    padding:8px 10px;background:var(--card);border-bottom:2px solid var(--line);
+  }
+  .rt-btn{
+    min-width:34px;height:32px;padding:0 9px;border-radius:9px;border:2px solid var(--line);
+    background:var(--card);color:var(--ink);font-size:14px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;transition:background .12s ease;
+  }
+  @media (hover:hover){ .rt-btn:hover{background:var(--paper-dark);} }
+  .rt-btn:active{transform:translateY(1px);}
+  .rt-select{
+    height:32px;border-radius:9px;border:2px solid var(--line);background:var(--card);
+    color:var(--ink);font-size:12.5px;font-weight:700;padding:0 6px;font-family:'Nunito',sans-serif;
+  }
+  .rt-color-label{
+    display:flex;align-items:center;gap:3px;height:32px;padding:0 6px;border-radius:9px;
+    border:2px solid var(--line);background:var(--card);font-size:14px;
+  }
+  .rt-color{width:22px;height:22px;padding:0;border:none;background:none;cursor:pointer;}
+  .rt-sep{width:1px;height:22px;background:var(--line);margin:0 2px;}
+  .rich-editor{
+    min-height:120px;padding:12px 14px;font-size:15px;line-height:1.6;color:var(--ink);
+    background:var(--card);outline:none;
+  }
+  .rich-editor:empty::before{
+    content: attr(data-placeholder);color:var(--ink-soft);font-weight:500;
+  }
+  .rich-editor ul, .rich-editor ol{margin:6px 0;padding-left:22px;}
+  .rich-editor li{margin-bottom:6px;}
+  .video-link-row{margin-bottom:14px;}
+  .note-view{margin-bottom:14px;font-size:15px;line-height:1.6;}
+  .note-view ul, .note-view ol{padding-left:22px;margin:0;}
+  .note-view li{margin-bottom:13px;line-height:1.6;font-size:15px;}
+  .note-view li::marker{color:var(--night);font-weight:800;}
+  .note-view:last-child{margin-bottom:0;}
+
   /* ---------- YOUTUBE VIDEO EMBED ---------- */
   .video-embed{
     position:relative; width:100%; padding-top:56.25%; /* 16:9 */
@@ -2938,8 +2990,71 @@ function mergeLesson(lesson, edits){
     title: ov.title !== undefined ? ov.title : lesson.title,
     sub: ov.sub !== undefined ? ov.sub : lesson.sub,
     learn: ov.learn !== undefined ? ov.learn : lesson.learn,
-    youtubeUrl: ov.youtubeUrl !== undefined ? ov.youtubeUrl : lesson.youtubeUrl
+    notes: ov.notes !== undefined ? ov.notes : lesson.notes,
+    youtubeUrl: ov.youtubeUrl !== undefined ? ov.youtubeUrl : lesson.youtubeUrl,
+    youtubeUrls: ov.youtubeUrls !== undefined ? ov.youtubeUrls : lesson.youtubeUrls
   };
+}
+function escapeHtml(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function newNoteId(){
+  return "note" + Date.now() + Math.random().toString(36).slice(2, 8);
+}
+/* Lesson notes: new lessons/edits carry a `notes` array of {id, html} rich-text
+   blocks. Older built-in lessons only have a plain `learn` array (one point per
+   line) — wrap that into a single note block so both formats render the same way. */
+function getLessonNotes(lesson){
+  if(lesson.notes !== undefined) return lesson.notes;
+  if(lesson.learn && lesson.learn.length){
+    return [{id:"legacy", html:"<ul>" + lesson.learn.map(l=>"<li>" + escapeHtml(l) + "</li>").join("") + "</ul>"}];
+  }
+  return [];
+}
+/* Lesson videos: new edits carry a `youtubeUrls` array; older lessons only have
+   a single `youtubeUrl` string. */
+function getLessonVideos(lesson){
+  if(lesson.youtubeUrls !== undefined) return lesson.youtubeUrls;
+  if(lesson.youtubeUrl) return [lesson.youtubeUrl];
+  return [];
+}
+/* Minimal allow-list sanitizer for teacher-authored rich text (from the
+   contentEditable note editor) before it's stored / rendered with
+   dangerouslySetInnerHTML. Strips scripts, event handlers and anything not
+   on the allow-list, but keeps the inline styles execCommand produces. */
+function sanitizeHtml(html){
+  const ALLOWED_TAGS = new Set(["B","STRONG","I","EM","U","S","STRIKE","SPAN","DIV","BR","UL","OL","LI","P","FONT","A","H1","H2","H3","H4"]);
+  try{
+    const doc = new DOMParser().parseFromString("<div>" + html + "</div>", "text/html");
+    const root = doc.body.firstChild;
+    (function clean(node){
+      Array.from(node.childNodes).forEach(child=>{
+        if(child.nodeType === 1){
+          if(!ALLOWED_TAGS.has(child.tagName)){
+            while(child.firstChild) node.insertBefore(child.firstChild, child);
+            node.removeChild(child);
+            return;
+          }
+          Array.from(child.attributes).forEach(attr=>{
+            const name = attr.name.toLowerCase();
+            if(name.startsWith("on")){ child.removeAttribute(attr.name); return; }
+            if(name === "style") return;
+            if(child.tagName === "A" && (name === "href" || name === "target" || name === "rel")){
+              if(name === "href" && /^\s*javascript:/i.test(attr.value)) child.removeAttribute(attr.name);
+              return;
+            }
+            if(child.tagName === "FONT" && (name === "color" || name === "size" || name === "face")) return;
+            child.removeAttribute(attr.name);
+          });
+          clean(child);
+        } else if(child.nodeType !== 3){
+          node.removeChild(child);
+        }
+      });
+    })(root);
+    return root.innerHTML;
+  }catch(e){ return ""; }
 }
 function youtubeEmbedId(url){
   if(!url) return null;
@@ -3621,20 +3736,149 @@ function ResultsView({answers, accent, onRetry, onDone, title}){
 }
 
 /* =========================================================
+   RICH-TEXT NOTE EDITOR — a single formattable lesson-note block
+   (bold/italic/underline/list/font/size/color, incl. Ctrl+B/I/U)
+   ========================================================= */
+function NoteEditor({initialHtml, registerRef, onRemove, canRemove, index}){
+  const divRef = useRef(null);
+  const savedRange = useRef(null);
+
+  useEffect(()=>{
+    if(divRef.current){
+      divRef.current.innerHTML = initialHtml || "";
+      registerRef(divRef.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function saveSelection(){
+    const sel = window.getSelection();
+    if(sel && sel.rangeCount > 0){
+      const range = sel.getRangeAt(0);
+      if(divRef.current && divRef.current.contains(range.commonAncestorContainer)){
+        savedRange.current = range.cloneRange();
+      }
+    }
+  }
+  function restoreSelection(){
+    if(savedRange.current){
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedRange.current);
+    }
+  }
+  function exec(cmd, val){
+    if(divRef.current){
+      divRef.current.focus();
+      restoreSelection();
+    }
+    try{ document.execCommand("styleWithCSS", false, true); }catch(e){}
+    document.execCommand(cmd, false, val);
+    saveSelection();
+  }
+  function handleKeyDown(e){
+    const mod = e.ctrlKey || e.metaKey;
+    if(!mod) return;
+    const key = e.key.toLowerCase();
+    if(key === "b"){ e.preventDefault(); exec("bold"); }
+    else if(key === "i"){ e.preventDefault(); exec("italic"); }
+    else if(key === "u"){ e.preventDefault(); exec("underline"); }
+  }
+
+  return (
+    <div className="note-block">
+      <div className="note-block-head">
+        <span className="note-block-num">📝 Note {index}</span>
+        {canRemove && (
+          <button type="button" className="note-remove-btn" onClick={onRemove} title="Remove this note">✕ Remove</button>
+        )}
+      </div>
+      <div className="rt-toolbar">
+        <button type="button" className="rt-btn" onMouseDown={e=>e.preventDefault()} onClick={()=>exec("bold")} title="Bold (Ctrl+B)"><b>B</b></button>
+        <button type="button" className="rt-btn" onMouseDown={e=>e.preventDefault()} onClick={()=>exec("italic")} title="Italic (Ctrl+I)"><i>I</i></button>
+        <button type="button" className="rt-btn" onMouseDown={e=>e.preventDefault()} onClick={()=>exec("underline")} title="Underline (Ctrl+U)"><u>U</u></button>
+        <span className="rt-sep"></span>
+        <button type="button" className="rt-btn" onMouseDown={e=>e.preventDefault()} onClick={()=>exec("insertUnorderedList")} title="Bullet list">• List</button>
+        <span className="rt-sep"></span>
+        <select className="rt-select" defaultValue="" onChange={e=>{ if(e.target.value){ exec("fontName", e.target.value); e.target.value=""; } }} title="Font">
+          <option value="" disabled>Font</option>
+          <option value="Nunito, sans-serif">Nunito</option>
+          <option value="'Fredoka', sans-serif">Fredoka</option>
+          <option value="'Space Mono', monospace">Monospace</option>
+          <option value="Georgia, serif">Serif</option>
+          <option value="'Comic Sans MS', cursive">Comic Sans</option>
+        </select>
+        <select className="rt-select" defaultValue="" onChange={e=>{ if(e.target.value){ exec("fontSize", e.target.value); e.target.value=""; } }} title="Size">
+          <option value="" disabled>Size</option>
+          <option value="2">Small</option>
+          <option value="3">Normal</option>
+          <option value="5">Large</option>
+          <option value="7">X-Large</option>
+        </select>
+        <label className="rt-color-label" title="Text color">
+          🎨<input type="color" className="rt-color" defaultValue="#2E2D52" onChange={e=>exec("foreColor", e.target.value)} />
+        </label>
+        <span className="rt-sep"></span>
+        <button type="button" className="rt-btn" onMouseDown={e=>e.preventDefault()} onClick={()=>exec("removeFormat")} title="Clear formatting">⨯ Clear</button>
+      </div>
+      <div
+        ref={divRef}
+        className="rich-editor"
+        contentEditable
+        suppressContentEditableWarning
+        onKeyDown={handleKeyDown}
+        onMouseUp={saveSelection}
+        onKeyUp={saveSelection}
+        data-placeholder="Type this teaching point here… select text to format it, or use the toolbar."
+      ></div>
+    </div>
+  );
+}
+
+/* =========================================================
    LESSON EDIT FORM — lets the teacher type in the school's own topic content
    ========================================================= */
 function LessonEditForm({lesson, accent, onSave, onCancel}){
   const [title, setTitle] = useState(lesson.title || "");
   const [sub, setSub] = useState(lesson.sub || "");
-  const [learnText, setLearnText] = useState((lesson.learn || []).join("\n"));
-  const [youtubeUrl, setYoutubeUrl] = useState(lesson.youtubeUrl || "");
-  const trimmedUrl = youtubeUrl.trim();
-  const previewId = trimmedUrl ? youtubeEmbedId(trimmedUrl) : null;
-  const urlLooksBad = trimmedUrl.length > 0 && !previewId;
+
+  const initialNotes = useMemo(()=>{
+    const n = getLessonNotes(lesson);
+    const withIds = (n.length ? n : [{html:""}]).map(b=>({id: b.id || newNoteId(), html: b.html || ""}));
+    return withIds;
+  }, [lesson.id]);
+  const [noteBlocks, setNoteBlocks] = useState(()=>initialNotes.map(b=>({id: b.id})));
+  const initialHtmlRef = useRef(Object.fromEntries(initialNotes.map(b=>[b.id, b.html])));
+  const noteRefs = useRef({});
+
+  const initialVideos = useMemo(()=>{
+    const v = getLessonVideos(lesson);
+    return v.length ? v.slice() : [""];
+  }, [lesson.id]);
+  const [videoLinks, setVideoLinks] = useState(initialVideos);
+
+  function addNote(){
+    const id = newNoteId();
+    initialHtmlRef.current[id] = "";
+    setNoteBlocks(prev => [...prev, {id}]);
+  }
+  function removeNote(id){
+    setNoteBlocks(prev => prev.length > 1 ? prev.filter(b=>b.id !== id) : prev);
+    delete noteRefs.current[id];
+    delete initialHtmlRef.current[id];
+  }
+  function addVideo(){ setVideoLinks(prev => [...prev, ""]); }
+  function removeVideo(idx){ setVideoLinks(prev => prev.filter((_,i)=>i!==idx)); }
+  function updateVideo(idx, val){ setVideoLinks(prev => prev.map((v,i)=> i===idx ? val : v)); }
 
   function handleSave(){
-    const learn = learnText.split("\n").map(s=>s.trim()).filter(Boolean);
-    onSave({title: title.trim() || lesson.title, sub: sub.trim(), learn: learn.length ? learn : lesson.learn, youtubeUrl: trimmedUrl});
+    const notes = noteBlocks.map(b=>{
+      const el = noteRefs.current[b.id];
+      const html = el ? sanitizeHtml(el.innerHTML) : (initialHtmlRef.current[b.id] || "");
+      return {id: b.id, html};
+    });
+    const youtubeUrls = videoLinks.map(v=>v.trim()).filter(Boolean);
+    onSave({title: title.trim() || lesson.title, sub: sub.trim(), notes, youtubeUrls});
   }
 
   return (
@@ -3643,27 +3887,55 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
       <input className="text-input" value={title} onChange={e=>setTitle(e.target.value)} placeholder="Topic title" />
       <label className="field-label">Subtitle (optional)</label>
       <input className="text-input" value={sub} onChange={e=>setSub(e.target.value)} placeholder="Subtitle" />
-      <label className="field-label">Lesson Notes (one point per line)</label>
-      <textarea className="text-area" rows={10} value={learnText} onChange={e=>setLearnText(e.target.value)} placeholder="Type each teaching point on its own line..."></textarea>
-      <label className="field-label">📺 YouTube Video Link (optional)</label>
-      <input className="text-input" value={youtubeUrl} onChange={e=>setYoutubeUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
-      {urlLooksBad && (
-        <div className="sub" style={{color:"var(--bad)", marginTop:4}}>
-          Hmm, that doesn't look like a YouTube link yet — paste the full video URL (or leave blank).
-        </div>
-      )}
-      {previewId && (
-        <div style={{marginTop:10}}>
-          <div className="video-embed">
-            <iframe
-              src={"https://www.youtube.com/embed/" + previewId}
-              title="YouTube video preview"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
+
+      <label className="field-label">📝 Lesson Notes</label>
+      {noteBlocks.map((b, i)=>(
+        <NoteEditor
+          key={b.id}
+          initialHtml={initialHtmlRef.current[b.id] || ""}
+          registerRef={el=>{ noteRefs.current[b.id] = el; }}
+          onRemove={()=>removeNote(b.id)}
+          canRemove={noteBlocks.length > 1}
+          index={i+1}
+        />
+      ))}
+      <button type="button" className="btn btn-ghost btn-sm" onClick={addNote} style={{marginTop:6}}>➕ Add Another Lesson Note</button>
+
+      <label className="field-label" style={{marginTop:22}}>📺 YouTube Video Links (optional)</label>
+      {videoLinks.map((url, idx)=>{
+        const trimmedUrl = url.trim();
+        const previewId = trimmedUrl ? youtubeEmbedId(trimmedUrl) : null;
+        const urlLooksBad = trimmedUrl.length > 0 && !previewId;
+        return (
+          <div key={idx} className="video-link-row">
+            <div style={{display:"flex", gap:8, alignItems:"center"}}>
+              <input className="text-input" value={url} onChange={e=>updateVideo(idx, e.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
+              {videoLinks.length > 1 && (
+                <button type="button" className="btn btn-ghost btn-sm" onClick={()=>removeVideo(idx)} title="Remove this video link">✕</button>
+              )}
+            </div>
+            {urlLooksBad && (
+              <div className="sub" style={{color:"var(--bad)", marginTop:4}}>
+                Hmm, that doesn't look like a YouTube link yet — paste the full video URL (or leave blank).
+              </div>
+            )}
+            {previewId && (
+              <div style={{marginTop:10}}>
+                <div className="video-embed">
+                  <iframe
+                    src={"https://www.youtube.com/embed/" + previewId}
+                    title="YouTube video preview"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })}
+      <button type="button" className="btn btn-ghost btn-sm" onClick={addVideo} style={{marginTop:6}}>➕ Add Another YouTube Video</button>
+
       <div className="learn-footer" style={{gap:10}}>
         <button className="btn btn-ghost" onClick={onCancel}>Cancel</button>
         <button className="btn btn-primary" style={{background:accent}} onClick={handleSave}>💾 Save Topic</button>
@@ -4358,7 +4630,7 @@ function App(){
             {l.sub && <div className="sub">{l.sub}</div>}
             <div className="lesson-status">
               {moved && <span className="pill todo">📦 Moved here</span>}
-              {l.youtubeUrl && youtubeEmbedId(l.youtubeUrl) && <span className="pill done">🎬 Video</span>}
+              {getLessonVideos(l).some(u=>youtubeEmbedId(u)) && <span className="pill done">🎬 Video</span>}
               <span className={"pill " + (learned ? "done":"todo")}>{learned ? "📖 Learned" : "📖 Not started"}</span>
               {best ? (
                 <span className={"pill " + (best.correct/best.total>=0.7 ? "score-good":"score-bad")}>
@@ -4562,22 +4834,22 @@ function App(){
               {rawLesson.homeQuarterId !== quarter.id && (
                 <p className="sub">📦 Originally in {subject.quarters.find(q=>q.id===rawLesson.homeQuarterId).num}, moved to {quarter.num}.</p>
               )}
-              {(()=>{
-                const vid = youtubeEmbedId(lesson.youtubeUrl);
+              {getLessonVideos(lesson).map((url, i)=>{
+                const vid = youtubeEmbedId(url);
                 return vid ? (
-                  <div className="video-embed">
+                  <div className="video-embed" key={i}>
                     <iframe
                       src={"https://www.youtube.com/embed/" + vid}
-                      title={lesson.title + " video"}
+                      title={lesson.title + " video " + (i+1)}
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     ></iframe>
                   </div>
                 ) : null;
-              })()}
-              <ul>
-                {(lesson.learn || []).map((line,i)=>(<li key={i}>{line}</li>))}
-              </ul>
+              })}
+              {getLessonNotes(lesson).map((note, i)=>(
+                <div className="note-view" key={note.id || i} dangerouslySetInnerHTML={{__html: note.html}}></div>
+              ))}
               <div className="learn-footer">
                 <button className="btn btn-primary" style={{background:quarter.color}} onClick={()=>{markLearned(lesson.id); setTab("quiz");}}>
                   {rec && rec.learned ? "Reviewed — Take Quiz →" : "Mark as Learned & Take Quiz →"}
