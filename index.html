@@ -734,26 +734,30 @@
   .order-item{
     display:flex;align-items:center;gap:10px;background:var(--paper);border:2.5px solid var(--line);
     border-radius:var(--radius-sm);padding:11px 12px;font-size:13.5px;font-weight:700;color:var(--ink);
+    transition:transform .12s ease, border-color .12s ease, opacity .12s ease, box-shadow .12s ease;
   }
   .order-item.correct{background:var(--q2-soft);border-color:var(--good);color:#0A8F68;}
   .order-item.incorrect{background:#FDE3E6;border-color:var(--bad);color:#C43D4B;}
+  .order-item.dragging{opacity:.4;border-style:dashed;border-color:var(--night);}
+  .order-item.drag-over{border-color:var(--night);box-shadow:0 0 0 3px var(--q3-soft);transform:scale(1.01);}
   .order-num{
     display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;
     background:var(--night);color:#fff;font-size:11.5px;font-weight:800;flex:none;
   }
   .order-label{flex:1;}
-  .order-btns{display:flex;gap:4px;flex:none;}
-  .order-btn{
-    background:var(--card);border:2px solid var(--line);border-radius:8px;width:28px;height:28px;
-    font-size:12px;font-weight:800;color:var(--ink);box-shadow:none;padding:0;
+  .order-handle{
+    flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;
+    border-radius:8px;background:var(--card);border:2px solid var(--line);color:var(--ink-soft);
+    font-size:15px;line-height:1;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
   }
-  .order-btn:disabled{opacity:.35;}
+  .order-handle:active{cursor:grabbing;background:var(--q3-soft);border-color:var(--night);}
+  .order-item.dragging .order-handle{cursor:grabbing;}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel" data-presets="env,react">
-const {useState, useEffect, useMemo} = React;
+const {useState, useEffect, useMemo, useRef} = React;
 
 /* =========================================================
    FIREBASE — cloud sync (no login/auth; open read/write via REST)
@@ -3124,6 +3128,8 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
   // Ordering / sequencing
   const [orderList, setOrderList] = useState([]); // array of original indices, in current display order
   const [orderChecked, setOrderChecked] = useState(false);
+  const [orderDragPos, setOrderDragPos] = useState(null); // position currently being dragged (for styling)
+  const orderDragPosRef = useRef(null); // position currently being dragged (for logic, avoids stale closures)
 
   const q = questions[idx];
   const isLast = idx === questions.length - 1;
@@ -3234,16 +3240,41 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
     if(allCorrect) Sound.correct(); else Sound.incorrect();
   }
 
-  // ---- Ordering handlers ----
-  function moveOrderItem(pos, dir){
+  // ---- Ordering handlers (drag & drop, mouse + touch via Pointer Events) ----
+  function handleOrderPointerDown(e, pos){
     if(orderChecked) return;
+    e.preventDefault();
+    orderDragPosRef.current = pos;
+    setOrderDragPos(pos);
+    document.addEventListener('pointermove', handleOrderPointerMove, {passive:false});
+    document.addEventListener('pointerup', handleOrderPointerUp, {passive:false});
+    document.addEventListener('pointercancel', handleOrderPointerUp, {passive:false});
+  }
+  function handleOrderPointerMove(e){
+    if(orderDragPosRef.current === null) return;
+    e.preventDefault();
+    const x = e.clientX, y = e.clientY;
+    const el = document.elementFromPoint(x, y);
+    const itemEl = el && el.closest && el.closest('.order-item');
+    if(!itemEl || !itemEl.dataset || itemEl.dataset.pos === undefined) return;
+    const overPos = Number(itemEl.dataset.pos);
+    const curPos = orderDragPosRef.current;
+    if(Number.isNaN(overPos) || overPos === curPos) return;
     setOrderList(prev=>{
       const next = prev.slice();
-      const target = pos + dir;
-      if(target < 0 || target >= next.length) return prev;
-      [next[pos], next[target]] = [next[target], next[pos]];
+      const [moved] = next.splice(curPos, 1);
+      next.splice(overPos, 0, moved);
       return next;
     });
+    orderDragPosRef.current = overPos;
+    setOrderDragPos(overPos);
+  }
+  function handleOrderPointerUp(){
+    orderDragPosRef.current = null;
+    setOrderDragPos(null);
+    document.removeEventListener('pointermove', handleOrderPointerMove);
+    document.removeEventListener('pointerup', handleOrderPointerUp);
+    document.removeEventListener('pointercancel', handleOrderPointerUp);
   }
   function handleOrderCheck(){
     if(orderChecked) return;
@@ -3443,21 +3474,23 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
 
         {isOrder && (
           <React.Fragment>
-            <p className="fill-hint">Use the arrows to put the steps in the correct order.</p>
+            <p className="fill-hint">Drag the items into the correct order.</p>
             <div className="order-list">
               {orderList.map((origIdx, pos)=>{
                 const isRightSpot = orderChecked && origIdx === pos;
                 let cls = "order-item";
                 if(orderChecked) cls += isRightSpot ? " correct" : " incorrect";
+                if(orderDragPos === pos) cls += " dragging";
                 return (
-                  <div key={origIdx} className={cls}>
+                  <div key={origIdx} className={cls} data-pos={pos}>
                     <span className="order-num">{pos+1}</span>
                     <span className="order-label">{q.items[origIdx]}</span>
                     {!orderChecked && (
-                      <span className="order-btns">
-                        <button type="button" className="order-btn" disabled={pos===0} onClick={()=>moveOrderItem(pos,-1)}>▲</button>
-                        <button type="button" className="order-btn" disabled={pos===orderList.length-1} onClick={()=>moveOrderItem(pos,1)}>▼</button>
-                      </span>
+                      <span
+                        className="order-handle"
+                        onPointerDown={e=>handleOrderPointerDown(e, pos)}
+                        aria-label="Drag to reorder"
+                      >⠿</span>
                     )}
                   </div>
                 );
