@@ -601,7 +601,7 @@
   .stamp.complete::after{animation:stampPop .5s cubic-bezier(.34,1.56,.64,1) both;}
 
   /* confetti burst for a passing score */
-  .confetti-wrap{position:relative; height:0;}
+  .confetti-wrap{position:relative; height:0; pointer-events:none;}
   .confetti-piece{
     position:absolute; top:-10px; left:50%; width:8px; height:14px; opacity:0.9;
     animation-name: confettiFall; animation-timing-function: cubic-bezier(.28,0,.55,1); animation-fill-mode:forwards;
@@ -613,7 +613,7 @@
   }
   /* full-screen, extra-large burst reserved for a perfect quiz score */
   .confetti-wrap.big{
-    position:fixed; inset:0; height:100vh; width:100vw; overflow:hidden; z-index:9999;
+    position:fixed; inset:0; height:100vh; width:100vw; overflow:hidden; z-index:9999; pointer-events:none;
   }
   .confetti-wrap.big .confetti-piece{
     top:-30px; width:11px; height:18px;
@@ -4466,8 +4466,8 @@ function App(){
         <div className="backbar">
           <button className="backbtn" onClick={()=>goQuarter(subject.id, quarter.id)}>←</button>
           <div>
-            <div className="qnum" style={{color:quarter.color, fontSize:"8px"}}>{rawLesson.chapterTitle}</div>
-            <h1 style={{margin:0, fontSize:"10px"}}>{lesson.title}</h1>
+            <div className="qnum" style={{color:quarter.color, fontSize:"9.6px"}}>{rawLesson.chapterTitle}</div>
+            <h1 style={{margin:0, fontSize:"12px"}}>{lesson.title}</h1>
           </div>
         </div>
 
