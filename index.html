@@ -818,12 +818,13 @@
   .quiz-opt-remove{flex:none;background:none;border:none;color:var(--bad);font-weight:800;font-size:16px;box-shadow:none;padding:4px 8px;}
   .quiz-opt-add{margin-bottom:12px;}
 
-  /* ---------- MATCHING ---------- */
-  .match-wrap{display:flex;gap:10px;margin-bottom:6px;}
-  .match-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;}
+  /* ---------- MATCHING (connect-the-dots) ---------- */
+  .match-wrap{display:flex;gap:38px;margin-bottom:6px;position:relative;}
+  .match-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px;position:relative;z-index:2;}
+  .match-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible;}
   .match-item{
-    display:block;width:100%;text-align:left;background:var(--paper);
-    border:2.5px solid var(--line);border-radius:var(--radius-sm);padding:11px 12px;
+    display:block;width:100%;text-align:left;background:var(--paper);position:relative;
+    border:2.5px solid var(--line);border-radius:var(--radius-sm);padding:11px 16px;
     font-size:13.5px;font-weight:700;color:var(--ink);transition:transform .1s ease, border-color .12s ease;
   }
   @media (hover:hover){ .match-item:hover:not(:disabled){border-color:var(--night);} }
@@ -836,6 +837,21 @@
     display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;
     background:var(--night);color:#fff;font-size:10.5px;font-weight:800;margin-right:6px;flex:none;
   }
+  /* the little connector dot on the edge of each word/card */
+  .match-dot{
+    position:absolute;top:50%;width:15px;height:15px;border-radius:50%;
+    background:var(--card);border:3px solid var(--ink-soft);transform:translateY(-50%);
+    z-index:3;transition:background .12s ease, border-color .12s ease, transform .12s ease;
+  }
+  .match-dot-left{right:-8.5px;cursor:grab;touch-action:none;}
+  .match-dot-left:active{cursor:grabbing;transform:translateY(-50%) scale(1.2);}
+  .match-dot-right{left:-8.5px;}
+  .match-item.active .match-dot-left,
+  .match-item.linked .match-dot-left,
+  .match-item.linked .match-dot-right{background:var(--night);border-color:var(--night);}
+  .match-item.correct .match-dot{background:var(--good);border-color:var(--good);}
+  .match-item.incorrect .match-dot{background:var(--bad);border-color:var(--bad);}
+  .match-item:disabled .match-dot-left{cursor:default;}
 
   /* ---------- DRAG & DROP ---------- */
   .dd-items{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;min-height:20px;}
@@ -3469,6 +3485,10 @@ function arraysEqual(a,b){
   return true;
 }
 
+// A friendly, distinct color for each connector line in a matching question (cycled by left index).
+const MATCH_LINE_COLORS = ["#ED9C2E","#22B588","#6886F2","#F37BAA","#9B6BF2","#2FB6C4","#F2624C","#4C9F3E"];
+function matchLineColor(li){ return MATCH_LINE_COLORS[li % MATCH_LINE_COLORS.length]; }
+
 function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInline=true}){
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
@@ -3476,11 +3496,16 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
   const [fillChecked, setFillChecked] = useState(false);
   const [answers, setAnswers] = useState([]);
 
-  // Matching
+  // Matching (connect-the-dots)
   const [matchRightOrder, setMatchRightOrder] = useState([]);
   const [matchPicks, setMatchPicks] = useState({}); // leftIdx -> rightIdx (index into shuffled right order)
   const [matchActiveLeft, setMatchActiveLeft] = useState(null);
   const [matchChecked, setMatchChecked] = useState(false);
+  const [matchDrag, setMatchDrag] = useState(null); // {li, x1,y1,x2,y2} while dragging a line
+  const [matchLineCoords, setMatchLineCoords] = useState({}); // li -> {x1,y1,x2,y2} for committed lines
+  const matchContainerRef = useRef(null);
+  const matchLeftDotRefs = useRef({});
+  const matchRightDotRefs = useRef({});
 
   // Drag & drop (sort into categories)
   const [ddAssign, setDdAssign] = useState({}); // itemIdx -> category name
@@ -3511,6 +3536,10 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
       setMatchPicks({});
       setMatchActiveLeft(null);
       setMatchChecked(false);
+      setMatchDrag(null);
+      setMatchLineCoords({});
+      matchLeftDotRefs.current = {};
+      matchRightDotRefs.current = {};
     } else if(isDragDrop){
       setDdAssign({});
       setDdActiveItem(null);
@@ -3547,22 +3576,31 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
     if(matchesFillAnswer(fillText, acceptable)) Sound.correct(); else Sound.incorrect();
   }
 
-  // ---- Matching handlers ----
+  // ---- Matching handlers (tap-to-select, or drag a line dot-to-dot) ----
+  function getDotCenter(el, containerEl){
+    const r = el.getBoundingClientRect();
+    const cr = containerEl.getBoundingClientRect();
+    return { x: r.left + r.width/2 - cr.left, y: r.top + r.height/2 - cr.top };
+  }
   function handleMatchLeftClick(li){
     if(matchChecked) return;
     setMatchActiveLeft(li);
   }
-  function handleMatchRightClick(ri){
-    if(matchChecked) return;
-    if(matchActiveLeft === null) return;
+  function commitMatch(li, ri){
+    if(matchChecked || li===null || li===undefined) return;
     setMatchPicks(prev=>{
       const next = {...prev};
       // remove this right slot from any other left it was assigned to
       Object.keys(next).forEach(k=>{ if(next[k]===ri) delete next[k]; });
-      next[matchActiveLeft] = ri;
+      next[li] = ri;
       return next;
     });
     setMatchActiveLeft(null);
+  }
+  function handleMatchRightClick(ri){
+    if(matchChecked) return;
+    if(matchActiveLeft === null) return;
+    commitMatch(matchActiveLeft, ri);
   }
   function handleMatchCheck(){
     if(matchChecked || !matchAllPicked) return;
@@ -3570,6 +3608,61 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
     const allCorrect = (q.pairs||[]).every((_,li)=> matchRightOrder[matchPicks[li]] === li);
     if(allCorrect) Sound.correct(); else Sound.incorrect();
   }
+  // Begin dragging a connector line from a left dot; tracks the pointer until release,
+  // and if released over a right item, commits the match — like drawing a line in a workbook.
+  function handleMatchDotPointerDown(e, li){
+    if(matchChecked) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const container = matchContainerRef.current;
+    const dotEl = matchLeftDotRefs.current[li];
+    if(!container || !dotEl) return;
+    const start = getDotCenter(dotEl, container);
+    setMatchActiveLeft(li);
+    const cr = container.getBoundingClientRect();
+    setMatchDrag({li, x1:start.x, y1:start.y, x2: e.clientX-cr.left, y2: e.clientY-cr.top});
+
+    function onMove(ev){
+      const cr2 = container.getBoundingClientRect();
+      setMatchDrag(prev => prev ? {...prev, x2: ev.clientX-cr2.left, y2: ev.clientY-cr2.top} : prev);
+    }
+    function onUp(ev){
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      const target = document.elementFromPoint(ev.clientX, ev.clientY);
+      const rightEl = target && target.closest && target.closest("[data-match-ri]");
+      if(rightEl){
+        commitMatch(li, Number(rightEl.getAttribute("data-match-ri")));
+      }
+      setMatchDrag(null);
+    }
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
+  // Recompute the pixel coordinates of committed connector lines whenever picks/layout change.
+  useEffect(()=>{
+    if(!isMatch) return;
+    function recompute(){
+      const container = matchContainerRef.current;
+      if(!container) return;
+      const coords = {};
+      Object.keys(matchPicks).forEach(liStr=>{
+        const li = Number(liStr);
+        const ri = matchPicks[li];
+        const leftEl = matchLeftDotRefs.current[li];
+        const rightEl = matchRightDotRefs.current[ri];
+        if(leftEl && rightEl){
+          const p1 = getDotCenter(leftEl, container);
+          const p2 = getDotCenter(rightEl, container);
+          coords[li] = {x1:p1.x, y1:p1.y, x2:p2.x, y2:p2.y};
+        }
+      });
+      setMatchLineCoords(coords);
+    }
+    recompute();
+    window.addEventListener("resize", recompute);
+    return ()=>window.removeEventListener("resize", recompute);
+  }, [isMatch, matchPicks, matchChecked, idx]);
 
   // ---- Drag & drop handlers ----
   function assignItem(ii, cat){
@@ -3741,8 +3834,23 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
 
         {isMatch && (
           <React.Fragment>
-            <p className="fill-hint">Tap a term on the left, then tap its match on the right.</p>
-            <div className="match-wrap">
+            <p className="fill-hint">Drag a line from the dot beside each word to its match on the right — or tap one, then tap its match.</p>
+            <div className="match-wrap" ref={matchContainerRef}>
+              <svg className="match-svg">
+                {Object.keys(matchLineCoords).map(liStr=>{
+                  const li = Number(liStr);
+                  const c = matchLineCoords[li];
+                  const ri = matchPicks[li];
+                  const isRightAnswer = matchChecked && matchRightOrder[ri] === li;
+                  let stroke = matchLineColor(li);
+                  if(matchChecked) stroke = isRightAnswer ? "var(--good)" : "var(--bad)";
+                  return <line key={li} x1={c.x1} y1={c.y1} x2={c.x2} y2={c.y2} stroke={stroke} strokeWidth="3" strokeLinecap="round" />;
+                })}
+                {matchDrag && (
+                  <line x1={matchDrag.x1} y1={matchDrag.y1} x2={matchDrag.x2} y2={matchDrag.y2}
+                    stroke={matchLineColor(matchDrag.li)} strokeWidth="3" strokeDasharray="7 6" strokeLinecap="round" />
+                )}
+              </svg>
               <div className="match-col">
                 {(q.pairs||[]).map((p,li)=>{
                   const pickedRi = matchPicks[li];
@@ -3754,7 +3862,13 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
                   if(matchChecked) cls += isRightAnswer ? " correct" : " incorrect";
                   return (
                     <button key={li} className={cls} disabled={matchChecked} onClick={()=>handleMatchLeftClick(li)}>
-                      <span className="match-num">{li+1}</span> {p.left}
+                      {p.left}
+                      <span
+                        className="match-dot match-dot-left"
+                        ref={el=>{ matchLeftDotRefs.current[li] = el; }}
+                        onPointerDown={(e)=>handleMatchDotPointerDown(e, li)}
+                        style={(!matchChecked && (isPicked || matchActiveLeft===li)) ? {background:matchLineColor(li), borderColor:matchLineColor(li)} : undefined}
+                      />
                     </button>
                   );
                 })}
@@ -3768,8 +3882,13 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
                   if(isPicked) cls += " linked";
                   if(matchChecked && isPicked) cls += isRightAnswer ? " correct" : " incorrect";
                   return (
-                    <button key={ri} className={cls} disabled={matchChecked} onClick={()=>handleMatchRightClick(ri)}>
-                      {isPicked && <span className="match-num">{Number(linkedLeft)+1}</span>} {q.pairs[origIdx].right}
+                    <button key={ri} className={cls} disabled={matchChecked} data-match-ri={ri} onClick={()=>handleMatchRightClick(ri)}>
+                      <span
+                        className="match-dot match-dot-right"
+                        ref={el=>{ matchRightDotRefs.current[ri] = el; }}
+                        style={(!matchChecked && isPicked) ? {background:matchLineColor(Number(linkedLeft)), borderColor:matchLineColor(Number(linkedLeft))} : undefined}
+                      />
+                      {q.pairs[origIdx].right}
                     </button>
                   );
                 })}
@@ -4797,8 +4916,7 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
         <p className="fill-hint">If a question in the JSON already has its own "topic", that's kept. Otherwise this batch topic is used. Leave blank for no topic.</p>
         <textarea className="text-area" rows={8} value={bulkText} onChange={e=>setBulkText(e.target.value)} placeholder="Paste JSON array here..."></textarea>
         <div className="learn-footer" style={{gap:10}}>
-          <button className="btn btn-ghost" onClick={()=>handleBulkImport("append")}>➕ Append to Bank</button>
-          <button className="btn btn-primary" style={{background:accent}} onClick={()=>handleBulkImport("replace")}>♻️ Replace Entire Bank</button>
+          <button className="btn btn-primary" style={{background:accent}} onClick={()=>handleBulkImport("append")}>➕ Append to Bank</button>
         </div>
       </div>
     </div>
