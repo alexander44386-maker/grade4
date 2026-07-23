@@ -180,6 +180,57 @@
     box-shadow:0 0 8px rgba(53,242,224,0.8), 0 2px 0 rgba(0,0,0,0.15);
   }
 
+  /* ---------- GENERAL / WORD-LIST REFERENCE SCREEN ---------- */
+  .ref-hero{
+    border-radius:var(--radius-lg);padding:24px 20px;margin-bottom:20px;position:relative;overflow:hidden;
+    background: linear-gradient(150deg, #6B5B95, #493E6B);
+    box-shadow: var(--shadow);
+  }
+  .ref-hero::before{
+    content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(circle at 14% 20%, rgba(255,255,255,0.14), transparent 40%),
+      radial-gradient(circle at 90% 85%, rgba(255,255,255,0.10), transparent 45%);
+  }
+  .ref-hero-title{font-family:'Fredoka';font-weight:700;font-size:24px;color:#fff;position:relative;margin:0 0 4px;}
+  .ref-hero-sub{font-size:13.5px;color:#E4DEF3;position:relative;font-weight:600;line-height:1.5;}
+  .ref-hero-stats{display:flex;gap:18px;margin-top:14px;position:relative;flex-wrap:wrap;}
+  .ref-hero-stat{background:rgba(255,255,255,0.14);border-radius:12px;padding:8px 14px;}
+  .ref-hero-stat .n{font-family:'Space Mono';font-weight:700;font-size:18px;color:#fff;}
+  .ref-hero-stat .l{font-size:10px;color:#D8D0EE;text-transform:uppercase;letter-spacing:.05em;font-weight:700;}
+  .ref-search{
+    width:100%;border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:12px 16px;
+    font-family:'Nunito';font-size:15px;background:var(--card);color:var(--ink);margin-bottom:18px;
+  }
+  .ref-search:focus{outline:none;border-color:#6B5B95;}
+  .ref-cat{
+    background:var(--card);border:1.5px solid var(--line);border-radius:var(--radius-md);
+    margin-bottom:14px;overflow:hidden;
+  }
+  .ref-cat-head{
+    display:flex;align-items:center;gap:12px;padding:15px 16px;cursor:pointer;user-select:none;
+    background:var(--paper-dark);
+  }
+  .ref-cat-icon{font-size:22px;flex:0 0 auto;}
+  .ref-cat-title{font-family:'Fredoka';font-weight:600;font-size:16.5px;flex:1;}
+  .ref-cat-count{font-family:'Space Mono';font-size:12px;color:var(--ink-soft);font-weight:700;}
+  .ref-cat-chev{font-size:13px;color:var(--ink-soft);transition:transform .2s ease;}
+  .ref-cat.open .ref-cat-chev{transform:rotate(180deg);}
+  .ref-cat-body{padding:16px;}
+  .ref-cat-note{font-size:12.5px;color:var(--ink-soft);margin:0 0 12px;font-style:italic;}
+  .ref-word-grid{display:flex;flex-wrap:wrap;gap:8px;}
+  .ref-word{
+    display:flex;align-items:center;gap:6px;
+    border:1.5px solid var(--line);border-radius:10px;padding:7px 12px;
+    font-family:'Space Mono';font-size:13.5px;background:var(--paper);
+    cursor:pointer;transition:transform .1s ease, background .12s ease, border-color .12s ease;
+  }
+  .ref-word:active{transform:scale(0.96);}
+  .ref-word.known{background:#DAF4EA;border-color:var(--good);color:#116B4E;}
+  .ref-word .chk{font-size:11px;}
+  .ref-progress-mini{height:5px;border-radius:4px;background:var(--paper-dark);overflow:hidden;margin-top:10px;}
+  .ref-progress-mini-fill{height:100%;background:#6B5B95;border-radius:4px;transition:width .3s ease;}
+
   /* ---------- ICON BADGES (used on subject/quarter cards) ---------- */
   .icon-badge{
     width:56px;height:56px;border-radius:18px;
@@ -731,6 +782,12 @@
   .bank-opt-correct{background:var(--q2-soft);color:#0A8F68;font-weight:800;}
   .bank-item-actions{display:flex;gap:8px;}
   .bank-item-type{display:inline-block;font-family:'Fredoka';font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--night);background:var(--q3-soft);border-radius:999px;padding:3px 9px;margin-bottom:8px;}
+  .bank-item-editing{background:var(--q1-soft, #FFF7E8);border-color:var(--night);}
+  .bank-edit-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
+  .bank-edit-opt-row{display:flex;align-items:center;gap:8px;}
+  .bank-edit-opt-row .text-input{flex:1;min-width:0;margin:0;}
+  .bank-edit-opt-row select.text-input{flex:1;min-width:0;}
+  .bank-edit-step-num{font-weight:800;flex:none;width:20px;text-align:right;}
   .type-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
   .type-tab{border:2.5px solid var(--line);background:var(--card);border-radius:999px;padding:8px 16px;font-weight:800;font-size:13px;font-family:'Fredoka';color:var(--ink-soft);box-shadow:none;}
   .type-tab.active{border-color:var(--night);color:var(--night);background:var(--q3-soft);}
@@ -2882,7 +2939,179 @@ const ENGLISH_QUARTERS = [
     ]
   }
 ];
+/* =========================================================
+   GENERAL — Grade 5 Readiness Word List (Sacred Heart Academy of Pasig)
+   A plain reference checklist (not a lesson/quiz subject) of words and
+   terms a student should already know by heart before starting Grade 5.
+   ========================================================= */
+const GENERAL_CATEGORIES = [
+  {
+    id:"spelling_en", icon:"\u270f\ufe0f", title:"English Spelling Words",
+    note:"Commonly misspelled words a Grade 4 finisher should be able to spell correctly from memory.",
+    words:["beautiful","definitely","separate","necessary","vegetable","February","Wednesday","because","different","favorite",
+      "government","surprise","especially","business","probably","interesting","experience","suddenly","although","therefore",
+      "receive","believe","achieve","weird","neighbor","calendar","library","restaurant","vacuum","guarantee",
+      "immediately","recommend","embarrass","occasionally","rhythm","schedule","privilege","address","excellent",
+      "knowledge","opportunity","environment","equipment","comfortable","successful","independent","responsible","weather",
+      "whether","through","thought","though","enough","cousin","niece","nephew","chief","straight"]
+  },
+  {
+    id:"sight_words", icon:"\ud83d\udc41\ufe0f", title:"High-Frequency Sight Words",
+    note:"Words that should be read instantly on sight, without sounding out.",
+    words:["although","among","because","before","between","during","either","enough","every","except",
+      "finally","however","instead","neither","often","perhaps","quite","several","since","sometimes",
+      "special","suddenly","though","through","together","toward","unless","until","usually","whether",
+      "without","almost","already","always","another","anything","around","before","behind","below",
+      "beside","beyond","certain","complete","difficult","during","early","earth","enough","example"]
+  },
+  {
+    id:"vocab_en", icon:"\ud83d\udcda", title:"English Vocabulary Words",
+    note:"General vocabulary words with meanings a Grade 4 finisher should already understand and use in sentences.",
+    words:["ancient","brilliant","cautious","courage","curious","enormous","fortunate","furious","gigantic","glimpse",
+      "gratitude","harsh","hesitate","humble","imitate","immense","industrious","invisible","jubilant","loyal",
+      "magnificent","mischievous","nervous","numerous","obedient","observant","peculiar","precious","reluctant","rural",
+      "sincere","sturdy","tremendous","urgent","vanish","vivid","wander","weary","astonish","boundary"]
+  },
+  {
+    id:"grammar_terms", icon:"\ud83d\udd24", title:"Grammar & Language Terms",
+    note:"Terms every student should be able to define and identify in a sentence.",
+    words:["noun","pronoun","verb","adjective","adverb","preposition","conjunction","interjection","synonym","antonym",
+      "homophone","subject","predicate","sentence","phrase","clause","tense","plural","singular","possessive",
+      "simile","metaphor","context clue","main idea","supporting detail","fact","opinion","sequence","summary","dialogue"]
+  },
+  {
+    id:"spelling_fil", icon:"\ud83c\udff5\ufe0f", title:"Mga Salitang Filipino",
+    note:"Mga salitang dapat nang alam at wastong maisusulat ng mag-aaral bago pumasok sa Grade 5.",
+    words:["pananagutan","kapaligiran","kalusugan","kasaysayan","kalayaan","pamahalaan","kabuhayan","kagandahang-asal","kapayapaan","katarungan",
+      "kalikasan","pagkakaisa","paggalang","pananampalataya","kultura","tradisyon","pamayanan","kabutihan","kasipagan","katapatan",
+      "pambansa","panlipunan","pandaigdig","kapaki-pakinabang","napakahalaga","responsibilidad","kooperatiba","migrasyon","kolonyalismo","rebolusyon"]
+  },
+  {
+    id:"vocab_math", icon:"\ud83d\udd22", title:"Math Vocabulary",
+    note:"Math terms a student should be able to define and apply, not just recognize.",
+    words:["numerator","denominator","quotient","dividend","divisor","product","sum","difference","factor","multiple",
+      "prime number","composite number","perimeter","area","volume","circumference","diameter","radius","vertex","angle",
+      "equivalent","estimate","decimal","percent","ratio","symmetry","polygon","parallel","perpendicular","congruent"]
+  },
+  {
+    id:"vocab_science", icon:"\ud83d\udd2c", title:"Science Vocabulary",
+    note:"Core science terms a Grade 4 finisher should recognize and explain in their own words.",
+    words:["ecosystem","habitat","organism","photosynthesis","adaptation","evaporation","condensation","precipitation","matter","solid",
+      "liquid","gas","force","energy","gravity","friction","circuit","conductor","insulator","nutrient",
+      "predator","prey","pollution","conservation","renewable","nonrenewable","rotation","revolution","climate","weather"]
+  },
+  {
+    id:"vocab_values", icon:"\ud83e\udded", title:"GMRC / Values Vocabulary",
+    note:"Character and values words a student should understand and be able to explain with an example.",
+    words:["honesty","integrity","respect","gratitude","empathy","humility","perseverance","diligence","cooperation","obedience",
+      "compassion","forgiveness","self-control","generosity","courtesy","fairness","responsibility","trustworthiness","patience","sincerity"]
+  },
+  {
+    id:"ph_geography", icon:"\ud83d\uddfa\ufe0f", title:"Philippine Geography Essentials",
+    note:"Regions, major islands, and famous landmarks every Filipino student should be able to point to on a map.",
+    words:["Luzon","Visayas","Mindanao","NCR (National Capital Region)","Ilocos Region","Cagayan Valley","Central Luzon","CALABARZON","MIMAROPA","Bicol Region",
+      "Western Visayas","Central Visayas","Eastern Visayas","Zamboanga Peninsula","Northern Mindanao","Davao Region","SOCCSKSARGEN","Caraga","BARMM","CAR (Cordillera)",
+      "Manila","Quezon City","Cebu City","Davao City","Baguio City","Palawan","Boracay Island","Banaue Rice Terraces","Mayon Volcano","Chocolate Hills",
+      "Taal Volcano","Mount Apo","Pasig River","Laguna de Bay"]
+  },
+  {
+    id:"ph_history", icon:"\ud83c\udfdb\ufe0f", title:"Philippine History Timeline",
+    note:"Key dates and events every student should be able to place in order.",
+    words:["1521 \u2013 Magellan's arrival","1565 \u2013 Spanish colonization begins","1896 \u2013 Philippine Revolution","1898 \u2013 Declaration of Independence","1899 \u2013 Philippine-American War",
+      "1935 \u2013 Commonwealth established","1941 \u2013 World War II reaches the Philippines","1946 \u2013 Full independence from the US","1972 \u2013 Martial Law declared","1986 \u2013 EDSA People Power Revolution",
+      "1987 \u2013 1987 Constitution ratified"]
+  },
+  {
+    id:"ph_symbols", icon:"\ud83e\udd85", title:"Philippine National Symbols",
+    note:"Symbols that represent the country \u2014 a common quiz-bee topic.",
+    words:["National Hero \u2013 Jose Rizal","National Flower \u2013 Sampaguita","National Bird \u2013 Philippine Eagle","National Tree \u2013 Narra","National Fish \u2013 Bangus (Milkfish)",
+      "National Fruit \u2013 Mango","National Sport \u2013 Arnis","National Gem \u2013 Philippine Pearl","National Dance \u2013 Tinikling","National Language \u2013 Filipino",
+      "National Costume (Male) \u2013 Barong Tagalog","National Costume (Female) \u2013 Baro't Saya"]
+  },
+  {
+    id:"ph_government", icon:"\u2696\ufe0f", title:"Basic Philippine Government Structure",
+    note:"How the government is organized \u2014 branches and levels, not specific officials (since those change).",
+    words:["Executive Branch","Legislative Branch","Judicial Branch","President","Vice President","Senate","House of Representatives",
+      "Supreme Court","Cabinet","Local Government Unit (LGU)","Barangay","Municipality","City","Province","Region"]
+  },
+  {
+    id:"days_months", icon:"\ud83d\udcc5", title:"Days, Months & Seasons (English & Filipino)",
+    note:"Should be recited instantly in either language.",
+    words:["Sunday \u2013 Linggo","Monday \u2013 Lunes","Tuesday \u2013 Martes","Wednesday \u2013 Miyerkules","Thursday \u2013 Huwebes","Friday \u2013 Biyernes","Saturday \u2013 Sabado",
+      "January \u2013 Enero","February \u2013 Pebrero","March \u2013 Marso","April \u2013 Abril","May \u2013 Mayo","June \u2013 Hunyo","July \u2013 Hulyo","August \u2013 Agosto",
+      "September \u2013 Setyembre","October \u2013 Oktubre","November \u2013 Nobyembre","December \u2013 Disyembre","Dry Season \u2013 Tag-init/Tag-araw","Wet Season \u2013 Tag-ulan"]
+  },
+  {
+    id:"number_facts", icon:"\u2795", title:"Number Words & Key Math Facts",
+    note:"Ordinal numbers and the trickiest multiplication facts students should have memorized cold.",
+    words:["first","second","third","fourth","fifth","sixth","seventh","eighth","ninth","tenth",
+      "eleventh","twelfth","twentieth","6 \u00d7 7 = 42","6 \u00d7 8 = 48","7 \u00d7 7 = 49","7 \u00d7 8 = 56","7 \u00d7 9 = 63","8 \u00d7 8 = 64","8 \u00d7 9 = 72","9 \u00d7 9 = 81","12 \u00d7 12 = 144"]
+  },
+  {
+    id:"measurement", icon:"\ud83d\udcd0", title:"Measurement Units (Metric)",
+    note:"Basic metric units used in Math and Science class.",
+    words:["millimeter (mm)","centimeter (cm)","meter (m)","kilometer (km)","milligram (mg)","gram (g)","kilogram (kg)",
+      "milliliter (mL)","liter (L)","degree Celsius (\u00b0C)","square meter (sq. m)","cubic meter (cu. m)","hectare"]
+  },
+  {
+    id:"money_time", icon:"\ud83d\udd50", title:"Money & Time Vocabulary",
+    note:"Everyday practical vocabulary for telling time and handling money.",
+    words:["piso","sentimo","withdraw","deposit","budget","savings","allowance","half past","quarter to","quarter past",
+      "o'clock","a.m.","p.m.","noon","midnight","leap year"]
+  },
+  {
+    id:"confused_pairs", icon:"\ud83d\udd00", title:"Commonly Confused Word Pairs",
+    note:"Words that sound alike or look alike but mean different things \u2014 a frequent source of errors.",
+    words:["its / it's","their / there / they're","affect / effect","accept / except","then / than","to / too / two",
+      "your / you're","who's / whose","lose / loose","advice / advise","desert / dessert","principal / principle",
+      "stationary / stationery","complement / compliment"]
+  },
+  {
+    id:"prefixes_suffixes", icon:"\ud83e\udde9", title:"Prefixes & Suffixes",
+    note:"Word parts that change meaning \u2014 knowing these helps decode unfamiliar words.",
+    words:["un- (not)","re- (again)","pre- (before)","dis- (opposite of)","mis- (wrongly)","non- (not)",
+      "-ful (full of)","-less (without)","-able (capable of)","-ness (state of)","-ment (result of)","-tion (act of)","-er (one who)","-ly (in a manner)"]
+  },
+  {
+    id:"punctuation", icon:"\u275d", title:"Punctuation Quick-Reference",
+    note:"Marks students should recognize by name and know when to use.",
+    words:["period ( . )","comma ( , )","apostrophe ( ' )","quotation marks ( \" )","question mark ( ? )","exclamation point ( ! )",
+      "colon ( : )","semicolon ( ; )","hyphen ( - )","parentheses ( )"]
+  },
+  {
+    id:"continents_oceans", icon:"\ud83c\udf0d", title:"Continents & Oceans",
+    note:"The seven continents and five oceans of the world.",
+    words:["Asia","Africa","North America","South America","Antarctica","Europe","Australia (Oceania)",
+      "Pacific Ocean","Atlantic Ocean","Indian Ocean","Arctic Ocean","Southern Ocean"]
+  },
+  {
+    id:"basic_science", icon:"\ud83e\ude90", title:"Basic Science Facts",
+    note:"Foundational science facts \u2014 planets in order, steps of the water cycle, and major body systems.",
+    words:["Mercury","Venus","Earth","Mars","Jupiter","Saturn","Uranus","Neptune",
+      "Evaporation","Condensation","Precipitation","Collection",
+      "Skeletal System","Muscular System","Digestive System","Circulatory System","Respiratory System","Nervous System"]
+  },
+  {
+    id:"idioms", icon:"\ud83d\udcac", title:"Common Idioms & Expressions",
+    note:"Figurative expressions students will encounter in reading and everyday conversation.",
+    words:["break the ice","piece of cake","under the weather","hit the books","costs an arm and a leg",
+      "once in a blue moon","the ball is in your court","actions speak louder than words","practice makes perfect","better late than never"]
+  }
+];
+const STORAGE_KEY_GENERAL = "gs4_general_known_v1";
+function loadGeneralKnown(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY_GENERAL);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {};
+}
+function saveGeneralKnown(g){
+  try{ localStorage.setItem(STORAGE_KEY_GENERAL, JSON.stringify(g)); }catch(e){}
+  queueCloudSync();
+}
 const SUBJECTS = [
+  {id:"general", name:"General Knowledge", shortName:"General", icon:"\ud83d\udcd6", tagline:"Grade 5 Readiness Word List", quarters:[], color:"#6B5B95", soft:"#EDE8F5", special:"reference"},
   {id:"science", name:"Science 4", shortName:"Science", icon:"\ud83d\udd2c", tagline:"Young Scientist's Passport", quarters: SCIENCE_QUARTERS, color:"#1FAB81", soft:"#DBF3EA"},
   {id:"hele", name:"HELE 4", shortName:"HELE", icon:"\ud83e\uddf0", tagline:"Home & Livelihood Explorer's Passport", quarters: HELE_QUARTERS, color:"#ED9C2E", soft:"#FBE9D0"},
   {id:"mapeh", name:"MAPEH 4", shortName:"MAPEH", icon:"\ud83c\udfa8", tagline:"MAPEH Culture & Wellness Passport", quarters: MAPEH_QUARTERS, color:"#F37BAA", soft:"#FDE3EE"},
@@ -4045,6 +4274,132 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
   const [bulkText, setBulkText] = useState("");
   const [bulkTopic, setBulkTopic] = useState("");
   const [selected, setSelected] = useState(new Set());
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [draft, setDraft] = useState(null);
+
+  function startEdit(i){
+    setEditingIndex(i);
+    setDraft(JSON.parse(JSON.stringify(questions[i])));
+  }
+  function cancelEdit(){
+    setEditingIndex(null);
+    setDraft(null);
+  }
+  function saveEdit(){
+    if(!draft || !String(draft.q||"").trim()){ alert("Question text can't be empty."); return; }
+    const t = draft.type || "mcq";
+    if((t === "mcq" || t === "tf")){
+      if(!draft.options || draft.options.some(o=>!String(o).trim())){ alert("All choices need text."); return; }
+    }
+    if(t === "fill" && !String(draft.answer||"").trim()){ alert("Answer can't be empty."); return; }
+    if(t === "match" && (!draft.pairs || draft.pairs.some(p=>!String(p.left).trim() || !String(p.right).trim()))){ alert("All match pairs need both sides filled in."); return; }
+    if(t === "dragdrop" && (!draft.items || draft.items.some(it=>!String(it.label).trim()) || !draft.categories || draft.categories.some(c=>!String(c).trim()))){ alert("All items and categories need text."); return; }
+    if(t === "order" && (!draft.items || draft.items.some(it=>!String(it).trim()))){ alert("All steps need text."); return; }
+    const next = questions.slice();
+    next[editingIndex] = draft;
+    onChange(next);
+    setEditingIndex(null);
+    setDraft(null);
+  }
+
+  function updateDraft(field, value){
+    setDraft(prev=>({...prev, [field]:value}));
+  }
+  function updateOption(oi, value){
+    setDraft(prev=>{
+      const options = prev.options.slice();
+      options[oi] = value;
+      return {...prev, options};
+    });
+  }
+  function addOption(){
+    setDraft(prev=>({...prev, options:[...prev.options, ""]}));
+  }
+  function removeOption(oi){
+    setDraft(prev=>{
+      if(prev.options.length <= 2) return prev;
+      const options = prev.options.slice();
+      options.splice(oi,1);
+      let correct = prev.correct;
+      if(correct === oi) correct = 0;
+      else if(correct > oi) correct = correct - 1;
+      return {...prev, options, correct};
+    });
+  }
+  function updatePair(pi, side, value){
+    setDraft(prev=>{
+      const pairs = prev.pairs.map((p,i)=> i===pi ? {...p, [side]:value} : p);
+      return {...prev, pairs};
+    });
+  }
+  function addPair(){
+    setDraft(prev=>({...prev, pairs:[...prev.pairs, {left:"", right:""}]}));
+  }
+  function removePair(pi){
+    setDraft(prev=>{
+      if(prev.pairs.length <= 2) return prev;
+      const pairs = prev.pairs.slice();
+      pairs.splice(pi,1);
+      return {...prev, pairs};
+    });
+  }
+  function updateDDItem(ii, field, value){
+    setDraft(prev=>{
+      const items = prev.items.map((it,i)=> i===ii ? {...it, [field]:value} : it);
+      return {...prev, items};
+    });
+  }
+  function addDDItem(){
+    setDraft(prev=>({...prev, items:[...prev.items, {label:"", category:(prev.categories&&prev.categories[0])||""}]}));
+  }
+  function removeDDItem(ii){
+    setDraft(prev=>{
+      if(prev.items.length <= 2) return prev;
+      const items = prev.items.slice();
+      items.splice(ii,1);
+      return {...prev, items};
+    });
+  }
+  function updateDDCategory(ci, value){
+    setDraft(prev=>{
+      const oldVal = prev.categories[ci];
+      const categories = prev.categories.slice();
+      categories[ci] = value;
+      const items = prev.items.map(it=> it.category===oldVal ? {...it, category:value} : it);
+      return {...prev, categories, items};
+    });
+  }
+  function addDDCategory(){
+    setDraft(prev=>({...prev, categories:[...prev.categories, ""]}));
+  }
+  function removeDDCategory(ci){
+    setDraft(prev=>{
+      if(prev.categories.length <= 2) return prev;
+      const removed = prev.categories[ci];
+      const categories = prev.categories.slice();
+      categories.splice(ci,1);
+      const items = prev.items.map(it=> it.category===removed ? {...it, category:categories[0]||""} : it);
+      return {...prev, categories, items};
+    });
+  }
+  function updateOrderItem(ii, value){
+    setDraft(prev=>{
+      const items = prev.items.slice();
+      items[ii] = value;
+      return {...prev, items};
+    });
+  }
+  function addOrderItem(){
+    setDraft(prev=>({...prev, items:[...prev.items, ""]}));
+  }
+  function removeOrderItem(ii){
+    setDraft(prev=>{
+      if(prev.items.length <= 2) return prev;
+      const items = prev.items.slice();
+      items.splice(ii,1);
+      return {...prev, items};
+    });
+  }
 
   const topics = bankTopics(questions);
   const noTopicCount = questions.filter(q=>!normTopic(q.topic)).length;
@@ -4232,6 +4587,144 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
           : t === "dragdrop" ? "🧩 Drag and Drop"
           : t === "order" ? "📋 Ordering / Sequencing"
           : "🔤 Multiple Choice";
+        const isEditing = editingIndex === i;
+
+        if(isEditing){
+          const dt = draft.type || "mcq";
+          return (
+            <div key={i} className="bank-item bank-item-editing">
+              <div className="bank-item-select" />
+              <div className="bank-item-body">
+                <div className="bank-item-type">{typeLabel}{" · ✏️ Editing"}</div>
+
+                <label className="field-label" style={{marginTop:0}}>Question text</label>
+                <textarea className="text-area" rows={2} value={draft.q} onChange={e=>updateDraft("q", e.target.value)} />
+
+                {dt === "tf" && (
+                  <React.Fragment>
+                    <label className="field-label">Correct answer</label>
+                    <div className="bank-edit-opts">
+                      {draft.options.map((o,oi)=>(
+                        <label key={oi} className="bank-edit-opt-row">
+                          <input type="radio" name={"correct-"+i} checked={draft.correct===oi} onChange={()=>updateDraft("correct", oi)} />
+                          <span>{o}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </React.Fragment>
+                )}
+
+                {dt === "mcq" && (
+                  <React.Fragment>
+                    <label className="field-label">Choices (pick the correct one)</label>
+                    <div className="bank-edit-opts">
+                      {draft.options.map((o,oi)=>(
+                        <div key={oi} className="bank-edit-opt-row">
+                          <input type="radio" name={"correct-"+i} checked={draft.correct===oi} onChange={()=>updateDraft("correct", oi)} title="Mark as correct" />
+                          <input className="text-input" value={o} onChange={e=>updateOption(oi, e.target.value)} placeholder={"Choice " + (oi+1)} />
+                          {draft.options.length > 2 && (
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={()=>removeOption(oi)}>✕</button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={addOption}>➕ Add Choice</button>
+                  </React.Fragment>
+                )}
+
+                {dt === "fill" && (
+                  <React.Fragment>
+                    <label className="field-label">Answer</label>
+                    <input className="text-input" value={draft.answer} onChange={e=>updateDraft("answer", e.target.value)} />
+                  </React.Fragment>
+                )}
+
+                {dt === "match" && (
+                  <React.Fragment>
+                    <label className="field-label">Pairs</label>
+                    <div className="bank-edit-opts">
+                      {draft.pairs.map((p,pi)=>(
+                        <div key={pi} className="bank-edit-opt-row">
+                          <input className="text-input" value={p.left} onChange={e=>updatePair(pi, "left", e.target.value)} placeholder="Left" />
+                          <span>→</span>
+                          <input className="text-input" value={p.right} onChange={e=>updatePair(pi, "right", e.target.value)} placeholder="Right" />
+                          {draft.pairs.length > 2 && (
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={()=>removePair(pi)}>✕</button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={addPair}>➕ Add Pair</button>
+                  </React.Fragment>
+                )}
+
+                {dt === "dragdrop" && (
+                  <React.Fragment>
+                    <label className="field-label">Categories</label>
+                    <div className="bank-edit-opts">
+                      {draft.categories.map((c,ci)=>(
+                        <div key={ci} className="bank-edit-opt-row">
+                          <input className="text-input" value={c} onChange={e=>updateDDCategory(ci, e.target.value)} placeholder={"Category " + (ci+1)} />
+                          {draft.categories.length > 2 && (
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={()=>removeDDCategory(ci)}>✕</button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={addDDCategory}>➕ Add Category</button>
+
+                    <label className="field-label">Items</label>
+                    <div className="bank-edit-opts">
+                      {draft.items.map((it,ii)=>(
+                        <div key={ii} className="bank-edit-opt-row">
+                          <input className="text-input" value={it.label} onChange={e=>updateDDItem(ii, "label", e.target.value)} placeholder="Item" />
+                          <span>→</span>
+                          <select className="text-input" value={it.category} onChange={e=>updateDDItem(ii, "category", e.target.value)}>
+                            {draft.categories.map((c,ci)=>(<option key={ci} value={c}>{c}</option>))}
+                          </select>
+                          {draft.items.length > 2 && (
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={()=>removeDDItem(ii)}>✕</button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={addDDItem}>➕ Add Item</button>
+                  </React.Fragment>
+                )}
+
+                {dt === "order" && (
+                  <React.Fragment>
+                    <label className="field-label">Steps (in correct order)</label>
+                    <div className="bank-edit-opts">
+                      {draft.items.map((it,ii)=>(
+                        <div key={ii} className="bank-edit-opt-row">
+                          <span className="bank-edit-step-num">{ii+1}.</span>
+                          <input className="text-input" value={it} onChange={e=>updateOrderItem(ii, e.target.value)} placeholder={"Step " + (ii+1)} />
+                          {draft.items.length > 2 && (
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={()=>removeOrderItem(ii)}>✕</button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={addOrderItem}>➕ Add Step</button>
+                  </React.Fragment>
+                )}
+
+                <label className="field-label">Explanation (optional)</label>
+                <textarea className="text-area" rows={2} value={draft.explain||""} onChange={e=>updateDraft("explain", e.target.value)} />
+
+                <label className="field-label">Topic (optional)</label>
+                <input className="text-input" list="topic-suggestions" value={draft.topic||""} onChange={e=>updateDraft("topic", e.target.value)} placeholder="e.g. Comparing" />
+
+                <div className="bank-item-actions" style={{marginTop:12}}>
+                  <button className="btn btn-primary btn-sm" style={{background:accent}} onClick={saveEdit}>💾 Save</button>
+                  <button className="btn btn-ghost btn-sm" onClick={cancelEdit}>Cancel</button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         return (
           <div key={i} className={"bank-item" + (selected.has(i) ? " bank-item-selected" : "")}>
             <label className="bank-item-select">
@@ -4272,6 +4765,7 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
                 </div>
               )}
               <div className="bank-item-actions">
+                <button className="btn btn-ghost btn-sm" onClick={()=>startEdit(i)}>✏️ Edit</button>
                 <button className="btn btn-ghost btn-sm" onClick={()=>handleDeleteOne(i)}>🗑️ Delete</button>
               </div>
             </div>
@@ -4316,6 +4810,7 @@ function App(){
   const [settings, setSettings] = useState(loadSettings());
   const [notes, setNotes] = useState(loadNotes());
   const [activity, setActivity] = useState(loadActivity());
+  const [generalKnown, setGeneralKnown] = useState(loadGeneralKnown());
   const [nav, setNav] = useState({screen:"dashboard"});
   const [quizSession, setQuizSession] = useState(null); // {kind:'lesson'|'long', questions, accent, title, key}
   const [saveFlash, setSaveFlash] = useState(false);
@@ -4327,6 +4822,7 @@ function App(){
   useEffect(()=>{ saveSettings(settings); }, [settings]);
   useEffect(()=>{ saveNotes(notes); }, [notes]);
   useEffect(()=>{ saveActivity(activity); }, [activity]);
+  useEffect(()=>{ saveGeneralKnown(generalKnown); }, [generalKnown]);
   useEffect(()=>{ setSoundEnabled(settings.soundEnabled !== false); }, [settings.soundEnabled]);
 
   async function saveEverythingNow(){
@@ -4381,6 +4877,16 @@ function App(){
   function goNotes(){ Sound.nav(); setNav({screen:"notes"}); setQuizSession(null); }
   function goSubjects(){ Sound.back(); setNav({screen:"subjects"}); setQuizSession(null); }
   function goSubjectHome(sid){ Sound.nav(); setNav({screen:"home", subjectId:sid}); setQuizSession(null); }
+  function goGeneral(sid){ Sound.nav(); setNav({screen:"general", subjectId:sid}); setQuizSession(null); }
+  function toggleGeneralWord(catId, word){
+    Sound.nav();
+    setGeneralKnown(prev=>{
+      const key = catId+"::"+word;
+      const next = {...prev};
+      if(next[key]) delete next[key]; else next[key] = true;
+      return next;
+    });
+  }
   function goQuarter(sid, qid){ Sound.nav(); setNav({screen:"quarter", subjectId:sid, quarterId:qid}); setQuizSession(null); }
   function goLesson(sid, qid, lid){ Sound.nav(); setNav({screen:"lesson", subjectId:sid, quarterId:qid, lessonId:lid, tab:"learn"}); setQuizSession(null); }
 
@@ -4483,6 +4989,17 @@ function App(){
         <div className="section-title">Subjects</div>
         <div className="subject-square-grid">
           {SUBJECTS.map((s,si)=>{
+            if(s.special==="reference"){
+              const total = GENERAL_CATEGORIES.reduce((n,c)=>n+c.words.length,0);
+              const known = Object.keys(generalKnown).filter(k=>generalKnown[k]).length;
+              return (
+                <button key={s.id} className={"subject-square" + (known>=total && total>0 ? " complete":"")} onClick={()=>goGeneral(s.id)} style={{animationDelay:(si*0.05)+"s"}}>
+                  <div className="sq-icon">{s.icon}</div>
+                  <div className="sq-label">{s.shortName}</div>
+                  <div className="sq-frac" style={{color:s.color}}>{known}/{total}</div>
+                </button>
+              );
+            }
             const learned = subjectLearnedCount(s, progress);
             const total = subjectLessonCount(s);
             return (
@@ -4544,6 +5061,17 @@ function App(){
           <div className="passport-name">SY 2026–2027 · Sacred Heart Academy of Pasig</div>
           <div className="stamp-row">
             {SUBJECTS.map(s=>{
+              if(s.special==="reference"){
+                const total = GENERAL_CATEGORIES.reduce((n,c)=>n+c.words.length,0);
+                const known = Object.keys(generalKnown).filter(k=>generalKnown[k]).length;
+                return (
+                  <button key={s.id} className={"stamp" + (known>=total && total>0 ? " complete":"")} onClick={()=>goGeneral(s.id)}>
+                    <div className="icon">{s.icon}</div>
+                    <div className="label">{s.shortName}</div>
+                    <div className="frac">{known}/{total}</div>
+                  </button>
+                );
+              }
               const learned = subjectLearnedCount(s, progress);
               const total = subjectLessonCount(s);
               return (
@@ -4600,6 +5128,101 @@ function App(){
             );
           })}
         </div>
+        <div className="footer-note">SACRED HEART ACADEMY OF PASIG · GRADE SCHOOL DEPARTMENT</div>
+      </React.Fragment>
+    );
+  }
+
+  /* ---------------- GENERAL SCREEN (Grade 5 Readiness Word List — reference, not lessons/quiz) ---------------- */
+  function GeneralScreen(){
+    const subject = currentSubject();
+    const [query, setQuery] = useState("");
+    const [openCats, setOpenCats] = useState(()=>({[GENERAL_CATEGORIES[0].id]:true}));
+    const q = query.trim().toLowerCase();
+
+    const totalWords = GENERAL_CATEGORIES.reduce((n,c)=>n+c.words.length,0);
+    const knownCount = Object.keys(generalKnown).filter(k=>generalKnown[k]).length;
+    const overallPct = totalWords ? Math.round((knownCount/totalWords)*100) : 0;
+
+    function toggleCat(id){
+      Sound.nav();
+      setOpenCats(prev=>({...prev, [id]: !prev[id]}));
+    }
+
+    return (
+      <React.Fragment>
+        <div className="backbar">
+          <button className="backbtn" onClick={goDashboard}>←</button>
+          <div className="icon-badge-sm" style={{background:subject.soft}}>{subject.icon}</div>
+          <div>
+            <div className="qnum">{subject.name}</div>
+            <h1 style={{margin:0, fontSize:"21px"}}>{subject.tagline}</h1>
+          </div>
+        </div>
+
+        <div className="ref-hero">
+          <div className="ref-hero-title">Words a Grade 5 Student Should Already Know</div>
+          <div className="ref-hero-sub">This is a plain reference list, not a lesson or quiz — a checklist of spelling words, sight words, and key vocabulary a Grade 4 finisher should have mastered before moving up. Tap a word once you're confident you know it.</div>
+          <div className="ref-hero-stats">
+            <div className="ref-hero-stat"><div className="n">{totalWords}</div><div className="l">Total Words</div></div>
+            <div className="ref-hero-stat"><div className="n">{knownCount}</div><div className="l">Marked Known</div></div>
+            <div className="ref-hero-stat"><div className="n">{overallPct}%</div><div className="l">Ready</div></div>
+          </div>
+        </div>
+
+        <input
+          className="ref-search"
+          type="text"
+          placeholder="Search a word or category..."
+          value={query}
+          onChange={e=>setQuery(e.target.value)}
+        />
+
+        {GENERAL_CATEGORIES.map(cat=>{
+          const filteredWords = q
+            ? cat.words.filter(w=>w.toLowerCase().includes(q))
+            : cat.words;
+          const catMatchesTitle = cat.title.toLowerCase().includes(q);
+          if(q && filteredWords.length===0 && !catMatchesTitle) return null;
+          const wordsToShow = (q && catMatchesTitle) ? cat.words : filteredWords;
+          const isOpen = !!openCats[cat.id] || !!q;
+          const catKnown = cat.words.filter(w=>generalKnown[cat.id+"::"+w]).length;
+          const catPct = cat.words.length ? Math.round((catKnown/cat.words.length)*100) : 0;
+          return (
+            <div key={cat.id} className={"ref-cat" + (isOpen ? " open":"")}>
+              <div className="ref-cat-head" onClick={()=>toggleCat(cat.id)}>
+                <div className="ref-cat-icon">{cat.icon}</div>
+                <div className="ref-cat-title">{cat.title}</div>
+                <div className="ref-cat-count">{catKnown}/{cat.words.length}</div>
+                <div className="ref-cat-chev">▾</div>
+              </div>
+              {isOpen && (
+                <div className="ref-cat-body">
+                  <p className="ref-cat-note">{cat.note}</p>
+                  <div className="ref-word-grid">
+                    {wordsToShow.map(w=>{
+                      const known = !!generalKnown[cat.id+"::"+w];
+                      return (
+                        <button
+                          key={w}
+                          className={"ref-word" + (known ? " known":"")}
+                          onClick={()=>toggleGeneralWord(cat.id, w)}
+                        >
+                          <span className="chk">{known ? "✓" : "○"}</span>
+                          <span>{w}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="ref-progress-mini">
+                    <div className="ref-progress-mini-fill" style={{width:catPct+"%"}}></div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+
         <div className="footer-note">SACRED HEART ACADEMY OF PASIG · GRADE SCHOOL DEPARTMENT</div>
       </React.Fragment>
     );
@@ -5012,6 +5635,8 @@ function App(){
     content = <LessonScreen/>;
   } else if(nav.screen==="home"){
     content = <SubjectHomeScreen/>;
+  } else if(nav.screen==="general"){
+    content = <GeneralScreen/>;
   } else if(nav.screen==="notes"){
     content = <NotesScreen/>;
   } else if(nav.screen==="subjects"){
