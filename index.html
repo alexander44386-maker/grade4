@@ -445,8 +445,14 @@
   }
   .rich-editor ul, .rich-editor ol{margin:6px 0;padding-left:22px;}
   .rich-editor li{margin-bottom:6px;}
+  .rich-editor table, .note-view table{border-collapse:collapse;margin:8px 0;max-width:100%;}
+  .rich-editor table td, .rich-editor table th, .note-view table td, .note-view table th{
+    border:1.5px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top;
+  }
+  .rich-editor table th, .note-view table th{background:var(--paper-dark);font-weight:800;}
+  .rich-editor{overflow-x:auto;}
   .video-link-row{margin-bottom:14px;}
-  .note-view{margin-bottom:14px;font-size:15px;line-height:1.6;}
+  .note-view{margin-bottom:14px;font-size:15px;line-height:1.6;overflow-x:auto;}
   .note-view ul, .note-view ol{padding-left:22px;margin:0;}
   .note-view li{margin-bottom:13px;line-height:1.6;font-size:15px;}
   .note-view li::marker{color:var(--night);font-weight:800;}
@@ -3265,7 +3271,7 @@ function getLessonVideos(lesson){
    dangerouslySetInnerHTML. Strips scripts, event handlers and anything not
    on the allow-list, but keeps the inline styles execCommand produces. */
 function sanitizeHtml(html){
-  const ALLOWED_TAGS = new Set(["B","STRONG","I","EM","U","S","STRIKE","SPAN","DIV","BR","UL","OL","LI","P","FONT","A","H1","H2","H3","H4"]);
+  const ALLOWED_TAGS = new Set(["B","STRONG","I","EM","U","S","STRIKE","SPAN","DIV","BR","UL","OL","LI","P","FONT","A","H1","H2","H3","H4","TABLE","THEAD","TBODY","TFOOT","TR","TD","TH"]);
   try{
     const doc = new DOMParser().parseFromString("<div>" + html + "</div>", "text/html");
     const root = doc.body.firstChild;
@@ -3286,6 +3292,7 @@ function sanitizeHtml(html){
               return;
             }
             if(child.tagName === "FONT" && (name === "color" || name === "size" || name === "face")) return;
+            if((child.tagName === "TD" || child.tagName === "TH") && (name === "colspan" || name === "rowspan")) return;
             child.removeAttribute(attr.name);
           });
           clean(child);
