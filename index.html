@@ -854,7 +854,8 @@
   .match-item:disabled .match-dot-left{cursor:default;}
 
   /* ---------- DRAG & DROP ---------- */
-  .dd-items{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;min-height:20px;}
+  .dd-items{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;min-height:20px;border-radius:12px;transition:background .15s ease;}
+  .dd-items.drag-over{background:var(--q3-soft);outline:2px dashed var(--night);outline-offset:4px;}
   .dd-chip{
     background:var(--paper);border:2.5px solid var(--line);border-radius:999px;padding:9px 15px;
     font-size:13.5px;font-weight:700;color:var(--ink);cursor:grab;transition:transform .1s ease, border-color .12s ease;
@@ -899,7 +900,7 @@
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel" data-presets="env,react">
+<script type="text/babel" data-presets="react">
 const {useState, useEffect, useMemo, useRef} = React;
 
 /* =========================================================
@@ -947,7 +948,7 @@ async function pushToCloud(){
 }
 
 async function loadFromCloud(){
-  // Pull the shared save down before the app renders, so this device
+  // Pull the shared save down in the background, so this device
   // picks up progress made on any other device. Falls back silently
   // to whatever is already in localStorage if the cloud isn't reachable.
   try{
@@ -958,9 +959,12 @@ async function loadFromCloud(){
       Object.keys(remote).forEach(k=>{
         try{ localStorage.setItem(k, JSON.stringify(remote[k])); }catch(e){}
       });
+      return true;
     }
+    return false;
   }catch(e){
     console.warn("Firebase load skipped (offline):", e.message);
+    return false;
   }
 }
 
@@ -3512,6 +3516,7 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
   const [ddActiveItem, setDdActiveItem] = useState(null);
   const [ddChecked, setDdChecked] = useState(false);
   const [dragOverCat, setDragOverCat] = useState(null);
+  const [dragOverBank, setDragOverBank] = useState(false);
 
   // Ordering / sequencing
   const [orderList, setOrderList] = useState([]); // array of original indices, in current display order
@@ -3520,6 +3525,7 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
   const orderDragPosRef = useRef(null); // position currently being dragged (for logic, avoids stale closures)
 
   const q = questions[idx];
+  const record = answers[idx]; // set once this question has already been answered — lets the Back button show a read-only review of it
   const isLast = idx === questions.length - 1;
   const qType = q.type || "mcq";
   const isFill = qType === "fill";
@@ -3529,8 +3535,18 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
   const acceptable = isFill ? String(q.answer||"").split("|").map(a=>a.trim()).filter(Boolean) : [];
   const fillIsCorrect = isFill && matchesFillAnswer(fillText, acceptable);
 
+  // Reset per-question mcq/fill state whenever we land on a question that hasn't been answered yet
+  // (i.e. we're not reviewing it via the Back button). Keeps forward/back navigation in sync.
+  useEffect(()=>{
+    if(idx < answers.length) return; // already-answered question — Back button review handles its own display
+    setSelected(null);
+    setFillText("");
+    setFillChecked(false);
+  }, [idx]);
+
   // Reset/initialize per-question state whenever the question changes
   useEffect(()=>{
+    if(idx < answers.length) return; // already-answered question — reviewed read-only, no need to rebuild interactive state
     if(isMatch){
       setMatchRightOrder(shuffledIndices((q.pairs||[]).length));
       setMatchPicks({});
@@ -3670,6 +3686,15 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
     setDdAssign(prev=>({...prev, [ii]:cat}));
     setDdActiveItem(null);
   }
+  function unassignItem(ii){
+    if(ddChecked) return;
+    setDdAssign(prev=>{
+      const next = {...prev};
+      delete next[ii];
+      return next;
+    });
+    setDdActiveItem(null);
+  }
   function handleDdItemClick(ii){
     if(ddChecked) return;
     setDdActiveItem(prev => prev===ii ? null : ii);
@@ -3688,6 +3713,13 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
     if(ddChecked) return;
     const ii = parseInt(e.dataTransfer.getData("text/plain"), 10);
     if(!Number.isNaN(ii)) assignItem(ii, cat);
+  }
+  function handleDdBankDrop(e){
+    e.preventDefault();
+    setDragOverBank(false);
+    if(ddChecked) return;
+    const ii = parseInt(e.dataTransfer.getData("text/plain"), 10);
+    if(!Number.isNaN(ii)) unassignItem(ii);
   }
   function handleDdCheck(){
     if(ddChecked || !ddAllAssigned) return;
@@ -3760,10 +3792,14 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
     } else {
       setAnswers(newAnswers);
       setIdx(idx+1);
-      setSelected(null);
-      setFillText("");
-      setFillChecked(false);
     }
+  }
+  // Step back to the previous question to review your answer and the correct one.
+  // Doesn't touch the answers array — stepping forward again just re-displays what was already recorded.
+  function handleBack(){
+    if(idx===0) return;
+    Sound.back();
+    setIdx(idx-1);
   }
 
   return (
@@ -3776,6 +3812,9 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
           ))}
         </div>
         <div style={{display:"flex", alignItems:"center", gap:8, marginLeft:10}}>
+          {idx>0 && (
+            <button className="btn btn-ghost btn-sm" title="Back to previous question" onClick={handleBack}>← Back</button>
+          )}
           {showStopInline && onStop && (
             <button
               className="btn btn-ghost btn-sm"
@@ -3788,7 +3827,11 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
               }}
             >✕ Stop Quiz</button>
           )}
-          {answered && (
+          {record ? (
+            <button className="btn btn-primary btn-sm" style={{background:accent}} onClick={()=>{ Sound.tap(); setIdx(idx+1); }}>
+              Next →
+            </button>
+          ) : answered && (
             <button className="btn btn-primary btn-sm" style={{background:accent}} onClick={handleNext}>
               {isLast ? "See Results →" : "Next →"}
             </button>
@@ -3799,6 +3842,10 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
         {q.tag && <div className="quiz-tag">{q.tag}</div>}
         <div className="quiz-q">{q.q}</div>
 
+        {record ? (
+          <AnswerReviewBody a={record} />
+        ) : (
+        <React.Fragment>
         {!isFill && !isMatch && !isDragDrop && !isOrder && q.options.map((opt, i) => {
           let cls = "quiz-opt";
           if(selected !== null){
@@ -3905,7 +3952,13 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
         {isDragDrop && (
           <React.Fragment>
             <p className="fill-hint">Drag each item into its category (or tap an item, then tap a category).</p>
-            <div className="dd-items">
+            <div
+              className={"dd-items" + (dragOverBank ? " drag-over" : "")}
+              onDragOver={e=>{ e.preventDefault(); if(!ddChecked) setDragOverBank(true); }}
+              onDragLeave={()=>setDragOverBank(false)}
+              onDrop={handleDdBankDrop}
+              onClick={()=>{ if(ddActiveItem!==null && ddAssign[ddActiveItem]!==undefined) unassignItem(ddActiveItem); }}
+            >
               {(q.items||[]).map((it,ii)=>{
                 if(ddAssign[ii] !== undefined) return null;
                 return (
@@ -3914,12 +3967,12 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
                     className={"dd-chip" + (ddActiveItem===ii ? " active" : "")}
                     draggable={!ddChecked}
                     onDragStart={e=>handleDdDragStart(e, ii)}
-                    onClick={()=>handleDdItemClick(ii)}
+                    onClick={(e)=>{e.stopPropagation(); handleDdItemClick(ii);}}
                   >{it.label}</div>
                 );
               })}
               {(q.items||[]).every((it,ii)=>ddAssign[ii]!==undefined) && !ddChecked && (
-                <div className="fill-hint" style={{margin:0}}>All items placed — check your answers below.</div>
+                <div className="fill-hint" style={{margin:0}}>All items placed — drag a chip here to return it to the word bank, or check your answers below.</div>
               )}
             </div>
             <div className="dd-categories">
@@ -3937,9 +3990,17 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
                     <div className="dd-category-title">{cat}</div>
                     {itemsHere.map(x=>{
                       const isRightAnswer = ddChecked && x.it.category===cat;
-                      let cls = "dd-chip dd-chip-placed";
+                      let cls = "dd-chip dd-chip-placed" + (ddActiveItem===x.ii ? " active" : "");
                       if(ddChecked) cls += isRightAnswer ? " correct" : " incorrect";
-                      return <div key={x.ii} className={cls} onClick={(e)=>{e.stopPropagation(); handleDdItemClick(x.ii);}}>{x.it.label}</div>;
+                      return (
+                        <div
+                          key={x.ii}
+                          className={cls}
+                          draggable={!ddChecked}
+                          onDragStart={e=>{ e.stopPropagation(); handleDdDragStart(e, x.ii); }}
+                          onClick={(e)=>{e.stopPropagation(); handleDdItemClick(x.ii);}}
+                        >{x.it.label}</div>
+                      );
                     })}
                     {itemsHere.length===0 && <div className="dd-empty">Drop here</div>}
                   </div>
@@ -3994,6 +4055,8 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
             {q.explain}
           </div>
         )}
+        </React.Fragment>
+        )}
       </div>
     </div>
   );
@@ -4033,6 +4096,46 @@ function Confetti({variant, big}){
     </div>
   );
 }
+// Shared "your answer / correct answer" block for one answered question — used both by the
+// end-of-quiz Results review list and by the in-quiz Back button review.
+function AnswerReviewBody({a}){
+  return a.type === "fill" ? (
+    <React.Fragment>
+      <div className={"ra " + (a.isCorrect ? "right":"wrong")}>
+        Your answer: {a.chosen || "(blank)"} {a.isCorrect ? "✓" : "✗"}
+      </div>
+      {!a.isCorrect && <div className="ra right">Correct answer: {String(a.answer||"").split("|")[0].trim()}</div>}
+    </React.Fragment>
+  ) : a.type === "match" ? (
+    <React.Fragment>
+      <div className={"ra " + (a.isCorrect ? "right":"wrong")}>
+        {a.isCorrect ? "All matched correctly ✓" : "Some matches were wrong ✗"}
+      </div>
+      {!a.isCorrect && a.pairs.map((p,pi)=>(<div key={pi} className="ra right">{p.left} → {p.right}</div>))}
+    </React.Fragment>
+  ) : a.type === "dragdrop" ? (
+    <React.Fragment>
+      <div className={"ra " + (a.isCorrect ? "right":"wrong")}>
+        {a.isCorrect ? "All items sorted correctly ✓" : "Some items were in the wrong category ✗"}
+      </div>
+      {!a.isCorrect && a.items.map((it,ii)=>(<div key={ii} className="ra right">{it.label} → {it.category}</div>))}
+    </React.Fragment>
+  ) : a.type === "order" ? (
+    <React.Fragment>
+      <div className={"ra " + (a.isCorrect ? "right":"wrong")}>
+        Your order: {a.chosen.join(" → ")} {a.isCorrect ? "✓" : "✗"}
+      </div>
+      {!a.isCorrect && <div className="ra right">Correct order: {a.items.join(" → ")}</div>}
+    </React.Fragment>
+  ) : (
+    <React.Fragment>
+      <div className={"ra " + (a.isCorrect ? "right":"wrong")}>
+        Your answer: {a.options[a.chosen]} {a.isCorrect ? "✓" : "✗"}
+      </div>
+      {!a.isCorrect && <div className="ra right">Correct answer: {a.options[a.correct]}</div>}
+    </React.Fragment>
+  );
+}
 function ResultsView({answers, accent, onRetry, onDone, title}){
   const total = answers.length;
   const correct = answers.filter(a => a.isCorrect).length;
@@ -4055,42 +4158,7 @@ function ResultsView({answers, accent, onRetry, onDone, title}){
           <div className="review-item" key={i} style={{animationDelay:Math.min(i*0.04,0.5)+"s"}}>
             {a.tag && <div className="rtag">{a.tag}</div>}
             <div className="rq">{i+1}. {a.question}</div>
-            {a.type === "fill" ? (
-              <React.Fragment>
-                <div className={"ra " + (a.isCorrect ? "right":"wrong")}>
-                  Your answer: {a.chosen || "(blank)"} {a.isCorrect ? "✓" : "✗"}
-                </div>
-                {!a.isCorrect && <div className="ra right">Correct answer: {String(a.answer||"").split("|")[0].trim()}</div>}
-              </React.Fragment>
-            ) : a.type === "match" ? (
-              <React.Fragment>
-                <div className={"ra " + (a.isCorrect ? "right":"wrong")}>
-                  {a.isCorrect ? "All matched correctly ✓" : "Some matches were wrong ✗"}
-                </div>
-                {!a.isCorrect && a.pairs.map((p,pi)=>(<div key={pi} className="ra right">{p.left} → {p.right}</div>))}
-              </React.Fragment>
-            ) : a.type === "dragdrop" ? (
-              <React.Fragment>
-                <div className={"ra " + (a.isCorrect ? "right":"wrong")}>
-                  {a.isCorrect ? "All items sorted correctly ✓" : "Some items were in the wrong category ✗"}
-                </div>
-                {!a.isCorrect && a.items.map((it,ii)=>(<div key={ii} className="ra right">{it.label} → {it.category}</div>))}
-              </React.Fragment>
-            ) : a.type === "order" ? (
-              <React.Fragment>
-                <div className={"ra " + (a.isCorrect ? "right":"wrong")}>
-                  Your order: {a.chosen.join(" → ")} {a.isCorrect ? "✓" : "✗"}
-                </div>
-                {!a.isCorrect && <div className="ra right">Correct order: {a.items.join(" → ")}</div>}
-              </React.Fragment>
-            ) : (
-              <React.Fragment>
-                <div className={"ra " + (a.isCorrect ? "right":"wrong")}>
-                  Your answer: {a.options[a.chosen]} {a.isCorrect ? "✓" : "✗"}
-                </div>
-                {!a.isCorrect && <div className="ra right">Correct answer: {a.options[a.correct]}</div>}
-              </React.Fragment>
-            )}
+            <AnswerReviewBody a={a} />
           </div>
         ))}
       </div>
@@ -4939,6 +5007,7 @@ function App(){
   const [nav, setNav] = useState({screen:"dashboard"});
   const [quizSession, setQuizSession] = useState(null); // {kind:'lesson'|'long', questions, accent, title, key}
   const [saveFlash, setSaveFlash] = useState(false);
+  const importInputRef = useRef(null);
 
   useEffect(()=>{ saveProgress(progress); }, [progress]);
   useEffect(()=>{ saveEdits(edits); }, [edits]);
@@ -4950,6 +5019,23 @@ function App(){
   useEffect(()=>{ saveGeneralKnown(generalKnown); }, [generalKnown]);
   useEffect(()=>{ setSoundEnabled(settings.soundEnabled !== false); }, [settings.soundEnabled]);
 
+  useEffect(()=>{
+    // If the background Firebase pull finds newer data than what we
+    // rendered with, refresh state from localStorage without a reload.
+    function onCloudSynced(){
+      setProgress(loadProgress());
+      setEdits(loadEdits());
+      setBank(loadBank());
+      setMoves(loadMoves());
+      setSettings(loadSettings());
+      setNotes(loadNotes());
+      setActivity(loadActivity());
+      setGeneralKnown(loadGeneralKnown());
+    }
+    window.addEventListener("gs4-cloud-synced", onCloudSynced);
+    return () => window.removeEventListener("gs4-cloud-synced", onCloudSynced);
+  }, []);
+
   async function saveEverythingNow(){
     Sound.save();
     saveProgress(progress); saveEdits(edits); saveBank(bank); saveMoves(moves);
@@ -4959,6 +5045,65 @@ function App(){
     const cloudOk = await pushToCloud();
     setSaveFlash(cloudOk ? "✅ Saved to Firebase!" : "⚠️ Saved on this device only (offline)");
     setTimeout(()=>setSaveFlash(false), 1800);
+  }
+
+  function exportAllData(){
+    const payload = {
+      app: "gs4-learning-passport",
+      exportedAt: new Date().toISOString(),
+      data: {
+        progress, edits, bank, moves, settings, notes, activity, generalKnown
+      }
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `learning-passport-backup-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setSaveFlash("⬇️ Exported backup file!");
+    setTimeout(()=>setSaveFlash(false), 1800);
+  }
+
+  function importAllData(file){
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try{
+        const parsed = JSON.parse(reader.result);
+        const d = parsed && parsed.data ? parsed.data : parsed; // allow raw or wrapped JSON
+        if(!d || typeof d !== "object") throw new Error("bad format");
+        if(!window.confirm("Import this backup? This will replace all current progress, topics, notes, and quiz bank data on this device.")) return;
+        if(d.progress) setProgress(d.progress);
+        if(d.edits) setEdits(d.edits);
+        if(d.bank) setBank(d.bank);
+        if(d.moves) setMoves(d.moves);
+        if(d.settings) setSettings(d.settings);
+        if(d.notes) setNotes(d.notes);
+        if(d.activity) setActivity(d.activity);
+        if(d.generalKnown) setGeneralKnown(d.generalKnown);
+        // Persist immediately so a refresh doesn't race the effects.
+        if(d.progress) saveProgress(d.progress);
+        if(d.edits) saveEdits(d.edits);
+        if(d.bank) saveBank(d.bank);
+        if(d.moves) saveMoves(d.moves);
+        if(d.settings) saveSettings(d.settings);
+        if(d.notes) saveNotes(d.notes);
+        if(d.activity) saveActivity(d.activity);
+        if(d.generalKnown) saveGeneralKnown(d.generalKnown);
+        clearTimeout(cloudSyncTimer);
+        const cloudOk = await pushToCloud();
+        setSaveFlash(cloudOk ? "✅ Imported & synced!" : "✅ Imported (saved on this device only)");
+        setTimeout(()=>setSaveFlash(false), 1800);
+      }catch(err){
+        setSaveFlash("⚠️ Import failed: invalid file");
+        setTimeout(()=>setSaveFlash(false), 2200);
+      }
+    };
+    reader.readAsText(file);
   }
 
   function logLessonLearned(lessonId){
@@ -5795,6 +5940,19 @@ function App(){
           }}
         >{settings.soundEnabled !== false ? "🔊" : "🔇"}</button>
         <button className="settings-btn" title="Save everything now" onClick={saveEverythingNow}>💾</button>
+        <button className="settings-btn" title="Export all data as JSON" onClick={exportAllData}>⬇️</button>
+        <button className="settings-btn" title="Import data from JSON backup" onClick={()=>importInputRef.current && importInputRef.current.click()}>⬆️</button>
+        <input
+          ref={importInputRef}
+          type="file"
+          accept="application/json,.json"
+          style={{display:"none"}}
+          onChange={(e)=>{
+            const file = e.target.files && e.target.files[0];
+            if(file) importAllData(file);
+            e.target.value = "";
+          }}
+        />
       </div>
     </div>
   );
@@ -5810,13 +5968,14 @@ function App(){
 }
 
 /* =========================================================
-   STARTUP — hydrate from Firebase first so this device sees
-   the latest saved progress, then mount the app. No login.
+   STARTUP — mount instantly from whatever's in localStorage,
+   then hydrate from Firebase in the background so other-device
+   progress still shows up, without blocking first paint.
    ========================================================= */
-(async function start(){
-  await loadFromCloud();
-  ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-})();
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+loadFromCloud().then(cloudSynced => {
+  if(cloudSynced) window.dispatchEvent(new Event("gs4-cloud-synced"));
+});
 </script>
 </body>
 </html>
