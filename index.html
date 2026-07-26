@@ -896,6 +896,49 @@
   }
   .order-handle:active{cursor:grabbing;background:var(--q3-soft);border-color:var(--night);}
   .order-item.dragging .order-handle{cursor:grabbing;}
+
+  /* ---------- LABEL THE PARTS ---------- */
+  .label-image-wrap{position:relative;display:inline-block;max-width:100%;margin-bottom:14px;border-radius:var(--radius-sm);overflow:hidden;border:2.5px solid var(--line);}
+  .label-image{display:block;max-width:100%;width:100%;height:auto;}
+  .label-pin{
+    position:absolute;transform:translate(-50%,-50%);
+    display:flex;align-items:center;
+    background:var(--card);border:2.5px solid var(--night);border-radius:999px;
+    padding:4px;min-width:26px;height:26px;
+    font-size:12px;font-weight:800;color:var(--night);cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,0.25);
+    transition:transform .12s ease, border-color .12s ease, background .12s ease;
+  }
+  @media (hover:hover){ .label-pin:not(:disabled):hover{transform:translate(-50%,-50%) scale(1.08);} }
+  .label-pin-num{
+    display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;
+    background:var(--night);color:#fff;font-size:10px;font-weight:800;flex:none;
+  }
+  .label-pin-text{padding:0 6px;white-space:nowrap;}
+  .label-pin.filled{background:var(--q3-soft);}
+  .label-pin.correct{border-color:var(--good);background:var(--q2-soft);color:#0A8F68;}
+  .label-pin.correct .label-pin-num{background:var(--good);}
+  .label-pin.incorrect{border-color:var(--bad);background:#FDE3E6;color:#C43D4B;}
+  .label-pin.incorrect .label-pin-num{background:var(--bad);}
+  .label-pin:disabled{cursor:default;}
+  .label-wordbank{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
+  .label-editor-wrap{position:relative;display:inline-block;max-width:100%;margin-bottom:12px;border-radius:var(--radius-sm);overflow:hidden;border:2.5px dashed var(--line);cursor:crosshair;}
+  .label-pin-edit{position:absolute;transform:translate(-50%,-50%);pointer-events:none;}
+
+  /* ---------- NUMBER PATTERN ---------- */
+  .pattern-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:6px;}
+  .pattern-chip{
+    background:var(--paper);border:2.5px solid var(--line);border-radius:var(--radius-sm);
+    padding:12px 16px;font-family:'Fredoka';font-weight:700;font-size:17px;color:var(--ink);min-width:44px;text-align:center;
+  }
+  .pattern-blank{
+    width:64px;border:2.5px solid var(--night);border-radius:var(--radius-sm);
+    padding:12px 8px;font-family:'Fredoka';font-weight:700;font-size:17px;color:var(--ink);text-align:center;
+    background:var(--q3-soft);
+  }
+  .pattern-blank:focus{outline:none;border-color:var(--night);}
+  .pattern-blank.correct{border-color:var(--good);background:var(--q2-soft);color:#0A8F68;}
+  .pattern-blank.incorrect{border-color:var(--bad);background:#FDE3E6;color:#C43D4B;}
 </style>
 </head>
 <body>
@@ -3524,6 +3567,16 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
   const [orderDragPos, setOrderDragPos] = useState(null); // position currently being dragged (for styling)
   const orderDragPosRef = useRef(null); // position currently being dragged (for logic, avoids stale closures)
 
+  // Label the Parts (tap a word, then tap the pin it names)
+  const [labelWordOrder, setLabelWordOrder] = useState([]); // shuffled indices into q.points
+  const [labelAssign, setLabelAssign] = useState({}); // pointIdx -> position in labelWordOrder
+  const [labelActiveWord, setLabelActiveWord] = useState(null); // position in labelWordOrder currently selected
+  const [labelChecked, setLabelChecked] = useState(false);
+
+  // Number Pattern (type the missing numbers)
+  const [patternValues, setPatternValues] = useState({}); // itemIdx -> typed string
+  const [patternChecked, setPatternChecked] = useState(false);
+
   const q = questions[idx];
   const record = answers[idx]; // set once this question has already been answered — lets the Back button show a read-only review of it
   const isLast = idx === questions.length - 1;
@@ -3532,6 +3585,8 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
   const isMatch = qType === "match";
   const isDragDrop = qType === "dragdrop";
   const isOrder = qType === "order";
+  const isLabel = qType === "label";
+  const isPattern = qType === "pattern";
   const acceptable = isFill ? String(q.answer||"").split("|").map(a=>a.trim()).filter(Boolean) : [];
   const fillIsCorrect = isFill && matchesFillAnswer(fillText, acceptable);
 
@@ -3564,6 +3619,14 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
     } else if(isOrder){
       setOrderList(shuffledIndices((q.items||[]).length));
       setOrderChecked(false);
+    } else if(isLabel){
+      setLabelWordOrder(shuffledIndices((q.points||[]).length));
+      setLabelAssign({});
+      setLabelActiveWord(null);
+      setLabelChecked(false);
+    } else if(isPattern){
+      setPatternValues({});
+      setPatternChecked(false);
     }
   }, [idx]);
 
@@ -3575,10 +3638,19 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
 
   const orderIsCorrect = isOrder && orderChecked && arraysEqual(orderList, (q.items||[]).map((_,i)=>i));
 
+  const labelAllAssigned = isLabel && (q.points||[]).length>0 && Object.keys(labelAssign).length === (q.points||[]).length;
+  const labelIsCorrect = isLabel && labelChecked && (q.points||[]).every((p,pi)=> labelWordOrder[labelAssign[pi]] === pi);
+
+  const patternBlankIdxs = isPattern ? (q.items||[]).map((it,ii)=> it.kind==="blank" ? ii : null).filter(x=>x!==null) : [];
+  const patternAllFilled = isPattern && patternBlankIdxs.length>0 && patternBlankIdxs.every(ii => String(patternValues[ii]||"").trim() !== "");
+  const patternIsCorrect = isPattern && patternChecked && patternBlankIdxs.every(ii => matchesFillAnswer(patternValues[ii], String((q.items[ii]||{}).answer||"").split("|").map(a=>a.trim())));
+
   const answered = isFill ? fillChecked
     : isMatch ? matchChecked
     : isDragDrop ? ddChecked
     : isOrder ? orderChecked
+    : isLabel ? labelChecked
+    : isPattern ? patternChecked
     : selected !== null;
 
   function handleSelect(optIdx){
@@ -3771,6 +3843,46 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
     if(arraysEqual(orderList, correctOrder)) Sound.correct(); else Sound.incorrect();
   }
 
+  // ---- Label the Parts handlers (tap a word, then tap the pin it names) ----
+  function handleLabelWordClick(wordPos){
+    if(labelChecked) return;
+    setLabelActiveWord(prev => prev===wordPos ? null : wordPos);
+  }
+  function handleLabelPinClick(pi){
+    if(labelChecked) return;
+    if(labelActiveWord === null){
+      if(labelAssign[pi] !== undefined){
+        setLabelAssign(prev=>{ const next = {...prev}; delete next[pi]; return next; });
+      }
+      return;
+    }
+    setLabelAssign(prev=>{
+      const next = {...prev};
+      Object.keys(next).forEach(k=>{ if(next[k]===labelActiveWord) delete next[k]; });
+      next[pi] = labelActiveWord;
+      return next;
+    });
+    setLabelActiveWord(null);
+  }
+  function handleLabelCheck(){
+    if(labelChecked || !labelAllAssigned) return;
+    setLabelChecked(true);
+    const allCorrect = (q.points||[]).every((p,pi)=> labelWordOrder[labelAssign[pi]] === pi);
+    if(allCorrect) Sound.correct(); else Sound.incorrect();
+  }
+
+  // ---- Number Pattern handlers ----
+  function handlePatternChange(ii, value){
+    if(patternChecked) return;
+    setPatternValues(prev=>({...prev, [ii]: value}));
+  }
+  function handlePatternCheck(){
+    if(patternChecked || !patternAllFilled) return;
+    setPatternChecked(true);
+    const allCorrect = patternBlankIdxs.every(ii => matchesFillAnswer(patternValues[ii], String((q.items[ii]||{}).answer||"").split("|").map(a=>a.trim())));
+    if(allCorrect) Sound.correct(); else Sound.incorrect();
+  }
+
   function handleNext(){
     Sound.tap();
     let record;
@@ -3783,6 +3895,11 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
       record = {type:"dragdrop", question:q.q, items:q.items, categories:q.categories, chosen:{...ddAssign}, isCorrect:ddIsCorrect, tag:q.tag || null};
     } else if(isOrder){
       record = {type:"order", question:q.q, items:q.items, chosen:orderList.map(i=>q.items[i]), isCorrect:orderIsCorrect, tag:q.tag || null};
+    } else if(isLabel){
+      const chosen = (q.points||[]).map((p,pi)=> labelAssign[pi]!==undefined ? q.points[labelWordOrder[labelAssign[pi]]].label : null);
+      record = {type:"label", question:q.q, image:q.image, points:q.points, chosen, isCorrect:labelIsCorrect, tag:q.tag || null};
+    } else if(isPattern){
+      record = {type:"pattern", question:q.q, items:q.items, chosen:{...patternValues}, isCorrect:patternIsCorrect, tag:q.tag || null};
     } else {
       record = {type:qType, question:q.q, options:q.options, correct:q.correct, chosen:selected, isCorrect: selected===q.correct, tag:q.tag || null};
     }
@@ -3846,7 +3963,7 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
           <AnswerReviewBody a={record} />
         ) : (
         <React.Fragment>
-        {!isFill && !isMatch && !isDragDrop && !isOrder && q.options.map((opt, i) => {
+        {!isFill && !isMatch && !isDragDrop && !isOrder && !isLabel && !isPattern && q.options.map((opt, i) => {
           let cls = "quiz-opt";
           if(selected !== null){
             if(i === q.correct) cls += " correct";
@@ -4047,11 +4164,90 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
           </React.Fragment>
         )}
 
+        {isLabel && (
+          <React.Fragment>
+            <p className="fill-hint">Tap a word below, then tap the pin it names.</p>
+            <div className="label-image-wrap">
+              <img src={q.image} alt="" className="label-image" />
+              {(q.points||[]).map((p,pi)=>{
+                const wp = labelAssign[pi];
+                const hasWord = wp !== undefined;
+                const isRightAnswer = labelChecked && hasWord && labelWordOrder[wp] === pi;
+                let cls = "label-pin";
+                if(hasWord) cls += " filled";
+                if(labelChecked) cls += isRightAnswer ? " correct" : " incorrect";
+                return (
+                  <button key={pi} type="button" className={cls} style={{left:p.x+"%", top:p.y+"%"}} disabled={labelChecked} onClick={()=>handleLabelPinClick(pi)}>
+                    <span className="label-pin-num">{pi+1}</span>
+                    {hasWord && <span className="label-pin-text">{q.points[labelWordOrder[wp]].label}</span>}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="label-wordbank">
+              {labelWordOrder.map((origIdx, wp)=>{
+                const isUsed = Object.values(labelAssign).includes(wp);
+                if(isUsed) return null;
+                return (
+                  <button key={wp} type="button" className={"dd-chip" + (labelActiveWord===wp ? " active" : "")} disabled={labelChecked} onClick={()=>handleLabelWordClick(wp)}>
+                    {q.points[origIdx].label}
+                  </button>
+                );
+              })}
+              {labelAllAssigned && !labelChecked && (
+                <div className="fill-hint" style={{margin:0}}>All parts labeled — check your answers below.</div>
+              )}
+            </div>
+            {!labelChecked && (
+              <div className="quiz-footer" style={{justifyContent:"flex-start", marginTop:6, marginBottom:10}}>
+                <button className="btn btn-ghost btn-sm" onClick={handleLabelCheck} disabled={!labelAllAssigned}>✓ Check Labels</button>
+              </div>
+            )}
+          </React.Fragment>
+        )}
+
+        {isPattern && (
+          <React.Fragment>
+            <p className="fill-hint">Type the missing numbers in the pattern.</p>
+            <div className="pattern-row">
+              {(q.items||[]).map((it,ii)=>{
+                if(it.kind !== "blank"){
+                  return <div key={ii} className="pattern-chip">{it.value}</div>;
+                }
+                const val = patternValues[ii] !== undefined ? patternValues[ii] : "";
+                const acceptableBlank = String(it.answer||"").split("|").map(a=>a.trim());
+                const isRight = patternChecked && matchesFillAnswer(val, acceptableBlank);
+                let cls = "pattern-blank";
+                if(patternChecked) cls += isRight ? " correct" : " incorrect";
+                return (
+                  <input
+                    key={ii}
+                    type="text"
+                    inputMode="numeric"
+                    className={cls}
+                    value={val}
+                    disabled={patternChecked}
+                    placeholder="?"
+                    onChange={e=>handlePatternChange(ii, e.target.value)}
+                  />
+                );
+              })}
+            </div>
+            {!patternChecked && (
+              <div className="quiz-footer" style={{justifyContent:"flex-start", marginTop:6, marginBottom:10}}>
+                <button className="btn btn-ghost btn-sm" onClick={handlePatternCheck} disabled={!patternAllFilled}>✓ Check Answers</button>
+              </div>
+            )}
+          </React.Fragment>
+        )}
+
         {answered && (
-          <div className={"feedback-box " + ((isFill ? fillIsCorrect : isMatch ? matchIsCorrect : isDragDrop ? ddIsCorrect : isOrder ? orderIsCorrect : selected===q.correct) ? "good":"bad")}>
-            {(isFill ? fillIsCorrect : isMatch ? matchIsCorrect : isDragDrop ? ddIsCorrect : isOrder ? orderIsCorrect : selected===q.correct) ? "✅ Correct! " : "❌ Not quite. "}
+          <div className={"feedback-box " + ((isFill ? fillIsCorrect : isMatch ? matchIsCorrect : isDragDrop ? ddIsCorrect : isOrder ? orderIsCorrect : isLabel ? labelIsCorrect : isPattern ? patternIsCorrect : selected===q.correct) ? "good":"bad")}>
+            {(isFill ? fillIsCorrect : isMatch ? matchIsCorrect : isDragDrop ? ddIsCorrect : isOrder ? orderIsCorrect : isLabel ? labelIsCorrect : isPattern ? patternIsCorrect : selected===q.correct) ? "✅ Correct! " : "❌ Not quite. "}
             {isFill && !fillIsCorrect && ("Correct answer: " + acceptable[0] + ". ")}
             {isOrder && !orderIsCorrect && ("Correct order: " + q.items.join(" → ") + ". ")}
+            {isLabel && !labelIsCorrect && ("Correct labels: " + (q.points||[]).map(p=>p.label).join(", ") + ". ")}
+            {isPattern && !patternIsCorrect && ("Correct numbers: " + (q.items||[]).map(it=> it.kind==="blank" ? String(it.answer||"").split("|")[0].trim() : it.value).join(", ") + ". ")}
             {q.explain}
           </div>
         )}
@@ -4126,6 +4322,24 @@ function AnswerReviewBody({a}){
         Your order: {a.chosen.join(" → ")} {a.isCorrect ? "✓" : "✗"}
       </div>
       {!a.isCorrect && <div className="ra right">Correct order: {a.items.join(" → ")}</div>}
+    </React.Fragment>
+  ) : a.type === "label" ? (
+    <React.Fragment>
+      <div className={"ra " + (a.isCorrect ? "right":"wrong")}>
+        {a.isCorrect ? "All parts labeled correctly ✓" : "Some labels were wrong ✗"}
+      </div>
+      {!a.isCorrect && a.points.map((p,pi)=>(<div key={pi} className="ra right">{pi+1}. {p.label}</div>))}
+    </React.Fragment>
+  ) : a.type === "pattern" ? (
+    <React.Fragment>
+      <div className={"ra " + (a.isCorrect ? "right":"wrong")}>
+        {a.isCorrect ? "All numbers correct ✓" : "Some numbers were wrong ✗"}
+      </div>
+      {!a.isCorrect && (
+        <div className="ra right">
+          Correct pattern: {a.items.map(it=> it.kind==="blank" ? String(it.answer||"").split("|")[0].trim() : it.value).join(", ")}
+        </div>
+      )}
     </React.Fragment>
   ) : (
     <React.Fragment>
@@ -4426,7 +4640,9 @@ const QUESTION_TYPES = [
   {id:"fill", label:"✍️ Fill in the Blank"},
   {id:"match", label:"🔗 Matching"},
   {id:"dragdrop", label:"🧩 Drag and Drop"},
-  {id:"order", label:"📋 Ordering / Sequencing"}
+  {id:"order", label:"📋 Ordering / Sequencing"},
+  {id:"label", label:"🖼️ Label the Parts"},
+  {id:"pattern", label:"🔢 Number Pattern"}
 ];
 
 // ---- Quiz-start question-type filter (pure MCQ / pure True-False / pure Fill-in / all types) ----
@@ -4438,7 +4654,9 @@ const QUIZ_TYPE_OPTIONS = [
   {id:"fill", label:"✍️ Fill in the Blank"},
   {id:"match", label:"🔗 Matching"},
   {id:"dragdrop", label:"🧩 Drag and Drop"},
-  {id:"order", label:"📋 Ordering / Sequencing"}
+  {id:"order", label:"📋 Ordering / Sequencing"},
+  {id:"label", label:"🖼️ Label the Parts"},
+  {id:"pattern", label:"🔢 Number Pattern"}
 ];
 function filterByType(questions, selectedType){
   if(!selectedType || selectedType === TYPE_ALL) return questions;
@@ -4489,6 +4707,8 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
     if(t === "match" && (!draft.pairs || draft.pairs.some(p=>!String(p.left).trim() || !String(p.right).trim()))){ alert("All match pairs need both sides filled in."); return; }
     if(t === "dragdrop" && (!draft.items || draft.items.some(it=>!String(it.label).trim()) || !draft.categories || draft.categories.some(c=>!String(c).trim()))){ alert("All items and categories need text."); return; }
     if(t === "order" && (!draft.items || draft.items.some(it=>!String(it).trim()))){ alert("All steps need text."); return; }
+    if(t === "label" && (!String(draft.image||"").trim() || !draft.points || draft.points.length < 1 || draft.points.some(p=>!String(p.label).trim()))){ alert("Add an image URL, and a label for every pin (click the picture to add a pin)."); return; }
+    if(t === "pattern" && (!draft.items || draft.items.filter(it=>it.kind==="blank").length < 1 || draft.items.some(it=> it.kind==="blank" ? !String(it.answer||"").trim() : !String(it.value||"").trim()))){ alert("Add at least one blank, and fill in every number and blank answer."); return; }
     const next = questions.slice();
     next[editingIndex] = draft;
     onChange(next);
@@ -4595,6 +4815,56 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
     });
   }
 
+  // ---- Label the Parts (image + pins) ----
+  function updateLabelImage(value){
+    setDraft(prev=>({...prev, image:value}));
+  }
+  function updateLabelPoint(pi, value){
+    setDraft(prev=>{
+      const points = prev.points.map((p,i)=> i===pi ? {...p, label:value} : p);
+      return {...prev, points};
+    });
+  }
+  function removeLabelPoint(pi){
+    setDraft(prev=>{
+      const points = prev.points.slice();
+      points.splice(pi,1);
+      return {...prev, points};
+    });
+  }
+  function handleLabelImageClick(e){
+    const rect = e.currentTarget.getBoundingClientRect();
+    if(!rect.width || !rect.height) return;
+    const xPct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const yPct = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    setDraft(prev=>({...prev, points:[...(prev.points||[]), {x:Math.round(xPct*10)/10, y:Math.round(yPct*10)/10, label:""}]}));
+  }
+
+  // ---- Number Pattern (sequence of numbers + blanks) ----
+  function updatePatternItem(ii, field, value){
+    setDraft(prev=>{
+      const items = prev.items.map((it,i)=> i===ii ? {...it, [field]:value} : it);
+      return {...prev, items};
+    });
+  }
+  function togglePatternKind(ii){
+    setDraft(prev=>{
+      const items = prev.items.map((it,i)=> i===ii ? (it.kind==="blank" ? {kind:"num", value:""} : {kind:"blank", answer:""}) : it);
+      return {...prev, items};
+    });
+  }
+  function addPatternItem(kind){
+    setDraft(prev=>({...prev, items:[...(prev.items||[]), kind==="blank" ? {kind:"blank", answer:""} : {kind:"num", value:""}]}));
+  }
+  function removePatternItem(ii){
+    setDraft(prev=>{
+      if((prev.items||[]).length <= 1) return prev;
+      const items = prev.items.slice();
+      items.splice(ii,1);
+      return {...prev, items};
+    });
+  }
+
   const topics = bankTopics(questions);
   const noTopicCount = questions.filter(q=>!normTopic(q.topic)).length;
   const allSelected = questions.length > 0 && selected.size === questions.length;
@@ -4677,7 +4947,7 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
       parsed = JSON.parse(bulkText);
       if(!Array.isArray(parsed)) throw new Error("not an array");
     }catch(e){
-      alert("Couldn't read that as a JSON list of questions. Expected format:\n[{\"q\":\"...\", \"options\":[\"A\",\"B\",\"C\",\"D\"], \"correct\":0, \"explain\":\"...\"}]\nAlso supports tf, fill, match, dragdrop, and order types — see the format notes below the bank.");
+      alert("Couldn't read that as a JSON list of questions. Expected format:\n[{\"q\":\"...\", \"options\":[\"A\",\"B\",\"C\",\"D\"], \"correct\":0, \"explain\":\"...\"}]\nAlso supports tf, fill, match, dragdrop, order, label, and pattern types — see the format notes below the bank.");
       return;
     }
     const fallbackTopic = normTopic(bulkTopic);
@@ -4692,6 +4962,11 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
           && p.items.every(it=>it && it.label && p.categories.includes(it.category));
       }
       if(t === "order" || t === "sequence" || t === "sequencing" || t === "ordering") return Array.isArray(p.items) && p.items.length >= 2;
+      if(t === "label" || t === "labelparts" || t === "diagram") return !!String(p.image||"").trim();
+      if(t === "pattern" || t === "numberpattern"){
+        if(Array.isArray(p.items) && p.items.length >= 1) return p.items.some(it=>it && typeof it.answer !== "undefined");
+        return Array.isArray(p.sequence) && p.sequence.length >= 1;
+      }
       return Array.isArray(p.options) && p.options.length >= 2;
     }).map(p=>{
       const t = String(p.type||"mcq").toLowerCase();
@@ -4715,6 +4990,29 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
       if(t === "order" || t === "sequence" || t === "sequencing" || t === "ordering"){
         return {type:"order", q:String(p.q), items:p.items.map(it=>String(it)), explain: p.explain ? String(p.explain) : "", topic};
       }
+      if(t === "label" || t === "labelparts" || t === "diagram"){
+        const points = Array.isArray(p.points) ? p.points.map(pt=>({x:Number(pt.x)||0, y:Number(pt.y)||0, label:String(pt.label||"")})) : [];
+        return {type:"label", q:String(p.q), image:String(p.image), points, explain: p.explain ? String(p.explain) : "", topic};
+      }
+      if(t === "pattern" || t === "numberpattern"){
+        let items;
+        if(Array.isArray(p.items) && p.items.length){
+          items = p.items.map(it=> (it && typeof it.answer !== "undefined") ? {kind:"blank", answer:String(it.answer)} : {kind:"num", value:String(it && typeof it.value !== "undefined" ? it.value : it)});
+        } else {
+          const blanks = Array.isArray(p.blanks) ? p.blanks.slice() : [];
+          let bi = 0;
+          items = (p.sequence||[]).map(v=>{
+            const isBlank = v === null || v === "" || (typeof v === "string" && /^(_+|blank)$/i.test(v.trim()));
+            if(isBlank){
+              const ans = blanks[bi] !== undefined ? String(blanks[bi]) : "";
+              bi++;
+              return {kind:"blank", answer:ans};
+            }
+            return {kind:"num", value:String(v)};
+          });
+        }
+        return {type:"pattern", q:String(p.q), items, explain: p.explain ? String(p.explain) : "", topic};
+      }
       return {type:"mcq", q:String(p.q), options:p.options.map(o=>String(o)), correct: Number.isInteger(p.correct)?p.correct:0, explain: p.explain ? String(p.explain) : "", topic};
     });
     if(!cleaned.length){ alert("No valid questions found in that JSON."); return; }
@@ -4728,7 +5026,7 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
   return (
     <div className="journal-page">
       <h3>Question Bank {questions.length ? "(" + questions.length + ")" : ""}</h3>
-      {questions.length === 0 && <p className="sub">No questions yet. Paste a JSON list below to add multiple choice, true/false, fill-in-the-blank, matching, drag-and-drop, or ordering questions.</p>}
+      {questions.length === 0 && <p className="sub">No questions yet. Paste a JSON list below to add multiple choice, true/false, fill-in-the-blank, matching, drag-and-drop, ordering, label-the-parts, or number-pattern questions.</p>}
 
       {questions.length > 0 && (
         <div className="bank-toolbar">
@@ -4780,6 +5078,8 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
           : t === "match" ? "🔗 Matching"
           : t === "dragdrop" ? "🧩 Drag and Drop"
           : t === "order" ? "📋 Ordering / Sequencing"
+          : t === "label" ? "🖼️ Label the Parts"
+          : t === "pattern" ? "🔢 Number Pattern"
           : "🔤 Multiple Choice";
         const isEditing = editingIndex === i;
 
@@ -4904,6 +5204,68 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
                   </React.Fragment>
                 )}
 
+                {dt === "label" && (
+                  <React.Fragment>
+                    <label className="field-label">Image URL</label>
+                    <input className="text-input" value={draft.image||""} onChange={e=>updateLabelImage(e.target.value)} placeholder="https://..." />
+                    {String(draft.image||"").trim() ? (
+                      <React.Fragment>
+                        <p className="fill-hint">Click anywhere on the picture to drop a numbered pin, then type its label below.</p>
+                        <div className="label-editor-wrap" onClick={handleLabelImageClick}>
+                          <img src={draft.image} alt="" className="label-image" />
+                          {(draft.points||[]).map((p,pi)=>(
+                            <div key={pi} className="label-pin label-pin-edit" style={{left:p.x+"%", top:p.y+"%"}}>
+                              <span className="label-pin-num">{pi+1}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </React.Fragment>
+                    ) : (
+                      <p className="fill-hint">Paste an image URL above, then click the picture to drop pins.</p>
+                    )}
+                    <label className="field-label">Pin labels</label>
+                    <div className="bank-edit-opts">
+                      {(draft.points||[]).map((p,pi)=>(
+                        <div key={pi} className="bank-edit-opt-row">
+                          <span className="bank-edit-step-num">{pi+1}.</span>
+                          <input className="text-input" value={p.label} onChange={e=>updateLabelPoint(pi, e.target.value)} placeholder={"Label for pin " + (pi+1)} />
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={()=>removeLabelPoint(pi)}>✕</button>
+                        </div>
+                      ))}
+                      {(!draft.points || draft.points.length===0) && (
+                        <p className="fill-hint" style={{margin:0}}>No pins yet — click the picture above to add one.</p>
+                      )}
+                    </div>
+                  </React.Fragment>
+                )}
+
+                {dt === "pattern" && (
+                  <React.Fragment>
+                    <label className="field-label">Pattern (toggle each spot between a number and a blank)</label>
+                    <div className="bank-edit-opts">
+                      {(draft.items||[]).map((it,ii)=>(
+                        <div key={ii} className="bank-edit-opt-row">
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={()=>togglePatternKind(ii)} title="Switch between number and blank">
+                            {it.kind==="blank" ? "🔲 Blank" : "🔢 Number"}
+                          </button>
+                          {it.kind==="blank" ? (
+                            <input className="text-input" value={it.answer||""} onChange={e=>updatePatternItem(ii, "answer", e.target.value)} placeholder="Correct answer" />
+                          ) : (
+                            <input className="text-input" value={it.value||""} onChange={e=>updatePatternItem(ii, "value", e.target.value)} placeholder="Number shown" />
+                          )}
+                          {(draft.items||[]).length > 1 && (
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={()=>removePatternItem(ii)}>✕</button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{display:"flex", gap:8}}>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={()=>addPatternItem("num")}>➕ Add Number</button>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={()=>addPatternItem("blank")}>➕ Add Blank</button>
+                    </div>
+                  </React.Fragment>
+                )}
+
                 <label className="field-label">Explanation (optional)</label>
                 <textarea className="text-area" rows={2} value={draft.explain||""} onChange={e=>updateDraft("explain", e.target.value)} />
 
@@ -4951,6 +5313,20 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
                   <span className="bank-opt bank-opt-correct">{q.items.join(" → ")}</span>
                 </div>
               )}
+              {t === "label" && (
+                <div className="bank-item-opts">
+                  {(q.points||[]).map((p,pi)=>(
+                    <span key={pi} className="bank-opt bank-opt-correct">{pi+1}. {p.label}</span>
+                  ))}
+                </div>
+              )}
+              {t === "pattern" && (
+                <div className="bank-item-opts">
+                  <span className="bank-opt bank-opt-correct">
+                    {(q.items||[]).map(it=> it.kind==="blank" ? "[" + String(it.answer||"").split("|")[0].trim() + "]" : it.value).join(", ")}
+                  </span>
+                </div>
+              )}
               {(t === "mcq" || t === "tf") && (
                 <div className="bank-item-opts">
                   {q.options.map((o,oi)=>(
@@ -4975,6 +5351,8 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
         <p className="sub">🔗 Matching: {"[{\"type\":\"match\",\"q\":\"Match the scientist to their invention\",\"pairs\":[{\"left\":\"Edison\",\"right\":\"Light bulb\"},{\"left\":\"Bell\",\"right\":\"Telephone\"}],\"explain\":\"...\",\"topic\":\"Inventors\"}]"}</p>
         <p className="sub">🧩 Drag and Drop: {"[{\"type\":\"dragdrop\",\"q\":\"Sort into Solid, Liquid, Gas\",\"categories\":[\"Solid\",\"Liquid\",\"Gas\"],\"items\":[{\"label\":\"Ice\",\"category\":\"Solid\"},{\"label\":\"Water\",\"category\":\"Liquid\"},{\"label\":\"Steam\",\"category\":\"Gas\"}],\"explain\":\"...\",\"topic\":\"Matter\"}]"} (each item's "category" must exactly match one of the "categories")</p>
         <p className="sub">📋 Ordering / Sequencing: {"[{\"type\":\"order\",\"q\":\"Arrange the butterfly life cycle\",\"items\":[\"Egg\",\"Larva\",\"Pupa\",\"Adult\"],\"explain\":\"...\",\"topic\":\"Life Cycles\"}]"} (list "items" in the correct order — they'll be shuffled for the student)</p>
+        <p className="sub">🖼️ Label the Parts: {"[{\"type\":\"label\",\"q\":\"Label the parts of the plant cell\",\"image\":\"https://example.com/cell.png\",\"points\":[{\"x\":20,\"y\":30,\"label\":\"Nucleus\"},{\"x\":50,\"y\":60,\"label\":\"Cell wall\"}],\"explain\":\"...\",\"topic\":\"Cells\"}]"} ("x"/"y" are % position on the image, 0–100. You can also paste just "image" and "q" with no "points", then click ✏️ Edit to click on the picture and drop pins.)</p>
+        <p className="sub">🔢 Number Pattern: {"[{\"type\":\"pattern\",\"q\":\"Fill in the missing numbers\",\"sequence\":[2,4,\"_\",8,\"_\",\"_\",12],\"blanks\":[6,10,11],\"explain\":\"...\",\"topic\":\"Skip Counting\"}]"} (put "_" in "sequence" for each blank, in order, then give each blank's answer in "blanks")</p>
         <p className="sub">"topic" is optional on all types — leave it out (or empty) for questions with no topic.</p>
         <label className="field-label">Topic for this batch (optional)</label>
         <input className="text-input" list="topic-suggestions" value={bulkTopic} onChange={e=>setBulkTopic(e.target.value)} placeholder="e.g. Comparing — applied to any question below with no topic of its own" />
