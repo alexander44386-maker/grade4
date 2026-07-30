@@ -753,7 +753,7 @@
   }
   .text-input, .text-area{
     width:100%;border:2.5px solid var(--line);border-radius:var(--radius-sm);padding:11px 14px;
-    font-family:'Nunito',sans-serif;font-size:15px;background:var(--card);color:var(--ink);
+    font-family:'Nunito',sans-serif;font-size:16px;background:var(--card);color:var(--ink);
   }
   .text-area{resize:vertical;line-height:1.55;}
   .text-input:focus, .text-area:focus{outline:none;border-color:var(--night);}
@@ -807,6 +807,26 @@
   .bank-topic-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:8px 0;border-top:1.5px dashed var(--line);}
   .bank-topic-row:first-of-type{border-top:none;}
   .bank-topic-name{font-weight:800;font-size:14px;}
+  .json-format-row{margin-bottom:14px;}
+  .json-format-label{font-weight:800;font-size:13.5px;margin-bottom:4px;}
+  .json-format-code-wrap{position:relative;}
+  .json-format-code{
+    background:var(--paper-dark);border:2px solid var(--line);border-radius:var(--radius-sm);
+    padding:10px 12px;font-family:'Courier New',monospace;font-size:12px;line-height:1.55;
+    white-space:pre-wrap;word-break:break-word;margin:0;color:var(--ink);max-width:100%;
+  }
+  .json-copy-btn{margin-top:6px;width:100%;}
+  @media(min-width:640px){
+    .json-copy-btn{position:absolute;top:8px;right:8px;margin-top:0;width:auto;}
+    .json-format-code{padding-right:96px;}
+  }
+  @media(max-width:480px){
+    .bank-item{padding:11px 12px;gap:9px;}
+    .bank-item-actions{width:100%;}
+    .bank-item-actions .btn{flex:1;}
+    .bank-edit-opt-row{flex-wrap:wrap;row-gap:4px;}
+    .bank-edit-opt-row .text-input{flex:1 1 130px;min-width:0;}
+  }
   .fill-hint{font-size:12px;color:var(--ink-soft);margin:-2px 0 10px;}
   .quiz-fill-input{
     width:100%;border:2.5px solid var(--line);border-radius:var(--radius-sm);padding:13px 16px;
@@ -829,7 +849,7 @@
   }
   @media (hover:hover){ .match-item:hover:not(:disabled){border-color:var(--night);} }
   .match-item.active{border-color:var(--night);background:var(--q3-soft);}
-  .match-item.linked{border-color:var(--night);}
+  .match-item.linked{border-color:var(--night);padding-right:38px;}
   .match-item.correct{background:var(--q2-soft);border-color:var(--good);color:#0A8F68;}
   .match-item.incorrect{background:#FDE3E6;border-color:var(--bad);color:#C43D4B;}
   .match-item:disabled{cursor:default;}
@@ -837,6 +857,12 @@
     display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;
     background:var(--night);color:#fff;font-size:10.5px;font-weight:800;margin-right:6px;flex:none;
   }
+  .match-undo{
+    position:absolute;top:50%;right:16px;transform:translateY(-50%);
+    display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;
+    background:var(--paper-dark);color:var(--bad);font-size:11px;font-weight:800;cursor:pointer;z-index:4;
+  }
+  @media (hover:hover){ .match-undo:hover{background:#FDE3E6;} }
   /* the little connector dot on the edge of each word/card */
   .match-dot{
     position:absolute;top:50%;width:15px;height:15px;border-radius:50%;
@@ -859,8 +885,10 @@
   .dd-chip{
     background:var(--paper);border:2.5px solid var(--line);border-radius:999px;padding:9px 15px;
     font-size:13.5px;font-weight:700;color:var(--ink);cursor:grab;transition:transform .1s ease, border-color .12s ease;
+    touch-action:none;user-select:none;-webkit-user-select:none;
   }
   .dd-chip.active{border-color:var(--night);background:var(--q3-soft);}
+  .dd-chip.dragging{opacity:.35;cursor:grabbing;}
   .dd-categories{display:flex;flex-wrap:wrap;gap:10px;}
   .dd-category{
     flex:1;min-width:120px;border:2.5px dashed var(--line);border-radius:var(--radius-sm);padding:10px;
@@ -872,6 +900,12 @@
   .dd-chip-placed{display:inline-block;margin:0 6px 6px 0;cursor:pointer;}
   .dd-chip-placed.correct{background:var(--q2-soft);border-color:var(--good);color:#0A8F68;}
   .dd-chip-placed.incorrect{background:#FDE3E6;border-color:var(--bad);color:#C43D4B;}
+  .dd-ghost{
+    position:fixed;top:0;left:0;pointer-events:none;z-index:999;
+    transform:translate(-50%,-130%);
+    background:var(--night);color:#fff;font-weight:800;font-size:13.5px;font-family:'Nunito',sans-serif;
+    padding:9px 15px;border-radius:999px;box-shadow:0 8px 18px rgba(0,0,0,.28);white-space:nowrap;
+  }
 
   /* ---------- ORDERING ---------- */
   .order-list{display:flex;flex-direction:column;gap:8px;margin-bottom:6px;}
@@ -3560,6 +3594,8 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
   const [ddChecked, setDdChecked] = useState(false);
   const [dragOverCat, setDragOverCat] = useState(null);
   const [dragOverBank, setDragOverBank] = useState(false);
+  const [ddDragging, setDdDragging] = useState(null); // {ii, x, y, label} while a chip is being pointer-dragged
+  const ddDragRef = useRef(null); // {ii, startX, startY, moved} for the in-progress pointer drag
 
   // Ordering / sequencing
   const [orderList, setOrderList] = useState([]); // array of original indices, in current display order
@@ -3672,7 +3708,21 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
   }
   function handleMatchLeftClick(li){
     if(matchChecked) return;
-    setMatchActiveLeft(li);
+    setMatchActiveLeft(prev => prev===li ? null : li);
+  }
+  function unmatchLeft(li){
+    if(matchChecked) return;
+    setMatchPicks(prev=>{
+      const next = {...prev};
+      delete next[li];
+      return next;
+    });
+    setMatchActiveLeft(null);
+  }
+  function clearAllMatches(){
+    if(matchChecked) return;
+    setMatchPicks({});
+    setMatchActiveLeft(null);
   }
   function commitMatch(li, ri){
     if(matchChecked || li===null || li===undefined) return;
@@ -3687,7 +3737,11 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
   }
   function handleMatchRightClick(ri){
     if(matchChecked) return;
-    if(matchActiveLeft === null) return;
+    if(matchActiveLeft === null){
+      const linkedLeft = Object.keys(matchPicks).find(k=>matchPicks[k]===ri);
+      if(linkedLeft !== undefined) unmatchLeft(Number(linkedLeft));
+      return;
+    }
     commitMatch(matchActiveLeft, ri);
   }
   function handleMatchCheck(){
@@ -3775,24 +3829,56 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
     if(ddChecked || ddActiveItem===null) return;
     assignItem(ddActiveItem, cat);
   }
-  function handleDdDragStart(e, ii){
+  // Pointer-based dragging: works the same for touch, mouse, and stylus, and lets
+  // a placed answer be dragged straight to a different category or back to the word bank.
+  // A tap with no real movement still falls back to the tap-to-select flow above.
+  function handleDdPointerDown(e, ii){
     if(ddChecked) return;
-    e.dataTransfer.setData("text/plain", String(ii));
+    ddDragRef.current = {ii, startX:e.clientX, startY:e.clientY, moved:false};
+    document.addEventListener('pointermove', handleDdPointerMove, {passive:false});
+    document.addEventListener('pointerup', handleDdPointerUp, {passive:false});
+    document.addEventListener('pointercancel', handleDdPointerCancel, {passive:false});
   }
-  function handleDdDrop(e, cat){
+  function handleDdPointerMove(e){
+    const drag = ddDragRef.current;
+    if(!drag) return;
+    if(!drag.moved){
+      const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
+      if(Math.hypot(dx, dy) < 6) return;
+      drag.moved = true;
+      setDdActiveItem(null);
+    }
     e.preventDefault();
+    setDdDragging({ii:drag.ii, x:e.clientX, y:e.clientY, label:(q.items[drag.ii]||{}).label || ""});
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const catEl = el && el.closest && el.closest('.dd-category');
+    const bankEl = el && el.closest && el.closest('.dd-items');
+    setDragOverCat(catEl ? catEl.dataset.cat : null);
+    setDragOverBank(!!bankEl && !catEl);
+  }
+  function finishDdDrag(e, cancelled){
+    const drag = ddDragRef.current;
+    document.removeEventListener('pointermove', handleDdPointerMove);
+    document.removeEventListener('pointerup', handleDdPointerUp);
+    document.removeEventListener('pointercancel', handleDdPointerCancel);
+    ddDragRef.current = null;
+    setDdDragging(null);
     setDragOverCat(null);
-    if(ddChecked) return;
-    const ii = parseInt(e.dataTransfer.getData("text/plain"), 10);
-    if(!Number.isNaN(ii)) assignItem(ii, cat);
-  }
-  function handleDdBankDrop(e){
-    e.preventDefault();
     setDragOverBank(false);
-    if(ddChecked) return;
-    const ii = parseInt(e.dataTransfer.getData("text/plain"), 10);
-    if(!Number.isNaN(ii)) unassignItem(ii);
+    if(!drag || ddChecked) return;
+    if(!drag.moved){
+      handleDdItemClick(drag.ii); // plain tap — toggle tap-to-select instead
+      return;
+    }
+    if(cancelled) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const catEl = el && el.closest && el.closest('.dd-category');
+    const bankEl = el && el.closest && el.closest('.dd-items');
+    if(catEl && catEl.dataset.cat) assignItem(drag.ii, catEl.dataset.cat);
+    else if(bankEl) unassignItem(drag.ii);
   }
+  function handleDdPointerUp(e){ finishDdDrag(e, false); }
+  function handleDdPointerCancel(e){ finishDdDrag(e, true); }
   function handleDdCheck(){
     if(ddChecked || !ddAllAssigned) return;
     setDdChecked(true);
@@ -3998,7 +4084,7 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
 
         {isMatch && (
           <React.Fragment>
-            <p className="fill-hint">Drag a line from the dot beside each word to its match on the right — or tap one, then tap its match.</p>
+            <p className="fill-hint">Drag a line from the dot beside each word to its match on the right — or tap one, then tap its match. Tap the ✕ on a matched word to undo it.</p>
             <div className="match-wrap" ref={matchContainerRef}>
               <svg className="match-svg">
                 {Object.keys(matchLineCoords).map(liStr=>{
@@ -4027,6 +4113,13 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
                   return (
                     <button key={li} className={cls} disabled={matchChecked} onClick={()=>handleMatchLeftClick(li)}>
                       {p.left}
+                      {isPicked && !matchChecked && (
+                        <span
+                          className="match-undo"
+                          title="Undo this match"
+                          onClick={(e)=>{ e.stopPropagation(); unmatchLeft(li); }}
+                        >✕</span>
+                      )}
                       <span
                         className="match-dot match-dot-left"
                         ref={el=>{ matchLeftDotRefs.current[li] = el; }}
@@ -4059,8 +4152,11 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
               </div>
             </div>
             {!matchChecked && (
-              <div className="quiz-footer" style={{justifyContent:"flex-start", marginTop:6, marginBottom:10}}>
+              <div className="quiz-footer" style={{justifyContent:"flex-start", marginTop:6, marginBottom:10, gap:10}}>
                 <button className="btn btn-ghost btn-sm" onClick={handleMatchCheck} disabled={!matchAllPicked}>✓ Check Matches</button>
+                {Object.keys(matchPicks).length > 0 && (
+                  <button className="btn btn-ghost btn-sm" onClick={clearAllMatches}>↺ Clear All</button>
+                )}
               </div>
             )}
           </React.Fragment>
@@ -4068,12 +4164,9 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
 
         {isDragDrop && (
           <React.Fragment>
-            <p className="fill-hint">Drag each item into its category (or tap an item, then tap a category).</p>
+            <p className="fill-hint">Drag each item into its category — or back to the word bank to change your mind. (Or tap an item, then tap where it goes.)</p>
             <div
               className={"dd-items" + (dragOverBank ? " drag-over" : "")}
-              onDragOver={e=>{ e.preventDefault(); if(!ddChecked) setDragOverBank(true); }}
-              onDragLeave={()=>setDragOverBank(false)}
-              onDrop={handleDdBankDrop}
               onClick={()=>{ if(ddActiveItem!==null && ddAssign[ddActiveItem]!==undefined) unassignItem(ddActiveItem); }}
             >
               {(q.items||[]).map((it,ii)=>{
@@ -4081,10 +4174,9 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
                 return (
                   <div
                     key={ii}
-                    className={"dd-chip" + (ddActiveItem===ii ? " active" : "")}
-                    draggable={!ddChecked}
-                    onDragStart={e=>handleDdDragStart(e, ii)}
-                    onClick={(e)=>{e.stopPropagation(); handleDdItemClick(ii);}}
+                    className={"dd-chip" + (ddActiveItem===ii ? " active" : "") + (ddDragging && ddDragging.ii===ii ? " dragging" : "")}
+                    onPointerDown={e=>handleDdPointerDown(e, ii)}
+                    onClick={e=>e.stopPropagation()}
                   >{it.label}</div>
                 );
               })}
@@ -4099,23 +4191,20 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
                   <div
                     key={cat}
                     className={"dd-category" + (dragOverCat===cat ? " drag-over" : "")}
+                    data-cat={cat}
                     onClick={()=>handleDdCategoryClick(cat)}
-                    onDragOver={e=>{ e.preventDefault(); if(!ddChecked) setDragOverCat(cat); }}
-                    onDragLeave={()=>setDragOverCat(prev=> prev===cat ? null : prev)}
-                    onDrop={e=>handleDdDrop(e, cat)}
                   >
                     <div className="dd-category-title">{cat}</div>
                     {itemsHere.map(x=>{
                       const isRightAnswer = ddChecked && x.it.category===cat;
-                      let cls = "dd-chip dd-chip-placed" + (ddActiveItem===x.ii ? " active" : "");
+                      let cls = "dd-chip dd-chip-placed" + (ddActiveItem===x.ii ? " active" : "") + (ddDragging && ddDragging.ii===x.ii ? " dragging" : "");
                       if(ddChecked) cls += isRightAnswer ? " correct" : " incorrect";
                       return (
                         <div
                           key={x.ii}
                           className={cls}
-                          draggable={!ddChecked}
-                          onDragStart={e=>{ e.stopPropagation(); handleDdDragStart(e, x.ii); }}
-                          onClick={(e)=>{e.stopPropagation(); handleDdItemClick(x.ii);}}
+                          onPointerDown={e=>{ e.stopPropagation(); handleDdPointerDown(e, x.ii); }}
+                          onClick={e=>e.stopPropagation()}
                         >{x.it.label}</div>
                       );
                     })}
@@ -4124,6 +4213,11 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
                 );
               })}
             </div>
+            {ddDragging && (
+              <div className="dd-ghost" style={{transform:`translate(${ddDragging.x}px, ${ddDragging.y}px) translate(-50%,-130%)`}}>
+                {ddDragging.label}
+              </div>
+            )}
             {!ddChecked && (
               <div className="quiz-footer" style={{justifyContent:"flex-start", marginTop:6, marginBottom:10}}>
                 <button className="btn btn-ghost btn-sm" onClick={handleDdCheck} disabled={!ddAllAssigned}>✓ Check Answers</button>
@@ -4637,6 +4731,7 @@ function TopicPicker({topics, totalCount, selected, onToggle}){
 const QUESTION_TYPES = [
   {id:"mcq", label:"🔤 Multiple Choice"},
   {id:"tf", label:"✅ True / False"},
+  {id:"tama", label:"🇵🇭 Tama o Mali"},
   {id:"fill", label:"✍️ Fill in the Blank"},
   {id:"match", label:"🔗 Matching"},
   {id:"dragdrop", label:"🧩 Drag and Drop"},
@@ -4651,6 +4746,7 @@ const QUIZ_TYPE_OPTIONS = [
   {id:TYPE_ALL, label:"🎲 All Types"},
   {id:"mcq", label:"🔤 Multiple Choice"},
   {id:"tf", label:"✅ True / False"},
+  {id:"tama", label:"🇵🇭 Tama o Mali"},
   {id:"fill", label:"✍️ Fill in the Blank"},
   {id:"match", label:"🔗 Matching"},
   {id:"dragdrop", label:"🧩 Drag and Drop"},
@@ -4682,6 +4778,51 @@ function QuizTypePicker({pool, selected, onSelect}){
   );
 }
 
+// Shows one JSON format example with a tap-to-copy button, so a JSON snippet
+// can be grabbed on a phone without having to carefully select text by hand.
+function CopyableJson({label, json, note}){
+  const [copied, setCopied] = useState(false);
+  function flashCopied(){
+    setCopied(true);
+    setTimeout(()=>setCopied(false), 1500);
+  }
+  function handleCopy(){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(json).then(flashCopied).catch(()=>fallbackCopy());
+    } else {
+      fallbackCopy();
+    }
+  }
+  function fallbackCopy(){
+    try{
+      const ta = document.createElement("textarea");
+      ta.value = json;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      flashCopied();
+    }catch(e){
+      alert("Couldn't copy automatically — tap and hold the text to select and copy it.");
+    }
+  }
+  return (
+    <div className="json-format-row">
+      <div className="json-format-label">{label}</div>
+      <div className="json-format-code-wrap">
+        <pre className="json-format-code">{json}</pre>
+        <button type="button" className="btn btn-ghost btn-sm json-copy-btn" onClick={handleCopy}>
+          {copied ? "✅ Copied!" : "📋 Copy"}
+        </button>
+      </div>
+      {note && <p className="fill-hint" style={{marginTop:4}}>{note}</p>}
+    </div>
+  );
+}
+
 function QuestionBankManager({lessonId, questions, accent, onChange}){
   const [bulkText, setBulkText] = useState("");
   const [bulkTopic, setBulkTopic] = useState("");
@@ -4700,7 +4841,7 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
   function saveEdit(){
     if(!draft || !String(draft.q||"").trim()){ alert("Question text can't be empty."); return; }
     const t = draft.type || "mcq";
-    if((t === "mcq" || t === "tf")){
+    if((t === "mcq" || t === "tf" || t === "tama")){
       if(!draft.options || draft.options.some(o=>!String(o).trim())){ alert("All choices need text."); return; }
     }
     if(t === "fill" && !String(draft.answer||"").trim()){ alert("Answer can't be empty."); return; }
@@ -4947,7 +5088,7 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
       parsed = JSON.parse(bulkText);
       if(!Array.isArray(parsed)) throw new Error("not an array");
     }catch(e){
-      alert("Couldn't read that as a JSON list of questions. Expected format:\n[{\"q\":\"...\", \"options\":[\"A\",\"B\",\"C\",\"D\"], \"correct\":0, \"explain\":\"...\"}]\nAlso supports tf, fill, match, dragdrop, order, label, and pattern types — see the format notes below the bank.");
+      alert("Couldn't read that as a JSON list of questions. Expected format:\n[{\"q\":\"...\", \"options\":[\"A\",\"B\",\"C\",\"D\"], \"correct\":0, \"explain\":\"...\"}]\nAlso supports tf, tama, fill, match, dragdrop, order, label, and pattern types — see the format notes below the bank.");
       return;
     }
     const fallbackTopic = normTopic(bulkTopic);
@@ -4956,6 +5097,7 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
       const t = String(p.type||"mcq").toLowerCase();
       if(t === "fill" || t === "fillblank" || t === "fill_in_the_blank") return !!p.answer;
       if(t === "tf" || t === "truefalse" || t === "true_false") return true;
+      if(t === "tama" || t === "tamaomali" || t === "tama_o_mali" || t === "tama o mali") return true;
       if(t === "match" || t === "matching") return Array.isArray(p.pairs) && p.pairs.length >= 2 && p.pairs.every(pr=>pr && pr.left && pr.right);
       if(t === "dragdrop" || t === "drag_and_drop" || t === "drag-drop" || t === "sort"){
         return Array.isArray(p.categories) && p.categories.length >= 2 && Array.isArray(p.items) && p.items.length >= 2
@@ -4980,6 +5122,13 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
         else if(Number.isInteger(p.correct)) correct = p.correct;
         else if(typeof p.correct === "string") correct = /^false$/i.test(p.correct.trim()) ? 1 : 0;
         return {type:"tf", q:String(p.q), options:["True","False"], correct, explain: p.explain ? String(p.explain) : "", topic};
+      }
+      if(t === "tama" || t === "tamaomali" || t === "tama_o_mali" || t === "tama o mali"){
+        let correct = 0;
+        if(typeof p.correct === "boolean") correct = p.correct ? 0 : 1;
+        else if(Number.isInteger(p.correct)) correct = p.correct;
+        else if(typeof p.correct === "string") correct = /^(mali|false)$/i.test(p.correct.trim()) ? 1 : 0;
+        return {type:"tama", q:String(p.q), options:["Tama","Mali"], correct, explain: p.explain ? String(p.explain) : "", topic};
       }
       if(t === "match" || t === "matching"){
         return {type:"match", q:String(p.q), pairs:p.pairs.map(pr=>({left:String(pr.left), right:String(pr.right)})), explain: p.explain ? String(p.explain) : "", topic};
@@ -5026,7 +5175,7 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
   return (
     <div className="journal-page">
       <h3>Question Bank {questions.length ? "(" + questions.length + ")" : ""}</h3>
-      {questions.length === 0 && <p className="sub">No questions yet. Paste a JSON list below to add multiple choice, true/false, fill-in-the-blank, matching, drag-and-drop, ordering, label-the-parts, or number-pattern questions.</p>}
+      {questions.length === 0 && <p className="sub">No questions yet. Paste a JSON list below to add multiple choice, true/false, tama o mali, fill-in-the-blank, matching, drag-and-drop, ordering, label-the-parts, or number-pattern questions.</p>}
 
       {questions.length > 0 && (
         <div className="bank-toolbar">
@@ -5075,6 +5224,7 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
         const t = q.type || "mcq";
         const typeLabel = t === "fill" ? "✍️ Fill in the Blank"
           : t === "tf" ? "✅ True / False"
+          : t === "tama" ? "🇵🇭 Tama o Mali"
           : t === "match" ? "🔗 Matching"
           : t === "dragdrop" ? "🧩 Drag and Drop"
           : t === "order" ? "📋 Ordering / Sequencing"
@@ -5094,7 +5244,7 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
                 <label className="field-label" style={{marginTop:0}}>Question text</label>
                 <textarea className="text-area" rows={2} value={draft.q} onChange={e=>updateDraft("q", e.target.value)} />
 
-                {dt === "tf" && (
+                {(dt === "tf" || dt === "tama") && (
                   <React.Fragment>
                     <label className="field-label">Correct answer</label>
                     <div className="bank-edit-opts">
@@ -5327,7 +5477,7 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
                   </span>
                 </div>
               )}
-              {(t === "mcq" || t === "tf") && (
+              {(t === "mcq" || t === "tf" || t === "tama") && (
                 <div className="bank-item-opts">
                   {q.options.map((o,oi)=>(
                     <span key={oi} className={"bank-opt" + (oi===q.correct ? " bank-opt-correct":"")}>{o}</span>
@@ -5345,14 +5495,31 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
 
       <div style={{marginTop:24}}>
         <h3>➕ Bulk Import from JSON</h3>
-        <p className="sub">Paste an array of questions. Multiple choice: {"[{\"q\":\"...\",\"options\":[\"A\",\"B\",\"C\",\"D\"],\"correct\":0,\"explain\":\"...\",\"topic\":\"Comparing\"}]"}</p>
-        <p className="sub">True/False: {"[{\"type\":\"tf\",\"q\":\"...\",\"correct\":0,\"explain\":\"...\",\"topic\":\"Ordering\"}]"} (correct: 0 = True, 1 = False)</p>
-        <p className="sub">Fill in the blank: {"[{\"type\":\"fill\",\"q\":\"...\",\"answer\":\"...\",\"explain\":\"...\",\"topic\":\"Rounding\"}]"}</p>
-        <p className="sub">🔗 Matching: {"[{\"type\":\"match\",\"q\":\"Match the scientist to their invention\",\"pairs\":[{\"left\":\"Edison\",\"right\":\"Light bulb\"},{\"left\":\"Bell\",\"right\":\"Telephone\"}],\"explain\":\"...\",\"topic\":\"Inventors\"}]"}</p>
-        <p className="sub">🧩 Drag and Drop: {"[{\"type\":\"dragdrop\",\"q\":\"Sort into Solid, Liquid, Gas\",\"categories\":[\"Solid\",\"Liquid\",\"Gas\"],\"items\":[{\"label\":\"Ice\",\"category\":\"Solid\"},{\"label\":\"Water\",\"category\":\"Liquid\"},{\"label\":\"Steam\",\"category\":\"Gas\"}],\"explain\":\"...\",\"topic\":\"Matter\"}]"} (each item's "category" must exactly match one of the "categories")</p>
-        <p className="sub">📋 Ordering / Sequencing: {"[{\"type\":\"order\",\"q\":\"Arrange the butterfly life cycle\",\"items\":[\"Egg\",\"Larva\",\"Pupa\",\"Adult\"],\"explain\":\"...\",\"topic\":\"Life Cycles\"}]"} (list "items" in the correct order — they'll be shuffled for the student)</p>
-        <p className="sub">🖼️ Label the Parts: {"[{\"type\":\"label\",\"q\":\"Label the parts of the plant cell\",\"image\":\"https://example.com/cell.png\",\"points\":[{\"x\":20,\"y\":30,\"label\":\"Nucleus\"},{\"x\":50,\"y\":60,\"label\":\"Cell wall\"}],\"explain\":\"...\",\"topic\":\"Cells\"}]"} ("x"/"y" are % position on the image, 0–100. You can also paste just "image" and "q" with no "points", then click ✏️ Edit to click on the picture and drop pins.)</p>
-        <p className="sub">🔢 Number Pattern: {"[{\"type\":\"pattern\",\"q\":\"Fill in the missing numbers\",\"sequence\":[2,4,\"_\",8,\"_\",\"_\",12],\"blanks\":[6,10,11],\"explain\":\"...\",\"topic\":\"Skip Counting\"}]"} (put "_" in "sequence" for each blank, in order, then give each blank's answer in "blanks")</p>
+        <p className="sub">Paste an array of questions, or use the copy button on any format below as a starting point.</p>
+        <CopyableJson label="🔤 Multiple Choice"
+          json={'[{"q":"...","options":["A","B","C","D"],"correct":0,"explain":"...","topic":"Comparing"}]'} />
+        <CopyableJson label="✅ True / False"
+          json={'[{"type":"tf","q":"...","correct":0,"explain":"...","topic":"Ordering"}]'}
+          note='correct: 0 = True, 1 = False' />
+        <CopyableJson label="🇵🇭 Tama o Mali"
+          json={'[{"type":"tama","q":"...","correct":0,"explain":"...","topic":"Ordering"}]'}
+          note='correct: 0 = Tama, 1 = Mali' />
+        <CopyableJson label="✍️ Fill in the Blank"
+          json={'[{"type":"fill","q":"...","answer":"...","explain":"...","topic":"Rounding"}]'} />
+        <CopyableJson label="🔗 Matching"
+          json={'[{"type":"match","q":"Match the scientist to their invention","pairs":[{"left":"Edison","right":"Light bulb"},{"left":"Bell","right":"Telephone"}],"explain":"...","topic":"Inventors"}]'} />
+        <CopyableJson label="🧩 Drag and Drop"
+          json={'[{"type":"dragdrop","q":"Sort into Solid, Liquid, Gas","categories":["Solid","Liquid","Gas"],"items":[{"label":"Ice","category":"Solid"},{"label":"Water","category":"Liquid"},{"label":"Steam","category":"Gas"}],"explain":"...","topic":"Matter"}]'}
+          note={'Each item\'s "category" must exactly match one of the "categories".'} />
+        <CopyableJson label="📋 Ordering / Sequencing"
+          json={'[{"type":"order","q":"Arrange the butterfly life cycle","items":["Egg","Larva","Pupa","Adult"],"explain":"...","topic":"Life Cycles"}]'}
+          note={'List "items" in the correct order — they\'ll be shuffled for the student.'} />
+        <CopyableJson label="🖼️ Label the Parts"
+          json={'[{"type":"label","q":"Label the parts of the plant cell","image":"https://example.com/cell.png","points":[{"x":20,"y":30,"label":"Nucleus"},{"x":50,"y":60,"label":"Cell wall"}],"explain":"...","topic":"Cells"}]'}
+          note='"x"/"y" are % position on the image, 0–100. You can also paste just "image" and "q" with no "points", then click ✏️ Edit to click on the picture and drop pins.' />
+        <CopyableJson label="🔢 Number Pattern"
+          json={'[{"type":"pattern","q":"Fill in the missing numbers","sequence":[2,4,"_",8,"_","_",12],"blanks":[6,10,11],"explain":"...","topic":"Skip Counting"}]'}
+          note={'Put "_" in "sequence" for each blank, in order, then give each blank\'s answer in "blanks".'} />
         <p className="sub">"topic" is optional on all types — leave it out (or empty) for questions with no topic.</p>
         <label className="field-label">Topic for this batch (optional)</label>
         <input className="text-input" list="topic-suggestions" value={bulkTopic} onChange={e=>setBulkTopic(e.target.value)} placeholder="e.g. Comparing — applied to any question below with no topic of its own" />
