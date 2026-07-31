@@ -147,6 +147,8 @@
     text-transform:uppercase;color:#BFD4FF;margin-bottom:4px;position:relative;
   }
   .passport-name{font-family:'Fredoka';font-weight:600;font-size:22px;margin-bottom:16px;color:#fff;position:relative;}
+  .rc-passport .passport-title{font-size:15px;margin-bottom:16px;}
+  .rc-passport .rc-table{position:relative;}
   .stamp-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;position:relative;}
   @media(min-width:560px){.stamp-row{grid-template-columns:repeat(4,1fr);}}
   @media(min-width:860px){.stamp-row{grid-template-columns:repeat(6,1fr);}}
@@ -600,8 +602,6 @@
     transition:transform .12s ease;
   }
   .settings-btn:active{transform:translateY(2px) scale(0.96);}
-  .settings-btn:disabled{opacity:.4;cursor:not-allowed;}
-  .settings-btn:disabled:active{transform:none;}
 
   /* ---------- TOGGLE SWITCH (sound settings) ---------- */
   .sound-toggle-row{display:flex; align-items:center; justify-content:space-between; padding:12px 0; gap:12px;}
@@ -753,21 +753,6 @@
       max-width:680px;margin-left:auto;margin-right:auto;
     }
   }
-  /* ---------- LEARN TAB LAYOUT (video + notes) ---------- */
-  /* Mobile/default: video(s) then notes, simply stacked — same as before. */
-  .learn-video-col .video-embed:last-child{margin-bottom:0;}
-  .learn-notes-col > *:last-child{margin-bottom:0;}
-  @media(min-width:900px){
-    /* Desktop: widen the Learn card and put the video beside the notes instead of
-       stacking everything full-width — keeps the tab from turning into one very
-       long scroll on a wide screen. The video stays pinned while notes scroll. */
-    .journal-page.learn-page{max-width:960px;}
-    .learn-layout{
-      display:grid; grid-template-columns:minmax(280px,400px) 1fr; gap:24px; align-items:start;
-    }
-    .learn-video-col{position:sticky; top:20px;}
-    .learn-video-col .video-embed{margin-bottom:16px;}
-  }
   .text-input, .text-area{
     width:100%;border:2.5px solid var(--line);border-radius:var(--radius-sm);padding:11px 14px;
     font-family:'Nunito',sans-serif;font-size:16px;background:var(--card);color:var(--ink);
@@ -909,17 +894,8 @@
   .dd-categories{display:flex;flex-wrap:wrap;gap:10px;}
   .dd-category{
     flex:1;min-width:120px;border:2.5px dashed var(--line);border-radius:var(--radius-sm);padding:10px;
-    cursor:pointer;transition:border-color .12s ease, background .12s ease;
+    background:var(--paper);cursor:pointer;transition:border-color .12s ease, background .12s ease;
   }
-  /* Each category gets its own pastel fill so kids can see at a glance how many bins there are */
-  .dd-category.dd-cat-0{background:#FFE9E9;border-color:#F2AFAF;}
-  .dd-category.dd-cat-1{background:#E7F1FF;border-color:#AAC8F2;}
-  .dd-category.dd-cat-2{background:#E9FBEA;border-color:#A7E0AC;}
-  .dd-category.dd-cat-3{background:#FFF6D9;border-color:#F0D488;}
-  .dd-category.dd-cat-4{background:#F4EAFF;border-color:#CBA9F2;}
-  .dd-category.dd-cat-5{background:#FFEAF6;border-color:#F2A9D9;}
-  .dd-category.dd-cat-6{background:#E6FBF7;border-color:#9FE6DA;}
-  .dd-category.dd-cat-7{background:#FFF0E4;border-color:#F0C097;}
   .dd-category.drag-over{border-color:var(--night);background:var(--q3-soft);}
   .dd-category-title{font-family:'Fredoka';font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);margin-bottom:8px;}
   .dd-empty{font-size:12px;color:var(--ink-soft);font-style:italic;padding:6px 0;}
@@ -999,6 +975,33 @@
   .pattern-blank:focus{outline:none;border-color:var(--night);}
   .pattern-blank.correct{border-color:var(--good);background:var(--q2-soft);color:#0A8F68;}
   .pattern-blank.incorrect{border-color:var(--bad);background:#FDE3E6;color:#C43D4B;}
+
+  /* ---------- REPORT CARD (GRADES) ---------- */
+  .rc-table{background:var(--card);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-md);margin-bottom:22px;}
+  .rc-row{display:grid;grid-template-columns:1.9fr repeat(4,0.6fr) 1fr;align-items:center;padding:8px 6px;border-bottom:1.5px solid var(--line);gap:2px;}
+  .rc-row:last-child{border-bottom:none;}
+  .rc-row.rc-head{background:var(--paper);font-family:'Space Mono';font-size:10px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.02em;}
+  .rc-subj{display:flex;align-items:center;gap:5px;font-weight:800;font-size:12.5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+  .rc-cell{text-align:center;font-family:'Space Mono';font-weight:700;font-size:12.5px;color:var(--ink-soft);}
+  .rc-final{text-align:center;font-family:'Space Mono';font-weight:800;font-size:13px;}
+  @media(min-width:560px){
+    .rc-row{padding:10px 12px;gap:4px;}
+    .rc-subj{font-size:14px;}
+    .rc-cell{font-size:14px;}
+    .rc-final{font-size:15px;}
+  }
+  .rc-avgrow{background:var(--paper);font-weight:800;}
+  .rc-final-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;}
+  .final-adj{display:flex;gap:4px;justify-content:center;}
+  .final-adj-btn{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);color:var(--ink-soft);font-weight:800;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+  .final-adj-btn:hover{border-color:var(--night);color:var(--night);}
+  @media(min-width:560px){ .final-adj-btn{width:20px;height:20px;font-size:12px;} }
+  .grade-qbox{background:var(--paper);border-radius:12px;padding:12px;border:1.5px solid var(--line);}
+  .grade-comp-item{display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;}
+  .grade-comp-item .text-input{margin:0;}
+  .grade-add-btn{border:2px dashed var(--line);background:transparent;color:var(--ink-soft);border-radius:10px;padding:6px 12px;font-weight:700;font-size:12.5px;font-family:'Fredoka';cursor:pointer;}
+  .grade-add-btn:hover{border-color:var(--night);color:var(--night);}
+  .grade-remove-btn{border:none;background:transparent;color:var(--bad);font-size:16px;cursor:pointer;padding:0 6px;line-height:1;}
 </style>
 </head>
 <body>
@@ -3251,6 +3254,118 @@ const SUBJECTS = [
   {id:"filipino", name:"Filipino 4", shortName:"Filipino", icon:"\ud83d\udcda", tagline:"Daan Tungo sa Wikang Filipino", quarters: FILIPINO_QUARTERS, color:"#F37777", soft:"#FDE5E5"},
   {id:"english", name:"English 4", shortName:"English", icon:"\ud83d\udd24", tagline:"Young Wordsmith's Passport", quarters: ENGLISH_QUARTERS, color:"#3E9DC5", soft:"#DCF0F8"}
 ];
+
+/* =========================================================
+   GRADES — component weights (from Sacred Heart's Grade Components
+   sheet), DepEd transmutation, and honor thresholds.
+   Subjects not on any report card (the "general" reference word list)
+   are excluded from the Grades section.
+   ========================================================= */
+// Written Work / Performance Task / Quarterly Assessment weights per subject group.
+const GRADE_WEIGHTS = {
+  filipino:{ww:0.3, pt:0.5, qa:0.2},
+  english: {ww:0.3, pt:0.5, qa:0.2},
+  ap:      {ww:0.3, pt:0.5, qa:0.2},
+  gmrc:    {ww:0.3, pt:0.5, qa:0.2}, // Christian Living / Values Education-type weighting
+  math:    {ww:0.4, pt:0.4, qa:0.2},
+  science: {ww:0.4, pt:0.4, qa:0.2},
+  computer:{ww:0.2, pt:0.6, qa:0.2},
+  mapeh:   {ww:0.2, pt:0.6, qa:0.2},
+  hele:    {ww:0.2, pt:0.6, qa:0.2}
+};
+const GRADED_SUBJECTS = SUBJECTS.filter(s=>s.special!=="reference" && GRADE_WEIGHTS[s.id]);
+const GRADE_QUARTERS = [
+  {id:"q1", label:"Q1"},
+  {id:"q2", label:"Q2"},
+  {id:"q3", label:"Q3"},
+  {id:"q4", label:"Q4"}
+];
+
+// DepEd's published transmutation table, expressed as a formula instead of
+// a hardcoded 40-row lookup: below 60% raw, every 4 raw points = +1 transmuted
+// point (60→60 ... 59.99→74); at/above 60% raw, every 1.6 raw points = +1
+// transmuted point (60→75 ... 100→100).
+function transmuteGrade(rawPct){
+  if(rawPct==null || isNaN(rawPct)) return null;
+  const raw = Math.max(0, Math.min(100, rawPct));
+  if(raw >= 60){
+    return Math.min(100, 75 + Math.floor((raw-60)/1.6));
+  }
+  return 60 + Math.floor(raw/4);
+}
+function honorLabel(avg){
+  if(avg==null) return null;
+  if(avg>=98) return "With Highest Honors";
+  if(avg>=95) return "With High Honors";
+  if(avg>=90) return "With Honors";
+  return null;
+}
+// A quarter entry is either:
+//  - mode "final": entry.ww / entry.pt / entry.qa each hold an already-computed
+//    percentage (0-100) for that component, weighted by this subject's group weights.
+//  - mode "detailed": entry.ww / entry.pt / entry.qa each hold an ARRAY of
+//    {score,total} items (Written Work #1, #2, ... etc). Each component's
+//    percentage is the sum of scores over the sum of totals across its items,
+//    then weighted the same way as Final mode.
+function componentPct(entry, key){
+  if(entry.mode==="detailed"){
+    const items = (entry[key]||[]).filter(it=>it && it.total!=="" && it.total!=null && Number(it.total)>0 && it.score!==""&&it.score!=null);
+    if(!items.length) return null;
+    const sumScore = items.reduce((a,it)=>a+Number(it.score),0);
+    const sumTotal = items.reduce((a,it)=>a+Number(it.total),0);
+    if(sumTotal<=0) return null;
+    return Math.max(0, Math.min(100, (sumScore/sumTotal)*100));
+  }
+  // final mode: a directly-entered percentage per component
+  const v = entry[key];
+  if(v==="" || v==null || isNaN(v)) return null;
+  return Math.max(0, Math.min(100, Number(v)));
+}
+function computeQuarterGrade(subjectId, entry){
+  if(!entry) return null;
+  const w = GRADE_WEIGHTS[subjectId];
+  if(!w) return null;
+  const parts = ["ww","pt","qa"];
+  let weightedSum = 0, weightUsed = 0;
+  parts.forEach(p=>{
+    const pct = componentPct(entry, p);
+    if(pct!=null){
+      weightedSum += pct * w[p];
+      weightUsed += w[p];
+    }
+  });
+  if(weightUsed<=0) return null;
+  const rawPct = weightedSum/weightUsed;
+  return transmuteGrade(rawPct);
+}
+function subjectFinalGrade(subjectId, gradesForSubject){
+  const vals = GRADE_QUARTERS.map(q=>computeQuarterGrade(subjectId, gradesForSubject && gradesForSubject[q.id])).filter(v=>v!=null);
+  if(!vals.length) return null;
+  return vals.reduce((a,b)=>a+b,0)/vals.length;
+}
+// A parent can nudge the auto-computed final grade up/down by whole points
+// (e.g. for teacher-adjusted rounding) without touching the underlying scores.
+function subjectAdjust(gradesForSubject){
+  return (gradesForSubject && Number(gradesForSubject.adjust)) || 0;
+}
+function subjectDisplayFinal(subjectId, gradesForSubject){
+  const base = subjectFinalGrade(subjectId, gradesForSubject);
+  if(base==null) return null;
+  return Math.max(60, Math.min(100, Math.round(base) + subjectAdjust(gradesForSubject)));
+}
+const GRADES_KEY = "gs4_grades_v1";
+function loadGrades(){
+  try{
+    const raw = localStorage.getItem(GRADES_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {};
+}
+function saveGrades(g){
+  try{ localStorage.setItem(GRADES_KEY, JSON.stringify(g)); }catch(e){}
+  queueCloudSync();
+}
+
 /* =========================================================
    HELPERS
    ========================================================= */
@@ -3602,11 +3717,6 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
   const [fillText, setFillText] = useState("");
   const [fillChecked, setFillChecked] = useState(false);
   const [answers, setAnswers] = useState([]);
-  // The furthest question index reached "for real" (as opposed to via the Back button).
-  // Answers are committed to the `answers` array the instant a question is checked, so we can't
-  // use answers.length anymore to tell "currently being answered" apart from "already reviewed" —
-  // this does that job instead.
-  const [furthestIdx, setFurthestIdx] = useState(0);
 
   // Matching (connect-the-dots)
   const [matchRightOrder, setMatchRightOrder] = useState([]);
@@ -3645,10 +3755,7 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
   const [patternChecked, setPatternChecked] = useState(false);
 
   const q = questions[idx];
-  // Only a genuinely-reviewed past question (idx < furthestIdx) renders as read-only.
-  // The current, still-in-progress question keeps its live interactive/feedback view even
-  // though its answer has already been committed into `answers` behind the scenes.
-  const record = idx < furthestIdx ? answers[idx] : undefined;
+  const record = answers[idx]; // set once this question has already been answered — lets the Back button show a read-only review of it
   const isLast = idx === questions.length - 1;
   const qType = q.type || "mcq";
   const isFill = qType === "fill";
@@ -3663,7 +3770,7 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
   // Reset per-question mcq/fill state whenever we land on a question that hasn't been answered yet
   // (i.e. we're not reviewing it via the Back button). Keeps forward/back navigation in sync.
   useEffect(()=>{
-    if(answers[idx] !== undefined) return; // already-answered question — never rebuild/clear its state once committed
+    if(idx < answers.length) return; // already-answered question — Back button review handles its own display
     setSelected(null);
     setFillText("");
     setFillChecked(false);
@@ -3671,7 +3778,7 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
 
   // Reset/initialize per-question state whenever the question changes
   useEffect(()=>{
-    if(answers[idx] !== undefined) return; // already-answered question — never rebuild/clear its state once committed
+    if(idx < answers.length) return; // already-answered question — reviewed read-only, no need to rebuild interactive state
     if(isMatch){
       setMatchRightOrder(shuffledIndices((q.pairs||[]).length));
       setMatchPicks({});
@@ -3723,29 +3830,15 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
     : isPattern ? patternChecked
     : selected !== null;
 
-  // Permanently lock in the answer to the CURRENT question as soon as it's submitted/checked,
-  // by writing straight into the answers array (instead of waiting for the Next button).
-  // This is what stops the "select wrong answer → Back → Next" trick from wiping the attempt
-  // and letting a student retry with the answer they just saw revealed.
-  function commitAnswer(record){
-    setAnswers(prev=>{
-      const next = prev.slice();
-      next[idx] = record;
-      return next;
-    });
-  }
   function handleSelect(optIdx){
     if(selected !== null) return;
     setSelected(optIdx);
     if(optIdx === q.correct) Sound.correct(); else Sound.incorrect();
-    commitAnswer({type:qType, question:q.q, options:q.options, correct:q.correct, chosen:optIdx, isCorrect: optIdx===q.correct, tag:q.tag || null});
   }
   function handleFillCheck(){
     if(fillChecked || !fillText.trim()) return;
     setFillChecked(true);
-    const correct = matchesFillAnswer(fillText, acceptable);
-    if(correct) Sound.correct(); else Sound.incorrect();
-    commitAnswer({type:"fill", question:q.q, answer:q.answer, chosen:fillText.trim(), isCorrect:correct, tag:q.tag || null});
+    if(matchesFillAnswer(fillText, acceptable)) Sound.correct(); else Sound.incorrect();
   }
 
   // ---- Matching handlers (tap-to-select, or drag a line dot-to-dot) ----
@@ -3797,8 +3890,6 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
     setMatchChecked(true);
     const allCorrect = (q.pairs||[]).every((_,li)=> matchRightOrder[matchPicks[li]] === li);
     if(allCorrect) Sound.correct(); else Sound.incorrect();
-    const chosenPairs = (q.pairs||[]).map((p,li)=>({left:p.left, right: q.pairs[matchRightOrder[matchPicks[li]]].right}));
-    commitAnswer({type:"match", question:q.q, pairs:q.pairs, chosen:chosenPairs, isCorrect:allCorrect, tag:q.tag || null});
   }
   // Begin dragging a connector line from a left dot; tracks the pointer until release,
   // and if released over a right item, commits the match — like drawing a line in a workbook.
@@ -3934,7 +4025,6 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
     setDdChecked(true);
     const allCorrect = (q.items||[]).every((it,ii)=> ddAssign[ii] === it.category);
     if(allCorrect) Sound.correct(); else Sound.incorrect();
-    commitAnswer({type:"dragdrop", question:q.q, items:q.items, categories:q.categories, chosen:{...ddAssign}, isCorrect:allCorrect, tag:q.tag || null});
   }
 
   // ---- Ordering handlers (drag & drop, mouse + touch via Pointer Events) ----
@@ -3977,9 +4067,7 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
     if(orderChecked) return;
     setOrderChecked(true);
     const correctOrder = (q.items||[]).map((_,i)=>i);
-    const allCorrect = arraysEqual(orderList, correctOrder);
-    if(allCorrect) Sound.correct(); else Sound.incorrect();
-    commitAnswer({type:"order", question:q.q, items:q.items, chosen:orderList.map(i=>q.items[i]), isCorrect:allCorrect, tag:q.tag || null});
+    if(arraysEqual(orderList, correctOrder)) Sound.correct(); else Sound.incorrect();
   }
 
   // ---- Label the Parts handlers (tap a word, then tap the pin it names) ----
@@ -4008,8 +4096,6 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
     setLabelChecked(true);
     const allCorrect = (q.points||[]).every((p,pi)=> labelWordOrder[labelAssign[pi]] === pi);
     if(allCorrect) Sound.correct(); else Sound.incorrect();
-    const chosen = (q.points||[]).map((p,pi)=> labelAssign[pi]!==undefined ? q.points[labelWordOrder[labelAssign[pi]]].label : null);
-    commitAnswer({type:"label", question:q.q, image:q.image, points:q.points, chosen, isCorrect:allCorrect, tag:q.tag || null});
   }
 
   // ---- Number Pattern handlers ----
@@ -4022,39 +4108,38 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
     setPatternChecked(true);
     const allCorrect = patternBlankIdxs.every(ii => matchesFillAnswer(patternValues[ii], String((q.items[ii]||{}).answer||"").split("|").map(a=>a.trim())));
     if(allCorrect) Sound.correct(); else Sound.incorrect();
-    commitAnswer({type:"pattern", question:q.q, items:q.items, chosen:{...patternValues}, isCorrect:allCorrect, tag:q.tag || null});
   }
 
-  // The current question's answer is already written into the `answers` array (see commitAnswer,
-  // called the moment the question was checked/selected) — so Next just needs to advance, or
-  // finish the quiz using the answers we already have. Nothing here can be re-triggered to
-  // change an answer that's already been locked in.
   function handleNext(){
     Sound.tap();
-    if(isLast){
-      // Fallback safety net: build the record here too, in case commitAnswer's state update
-      // hasn't flushed yet for some reason, so a finished quiz never loses its last answer.
-      const already = answers[idx];
-      const record = already || (
-        isFill ? {type:"fill", question:q.q, answer:q.answer, chosen:fillText.trim(), isCorrect:fillIsCorrect, tag:q.tag || null}
-        : isMatch ? {type:"match", question:q.q, pairs:q.pairs, chosen:(q.pairs||[]).map((p,li)=>({left:p.left, right: q.pairs[matchRightOrder[matchPicks[li]]].right})), isCorrect:matchIsCorrect, tag:q.tag || null}
-        : isDragDrop ? {type:"dragdrop", question:q.q, items:q.items, categories:q.categories, chosen:{...ddAssign}, isCorrect:ddIsCorrect, tag:q.tag || null}
-        : isOrder ? {type:"order", question:q.q, items:q.items, chosen:orderList.map(i=>q.items[i]), isCorrect:orderIsCorrect, tag:q.tag || null}
-        : isLabel ? {type:"label", question:q.q, image:q.image, points:q.points, chosen:(q.points||[]).map((p,pi)=> labelAssign[pi]!==undefined ? q.points[labelWordOrder[labelAssign[pi]]].label : null), isCorrect:labelIsCorrect, tag:q.tag || null}
-        : isPattern ? {type:"pattern", question:q.q, items:q.items, chosen:{...patternValues}, isCorrect:patternIsCorrect, tag:q.tag || null}
-        : {type:qType, question:q.q, options:q.options, correct:q.correct, chosen:selected, isCorrect: selected===q.correct, tag:q.tag || null}
-      );
-      const finalAnswers = answers.slice();
-      finalAnswers[idx] = record;
-      onFinish(finalAnswers);
+    let record;
+    if(isFill){
+      record = {type:"fill", question:q.q, answer:q.answer, chosen:fillText.trim(), isCorrect:fillIsCorrect, tag:q.tag || null};
+    } else if(isMatch){
+      const chosenPairs = (q.pairs||[]).map((p,li)=>({left:p.left, right: q.pairs[matchRightOrder[matchPicks[li]]].right}));
+      record = {type:"match", question:q.q, pairs:q.pairs, chosen:chosenPairs, isCorrect:matchIsCorrect, tag:q.tag || null};
+    } else if(isDragDrop){
+      record = {type:"dragdrop", question:q.q, items:q.items, categories:q.categories, chosen:{...ddAssign}, isCorrect:ddIsCorrect, tag:q.tag || null};
+    } else if(isOrder){
+      record = {type:"order", question:q.q, items:q.items, chosen:orderList.map(i=>q.items[i]), isCorrect:orderIsCorrect, tag:q.tag || null};
+    } else if(isLabel){
+      const chosen = (q.points||[]).map((p,pi)=> labelAssign[pi]!==undefined ? q.points[labelWordOrder[labelAssign[pi]]].label : null);
+      record = {type:"label", question:q.q, image:q.image, points:q.points, chosen, isCorrect:labelIsCorrect, tag:q.tag || null};
+    } else if(isPattern){
+      record = {type:"pattern", question:q.q, items:q.items, chosen:{...patternValues}, isCorrect:patternIsCorrect, tag:q.tag || null};
     } else {
-      setFurthestIdx(f=>Math.max(f, idx+1));
+      record = {type:qType, question:q.q, options:q.options, correct:q.correct, chosen:selected, isCorrect: selected===q.correct, tag:q.tag || null};
+    }
+    const newAnswers = [...answers, record];
+    if(isLast){
+      onFinish(newAnswers);
+    } else {
+      setAnswers(newAnswers);
       setIdx(idx+1);
     }
   }
   // Step back to the previous question to review your answer and the correct one.
-  // Doesn't touch the answers array — stepping forward again just re-displays what was already
-  // recorded, and can never undo or overwrite an answer that's already been locked in.
+  // Doesn't touch the answers array — stepping forward again just re-displays what was already recorded.
   function handleBack(){
     if(idx===0) return;
     Sound.back();
@@ -4241,12 +4326,12 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
               )}
             </div>
             <div className="dd-categories">
-              {(q.categories||[]).map((cat,ci)=>{
+              {(q.categories||[]).map(cat=>{
                 const itemsHere = (q.items||[]).map((it,ii)=>({it,ii})).filter(x=>ddAssign[x.ii]===cat);
                 return (
                   <div
                     key={cat}
-                    className={"dd-category dd-cat-" + (ci % 8) + (dragOverCat===cat ? " drag-over" : "")}
+                    className={"dd-category" + (dragOverCat===cat ? " drag-over" : "")}
                     data-cat={cat}
                     onClick={()=>handleDdCategoryClick(cat)}
                   >
@@ -5112,15 +5197,6 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
     setSelected(new Set());
   }
 
-  function handleDeleteType(type){
-    const label = (QUESTION_TYPES.find(t=>t.id===type)||{}).label || type;
-    const count = questions.filter(q=>(q.type||"mcq")===type).length;
-    if(count===0) return;
-    if(!confirm("Delete all " + count + " \"" + label + "\" question(s)? This can't be undone.")) return;
-    onChange(questions.filter(q=>(q.type||"mcq")!==type));
-    setSelected(new Set());
-  }
-
   function triggerDownload(filename, data){
     try{
       const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
@@ -5140,12 +5216,6 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
     const list = questions.filter(q=>normTopic(q.topic)===topic);
     if(!list.length) return;
     triggerDownload(slugify(lessonId) + "-" + slugify(topic || "no-topic") + ".json", list);
-  }
-
-  function handleDownloadType(type){
-    const list = questions.filter(q=>(q.type||"mcq")===type);
-    if(!list.length) return;
-    triggerDownload(slugify(lessonId) + "-" + slugify(type) + ".json", list);
   }
 
   function handleDownloadAll(){
@@ -5288,24 +5358,6 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {questions.length > 0 && (
-        <div className="bank-topic-tools">
-          <label className="field-label" style={{marginTop:0}}>Manage by question type</label>
-          {QUESTION_TYPES.filter(t=>questions.some(q=>(q.type||"mcq")===t.id)).map(t=>{
-            const count = questions.filter(q=>(q.type||"mcq")===t.id).length;
-            return (
-              <div key={t.id} className="bank-topic-row">
-                <span className="bank-topic-name">{t.label} ({count})</span>
-                <div style={{display:"flex", gap:8}}>
-                  <button className="btn btn-ghost btn-sm" onClick={()=>handleDownloadType(t.id)}>⬇️ Download</button>
-                  <button className="btn btn-ghost btn-sm" style={{color:"var(--bad)"}} onClick={()=>handleDeleteType(t.id)}>🗑️ Delete All</button>
-                </div>
-              </div>
-            );
-          })}
         </div>
       )}
 
@@ -5638,6 +5690,7 @@ function App(){
   const [notes, setNotes] = useState(loadNotes());
   const [activity, setActivity] = useState(loadActivity());
   const [generalKnown, setGeneralKnown] = useState(loadGeneralKnown());
+  const [grades, setGrades] = useState(loadGrades());
   const [nav, setNav] = useState({screen:"dashboard"});
   const [quizSession, setQuizSession] = useState(null); // {kind:'lesson'|'long', questions, accent, title, key}
   const [saveFlash, setSaveFlash] = useState(false);
@@ -5651,6 +5704,7 @@ function App(){
   useEffect(()=>{ saveNotes(notes); }, [notes]);
   useEffect(()=>{ saveActivity(activity); }, [activity]);
   useEffect(()=>{ saveGeneralKnown(generalKnown); }, [generalKnown]);
+  useEffect(()=>{ saveGrades(grades); }, [grades]);
   useEffect(()=>{ setSoundEnabled(settings.soundEnabled !== false); }, [settings.soundEnabled]);
 
   useEffect(()=>{
@@ -5665,6 +5719,7 @@ function App(){
       setNotes(loadNotes());
       setActivity(loadActivity());
       setGeneralKnown(loadGeneralKnown());
+      setGrades(loadGrades());
     }
     window.addEventListener("gs4-cloud-synced", onCloudSynced);
     return () => window.removeEventListener("gs4-cloud-synced", onCloudSynced);
@@ -5673,7 +5728,7 @@ function App(){
   async function saveEverythingNow(){
     Sound.save();
     saveProgress(progress); saveEdits(edits); saveBank(bank); saveMoves(moves);
-    saveSettings(settings); saveNotes(notes); saveActivity(activity);
+    saveSettings(settings); saveNotes(notes); saveActivity(activity); saveGrades(grades);
     // Skip the debounce and push the full snapshot to Firebase right away.
     clearTimeout(cloudSyncTimer);
     const cloudOk = await pushToCloud();
@@ -5686,7 +5741,7 @@ function App(){
       app: "gs4-learning-passport",
       exportedAt: new Date().toISOString(),
       data: {
-        progress, edits, bank, moves, settings, notes, activity, generalKnown
+        progress, edits, bank, moves, settings, notes, activity, generalKnown, grades
       }
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
@@ -5719,6 +5774,7 @@ function App(){
         if(d.notes) setNotes(d.notes);
         if(d.activity) setActivity(d.activity);
         if(d.generalKnown) setGeneralKnown(d.generalKnown);
+        if(d.grades) setGrades(d.grades);
         // Persist immediately so a refresh doesn't race the effects.
         if(d.progress) saveProgress(d.progress);
         if(d.edits) saveEdits(d.edits);
@@ -5728,6 +5784,7 @@ function App(){
         if(d.notes) saveNotes(d.notes);
         if(d.activity) saveActivity(d.activity);
         if(d.generalKnown) saveGeneralKnown(d.generalKnown);
+        if(d.grades) saveGrades(d.grades);
         clearTimeout(cloudSyncTimer);
         const cloudOk = await pushToCloud();
         setSaveFlash(cloudOk ? "✅ Imported & synced!" : "✅ Imported (saved on this device only)");
@@ -5779,6 +5836,50 @@ function App(){
 
   function goDashboard(){ Sound.back(); setNav({screen:"dashboard"}); setQuizSession(null); }
   function goNotes(){ Sound.nav(); setNav({screen:"notes"}); setQuizSession(null); }
+  function goGrades(){ Sound.nav(); setNav({screen:"grades"}); setQuizSession(null); }
+  function setGradeEntry(subjectId, quarterId, patch){
+    setGrades(prev=>{
+      const subj = {...(prev[subjectId]||{})};
+      const q = {...(subj[quarterId]||{mode:"final"})};
+      subj[quarterId] = {...q, ...patch};
+      return {...prev, [subjectId]: subj};
+    });
+  }
+  function addGradeItem(subjectId, quarterId, key){
+    setGrades(prev=>{
+      const subj = {...(prev[subjectId]||{})};
+      const q = {...(subj[quarterId]||{mode:"final"})};
+      const items = [...(q[key]||[]), {score:"", total:""}];
+      subj[quarterId] = {...q, [key]: items};
+      return {...prev, [subjectId]: subj};
+    });
+  }
+  function removeGradeItem(subjectId, quarterId, key, idx){
+    setGrades(prev=>{
+      const subj = {...(prev[subjectId]||{})};
+      const q = {...(subj[quarterId]||{mode:"final"})};
+      const items = (q[key]||[]).filter((_,i)=>i!==idx);
+      subj[quarterId] = {...q, [key]: items};
+      return {...prev, [subjectId]: subj};
+    });
+  }
+  function updateGradeItem(subjectId, quarterId, key, idx, field, value){
+    setGrades(prev=>{
+      const subj = {...(prev[subjectId]||{})};
+      const q = {...(subj[quarterId]||{mode:"final"})};
+      const items = [...(q[key]||[])];
+      items[idx] = {...(items[idx]||{score:"",total:""}), [field]: value};
+      subj[quarterId] = {...q, [key]: items};
+      return {...prev, [subjectId]: subj};
+    });
+  }
+  function adjustSubjectFinal(subjectId, delta){
+    setGrades(prev=>{
+      const subj = {...(prev[subjectId]||{})};
+      subj.adjust = (Number(subj.adjust)||0) + delta;
+      return {...prev, [subjectId]: subj};
+    });
+  }
   function goSubjects(){ Sound.back(); setNav({screen:"subjects"}); setQuizSession(null); }
   function goSubjectHome(sid){ Sound.nav(); setNav({screen:"home", subjectId:sid}); setQuizSession(null); }
   function goGeneral(sid){ Sound.nav(); setNav({screen:"general", subjectId:sid}); setQuizSession(null); }
@@ -5951,6 +6052,213 @@ function App(){
             </div>
           </div>
         ))}
+        <div className="footer-note">SACRED HEART ACADEMY OF PASIG · GRADE SCHOOL DEPARTMENT</div>
+      </React.Fragment>
+    );
+  }
+
+  /* ---------------- GRADES SCREEN ---------------- */
+  function GradesScreen(){
+    const [openSubject, setOpenSubject] = useState(null);
+    const [selectedQuarter, setSelectedQuarter] = useState(GRADE_QUARTERS[0].id);
+
+    const subjectFinals = GRADED_SUBJECTS.map(s=>({s, final: subjectDisplayFinal(s.id, grades[s.id])}));
+    const withGrade = subjectFinals.filter(x=>x.final!=null);
+    const generalAvg = withGrade.length ? withGrade.reduce((a,x)=>a+x.final,0)/withGrade.length : null;
+    const honor = honorLabel(generalAvg);
+
+    // Column averages across every subject, for the report-card footer row.
+    const quarterAverages = GRADE_QUARTERS.map(q=>{
+      const vals = GRADED_SUBJECTS.map(s=>computeQuarterGrade(s.id, (grades[s.id]||{})[q.id])).filter(v=>v!=null);
+      return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+    });
+
+    function toggleSubject(sid){
+      Sound.nav();
+      setOpenSubject(prev=> prev===sid ? null : sid);
+    }
+    function nudge(e, subjectId, delta){
+      e.stopPropagation();
+      Sound.tap();
+      adjustSubjectFinal(subjectId, delta);
+    }
+
+    return (
+      <React.Fragment>
+        <div className="backbar">
+          <button className="backbtn" onClick={goDashboard}>←</button>
+          <div>
+            <div className="qnum">Report Card</div>
+            <h1 style={{margin:0, fontSize:"22px"}}>🎓 Grades</h1>
+          </div>
+        </div>
+
+        <div className="passport rc-passport">
+          <div className="passport-title">Report Card — All Subjects</div>
+          <div className="rc-table" style={{margin:0}}>
+            <div className="rc-row rc-head">
+              <div>Subject</div>
+              <div className="rc-cell">Q1</div>
+              <div className="rc-cell">Q2</div>
+              <div className="rc-cell">Q3</div>
+              <div className="rc-cell">Q4</div>
+              <div className="rc-cell">Final</div>
+            </div>
+            {subjectFinals.map(({s, final})=>{
+              const subjGrades = grades[s.id] || {};
+              return (
+                <div key={s.id} className="rc-row" style={{cursor:"pointer"}} onClick={()=>{ setOpenSubject(s.id); Sound.nav(); }}>
+                  <div className="rc-subj"><span>{s.icon}</span><span>{s.shortName}</span></div>
+                  {GRADE_QUARTERS.map(q=>{
+                    const g = computeQuarterGrade(s.id, subjGrades[q.id]);
+                    return <div key={q.id} className="rc-cell">{g!=null ? g : "—"}</div>;
+                  })}
+                  <div className="rc-final-wrap">
+                    <div className="rc-final" style={{color:s.color}}>{final!=null ? final : "—"}</div>
+                    {final!=null && (
+                      <div className="final-adj">
+                        <button className="final-adj-btn" title="−1" onClick={e=>nudge(e, s.id, -1)}>−</button>
+                        <button className="final-adj-btn" title="+1" onClick={e=>nudge(e, s.id, 1)}>+</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            <div className="rc-row rc-avgrow">
+              <div>Average</div>
+              {quarterAverages.map((avg,qi)=>(
+                <div key={qi} className="rc-cell">{avg!=null ? avg.toFixed(1) : "—"}</div>
+              ))}
+              <div className="rc-final">{generalAvg!=null ? generalAvg.toFixed(1) : "—"}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="section-title" style={{display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8}}>
+          <span>Subjects</span>
+          <div className="type-tabs" style={{margin:0}}>
+            {GRADE_QUARTERS.map(q=>(
+              <button
+                key={q.id}
+                className={"type-tab" + (selectedQuarter===q.id ? " active":"")}
+                style={{padding:"4px 12px", fontSize:"12px"}}
+                onClick={()=>{ Sound.tap(); setSelectedQuarter(q.id); }}
+              >{q.label}</button>
+            ))}
+          </div>
+        </div>
+        {GRADED_SUBJECTS.map(s=>{
+          const subjGrades = grades[s.id] || {};
+          const final = subjectDisplayFinal(s.id, subjGrades);
+          const isOpen = openSubject===s.id;
+          const w = GRADE_WEIGHTS[s.id];
+          return (
+            <div key={s.id} className="subject-card" style={{cursor:"pointer", marginBottom:12}} onClick={()=>toggleSubject(s.id)}>
+              <div style={{display:"flex", alignItems:"center", justifyContent:"space-between"}}>
+                <div style={{display:"flex", alignItems:"center", gap:12}}>
+                  <div className="sicon" style={{margin:0}}>{s.icon}</div>
+                  <div>
+                    <h2 style={{margin:0}}>{s.name}</h2>
+                    <div className="stag" style={{margin:0}}>WW {Math.round(w.ww*100)}% · PT {Math.round(w.pt*100)}% · QA {Math.round(w.qa*100)}%</div>
+                  </div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div className="smeta" style={{fontSize:"22px", color:s.color}}>{final!=null ? final : "—"}</div>
+                  {isOpen && final!=null ? (
+                    <div className="final-adj" style={{justifyContent:"flex-end"}}>
+                      <button className="final-adj-btn" title="−1" onClick={e=>{e.stopPropagation(); Sound.tap(); adjustSubjectFinal(s.id,-1);}}>−</button>
+                      <button className="final-adj-btn" title="+1" onClick={e=>{e.stopPropagation(); Sound.tap(); adjustSubjectFinal(s.id,1);}}>+</button>
+                    </div>
+                  ) : (
+                    <div className="smeta">{isOpen ? "▲ hide" : "▼ edit"}</div>
+                  )}
+                </div>
+              </div>
+
+              {isOpen && (
+                <div onClick={e=>e.stopPropagation()} style={{marginTop:16, display:"grid", gap:14}}>
+                  <div className="smeta" style={{textAlign:"right", cursor:"pointer"}} onClick={()=>toggleSubject(s.id)}>▲ hide</div>
+                  {GRADE_QUARTERS.filter(q=>q.id===selectedQuarter).map(q=>{
+                    const entry = subjGrades[q.id] || {mode:"final"};
+                    const mode = entry.mode || "final";
+                    const qGrade = computeQuarterGrade(s.id, entry);
+                    return (
+                      <div key={q.id} className="grade-qbox">
+                        <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10, flexWrap:"wrap", gap:8}}>
+                          <div style={{fontWeight:800}}>{q.label}</div>
+                          <div style={{display:"flex", gap:6, alignItems:"center"}}>
+                            <button
+                              className={"type-tab" + (mode==="final" ? " active":"")}
+                              style={{padding:"4px 10px", fontSize:"12px"}}
+                              onClick={()=>setGradeEntry(s.id, q.id, {mode:"final"})}
+                            >Final</button>
+                            <button
+                              className={"type-tab" + (mode==="detailed" ? " active":"")}
+                              style={{padding:"4px 10px", fontSize:"12px"}}
+                              onClick={()=>setGradeEntry(s.id, q.id, {mode:"detailed"})}
+                            >Detailed</button>
+                            <div className="smeta" style={{marginLeft:6, color:s.color, fontSize:"16px"}}>{qGrade!=null ? qGrade : "—"}</div>
+                          </div>
+                        </div>
+
+                        {mode==="final" ? (
+                          <div style={{display:"grid", gap:10}}>
+                            {[["ww","Written Work", w.ww],["pt","Performance Task", w.pt],["qa","Quarterly Assessment", w.qa]].map(([key,label,weight])=>(
+                              <div key={key}>
+                                <label className="field-label">{label} — {Math.round(weight*100)}% of Final Grade</label>
+                                <input
+                                  className="text-input"
+                                  type="number" min="0" max="100" inputMode="decimal"
+                                  value={entry[key] ?? ""}
+                                  onChange={e=>setGradeEntry(s.id, q.id, {[key]: e.target.value})}
+                                  placeholder="e.g. 95"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{display:"grid", gap:14}}>
+                            {[["ww","Written Work", w.ww],["pt","Performance Task", w.pt],["qa","Quarterly Assessment", w.qa]].map(([key,label,weight])=>{
+                              const items = entry[key] || [];
+                              return (
+                                <div key={key}>
+                                  <label className="field-label">{label} — {Math.round(weight*100)}% of Final Grade</label>
+                                  {items.length===0 && <div className="smeta" style={{marginBottom:6}}>No items yet.</div>}
+                                  {items.map((it,idx)=>(
+                                    <div key={idx} className="grade-comp-item">
+                                      <div style={{flex:1}}>
+                                        <label className="field-label">{label} #{idx+1} Score</label>
+                                        <input className="text-input" type="number" min="0" inputMode="decimal"
+                                          value={it.score ?? ""}
+                                          onChange={e=>updateGradeItem(s.id, q.id, key, idx, "score", e.target.value)}
+                                          placeholder="0" />
+                                      </div>
+                                      <div style={{flex:1}}>
+                                        <label className="field-label">out of</label>
+                                        <input className="text-input" type="number" min="0" inputMode="decimal"
+                                          value={it.total ?? ""}
+                                          onChange={e=>updateGradeItem(s.id, q.id, key, idx, "total", e.target.value)}
+                                          placeholder="0" />
+                                      </div>
+                                      <button className="grade-remove-btn" title="Remove" onClick={()=>removeGradeItem(s.id, q.id, key, idx)}>✕</button>
+                                    </div>
+                                  ))}
+                                  <button className="grade-add-btn" onClick={()=>addGradeItem(s.id, q.id, key)}>+ Add {label} #{items.length+1}</button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
         <div className="footer-note">SACRED HEART ACADEMY OF PASIG · GRADE SCHOOL DEPARTMENT</div>
       </React.Fragment>
     );
@@ -6362,7 +6670,7 @@ function App(){
               </div>
             </div>
           ) : (
-            <div className="journal-page learn-page">
+            <div className="journal-page">
               <div style={{display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10, flexWrap:"wrap"}}>
                 <h3 style={{marginTop:0}}>{lesson.title}{lesson.sub ? " — " + lesson.sub : ""}</h3>
                 <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
@@ -6373,45 +6681,32 @@ function App(){
               {rawLesson.homeQuarterId !== quarter.id && (
                 <p className="sub">📦 Originally in {subject.quarters.find(q=>q.id===rawLesson.homeQuarterId).num}, moved to {quarter.num}.</p>
               )}
-              {(()=>{
-                // On desktop, video(s) and notes sit side by side (video sticky) instead of
-                // stacking full-width one after another — keeps the Learn tab from turning
-                // into one very long scroll on a wide screen, while mobile keeps the simple
-                // stacked order.
-                const videoIds = getLessonVideos(lesson).map(youtubeEmbedId).filter(Boolean);
-                const notes = getLessonNotes(lesson);
-                const multiple = notes.length > 1;
-                const videoBlock = videoIds.length > 0 ? (
-                  <div className="learn-video-col">
-                    {videoIds.map((vid, i)=>(
-                      <div className="video-embed" key={i}>
-                        <iframe
-                          src={"https://www.youtube.com/embed/" + vid}
-                          title={lesson.title + " video " + (i+1)}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        ></iframe>
-                      </div>
-                    ))}
+              {getLessonVideos(lesson).map((url, i)=>{
+                const vid = youtubeEmbedId(url);
+                return vid ? (
+                  <div className="video-embed" key={i}>
+                    <iframe
+                      src={"https://www.youtube.com/embed/" + vid}
+                      title={lesson.title + " video " + (i+1)}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
                   </div>
                 ) : null;
-                const notesBlock = (
-                  <div className="learn-notes-col">
-                    {notes.map((note, i)=>(
-                      multiple ? (
-                        <div className="note-card" key={note.id || i}>
-                          <div className="note-card-head">📝 Note {i+1}</div>
-                          <div className="note-view" dangerouslySetInnerHTML={{__html: note.html}}></div>
-                        </div>
-                      ) : (
-                        <div className="note-view" key={note.id || i} dangerouslySetInnerHTML={{__html: note.html}}></div>
-                      )
-                    ))}
-                  </div>
-                );
-                return videoBlock ? (
-                  <div className="learn-layout">{videoBlock}{notesBlock}</div>
-                ) : notesBlock;
+              })}
+              {(()=>{
+                const notes = getLessonNotes(lesson);
+                const multiple = notes.length > 1;
+                return notes.map((note, i)=>(
+                  multiple ? (
+                    <div className="note-card" key={note.id || i}>
+                      <div className="note-card-head">📝 Note {i+1}</div>
+                      <div className="note-view" dangerouslySetInnerHTML={{__html: note.html}}></div>
+                    </div>
+                  ) : (
+                    <div className="note-view" key={note.id || i} dangerouslySetInnerHTML={{__html: note.html}}></div>
+                  )
+                ));
               })()}
               <div className="learn-footer">
                 <button className="btn btn-primary" style={{background:quarter.color}} onClick={()=>{markLearned(lesson.id); setTab("quiz");}}>
@@ -6556,6 +6851,8 @@ function App(){
     content = <GeneralScreen/>;
   } else if(nav.screen==="notes"){
     content = <NotesScreen/>;
+  } else if(nav.screen==="grades"){
+    content = <GradesScreen/>;
   } else if(nav.screen==="subjects"){
     content = <SubjectsScreen/>;
   } else {
@@ -6586,8 +6883,8 @@ function App(){
             if(next) setTimeout(()=>Sound.tap(), 30);
           }}
         >{settings.soundEnabled !== false ? "🔊" : "🔇"}</button>
+        <button className="settings-btn" title="Grades" onClick={goGrades}>🎓</button>
         <button className="settings-btn" title="Save everything now" onClick={saveEverythingNow}>💾</button>
-        <button className="settings-btn" title="Profile (coming soon)" disabled>👤</button>
         <button className="settings-btn" title="Export all data as JSON" onClick={exportAllData}>⬇️</button>
         <button className="settings-btn" title="Import data from JSON backup" onClick={()=>importInputRef.current && importInputRef.current.click()}>⬆️</button>
         <input
