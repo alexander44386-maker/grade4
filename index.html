@@ -43,6 +43,35 @@
     --aw-magenta: #FF3CAC;
     --aw-purple: #7B2FF7;
   }
+  body.dark-mode{
+    --paper: #14141F;
+    --paper-dark: #1D1D2C;
+    --card: #1B1B29;
+    --ink: #ECEBF5;
+    --ink-soft: #9F9CC2;
+    --line: #34334A;
+    --q1-soft: #3A2F17;
+    --q2-soft: #123328;
+    --q3-soft: #1E2745;
+    --q4-soft: #3A1D2C;
+    --shadow: 0 0 0 1px rgba(123,47,247,0.18), 0 4px 18px rgba(53,242,224,0.10), 0 2px 10px rgba(0,0,0,0.5);
+    --shadow-lg: 0 0 24px rgba(53,242,224,0.16), 0 0 40px rgba(123,47,247,0.12), 0 10px 26px rgba(0,0,0,0.55);
+    scrollbar-color: #3A3A54 #14141F;
+  }
+  body.dark-mode{
+    background:
+      radial-gradient(circle at 12% 8%, rgba(239,194,76,0.08), transparent 40%),
+      radial-gradient(circle at 88% 4%, rgba(104,134,242,0.10), transparent 38%),
+      radial-gradient(circle at 6px 6px, rgba(236,235,245,0.04) 2px, transparent 0) 0 0/28px 28px,
+      var(--paper);
+  }
+  body.dark-mode ::-webkit-scrollbar{width:12px;height:12px;}
+  body.dark-mode ::-webkit-scrollbar-track{background:#14141F;}
+  body.dark-mode ::-webkit-scrollbar-thumb{background:#3A3A54;border-radius:20px;border:2.5px solid #14141F;}
+  body.dark-mode ::-webkit-scrollbar-thumb:hover{background:#4B4A6B;}
+  body.dark-mode .progress-track{
+    box-shadow:inset 0 1px 4px rgba(0,0,0,0.55), inset 0 0 8px rgba(53,242,224,0.06);
+  }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
@@ -55,13 +84,14 @@
     font-family:'Nunito', sans-serif;
     font-size:16px;
     min-height:100vh;
+    transition:background-color .25s ease, color .25s ease;
   }
   #root{max-width:960px;margin:0 auto;padding:20px 16px 60px;}
   @media(min-width:1100px){ #root{max-width:1080px;padding:28px 24px 70px;} }
   @media(min-width:1440px){ #root{max-width:1180px;} }
   h1,h2,h3,.display{font-family:'Fredoka', sans-serif;}
   .mono{font-family:'Space Mono', monospace;}
-  button{font-family:'Nunito', sans-serif;cursor:pointer;}
+  button{font-family:'Nunito', sans-serif;cursor:pointer;color:var(--ink);}
   a{color:inherit;}
   :focus-visible{outline:3px solid var(--night);outline-offset:2px;border-radius:8px;}
   @media (prefers-reduced-motion: reduce){
@@ -141,6 +171,9 @@
     content:"⭐";position:absolute;right:18px;top:14px;font-size:26px;
     opacity:.7;transform:rotate(12deg);
     filter:drop-shadow(0 0 8px var(--aw-cyan));
+  }
+  body.dark-mode .passport::after{
+    content:"🌙";
   }
   .passport-title{
     font-family:'Fredoka', sans-serif;font-size:12.5px;letter-spacing:.1em;font-weight:600;
@@ -412,6 +445,13 @@
     padding:9px 12px;background:var(--paper-dark);
   }
   .note-block-num{font-family:'Fredoka';font-weight:700;font-size:13px;color:var(--ink-soft);}
+  .note-name-input{
+    flex:1;min-width:0;border:none;background:none;outline:none;
+    font-family:'Fredoka';font-weight:700;font-size:13px;color:var(--ink-soft);
+    padding:2px 4px;border-radius:6px;
+  }
+  .note-name-input:focus{background:var(--card);box-shadow:0 0 0 2px var(--line);}
+  .note-name-input::placeholder{color:var(--ink-soft);opacity:.7;}
   .note-remove-btn{
     background:none;border:none;color:var(--bad);font-weight:800;font-size:12.5px;
     font-family:'Fredoka';padding:4px 8px;border-radius:8px;
@@ -420,6 +460,7 @@
   .rt-toolbar{
     display:flex;align-items:center;flex-wrap:wrap;gap:4px;
     padding:8px 10px;background:var(--card);border-bottom:2px solid var(--line);
+    position:sticky;top:0;z-index:5;
   }
   .rt-btn{
     min-width:34px;height:32px;padding:0 9px;border-radius:9px;border:2px solid var(--line);
@@ -596,6 +637,7 @@
   .footer-note{
     text-align:center;color:var(--ink-soft);font-size:11.5px;font-family:'Fredoka';font-weight:600;letter-spacing:.03em;margin-top:36px;opacity:.8;
   }
+  .footer-heart-trigger{cursor:pointer;}
   .settings-btn{
     background:var(--card);border:2.5px solid var(--line);border-radius:14px;width:42px;height:42px;
     display:flex;align-items:center;justify-content:center;font-size:17px;
@@ -723,6 +765,20 @@
   }
   .stamp.complete::after{animation:stampPop .5s cubic-bezier(.34,1.56,.64,1) both;}
 
+  /* twinkling starfield background layer, shown only in dark mode */
+  .starfield{
+    position:fixed; inset:0; width:100vw; height:100vh; pointer-events:none; z-index:0; overflow:hidden;
+  }
+  .starfield-star{
+    position:absolute; border-radius:50%; background:#fff;
+    animation-name: starTwinkle; animation-timing-function: ease-in-out; animation-iteration-count:infinite;
+  }
+  @keyframes starTwinkle{
+    0%, 100%{opacity:var(--star-min,0.15); transform:scale(0.8);}
+    50%{opacity:var(--star-max,0.9); transform:scale(1.15);}
+  }
+  #root{position:relative; z-index:1;}
+
   /* confetti burst for a passing score */
   .confetti-wrap{position:relative; height:0; pointer-events:none;}
   .confetti-piece{
@@ -747,6 +803,33 @@
     50%{transform:translate(var(--dxMid,0px),52vh) rotate(var(--rotMid,300deg)) scale(1.05); opacity:1;}
     85%{opacity:1;}
     100%{transform:translate(var(--dx,0px),108vh) rotate(var(--rot,760deg)) scale(0.9); opacity:0;}
+  }
+
+  /* fireflies — calmer dark-mode celebration: soft glowing dots that rise and bob instead of falling */
+  .firefly-wrap .firefly-piece{
+    position:absolute; bottom:-4px; left:50%; border-radius:50%;
+    animation-timing-function: ease-in-out; animation-fill-mode:forwards; animation-name: fireflyFloat;
+  }
+  @keyframes fireflyFloat{
+    0%{transform:translate(0,0) scale(0.5); opacity:0;}
+    8%{opacity:1;}
+    22%{transform:translate(var(--dx1,8px),-22px) scale(1); opacity:0.35;}
+    38%{transform:translate(var(--dx2,-10px),-42px) scale(0.85); opacity:1;}
+    58%{transform:translate(var(--dx3,9px),-68px) scale(1.05); opacity:0.3;}
+    80%{transform:translate(var(--dx4,-7px),-92px) scale(0.9); opacity:0.9;}
+    100%{transform:translate(var(--dx5,4px),-115px) scale(0.6); opacity:0;}
+  }
+  .confetti-wrap.big.firefly-wrap .firefly-piece{
+    bottom:-2vh; animation-name: fireflyFloatBig;
+  }
+  @keyframes fireflyFloatBig{
+    0%{transform:translate(0,0) scale(0.5); opacity:0;}
+    8%{opacity:1;}
+    22%{transform:translate(var(--dx1,20px),-18vh) scale(1); opacity:0.35;}
+    38%{transform:translate(var(--dx2,-24px),-34vh) scale(0.85); opacity:1;}
+    58%{transform:translate(var(--dx3,22px),-55vh) scale(1.05); opacity:0.3;}
+    80%{transform:translate(var(--dx4,-18px),-75vh) scale(0.9); opacity:0.9;}
+    100%{transform:translate(var(--dx5,10px),-98vh) scale(0.6); opacity:0;}
   }
   @media(min-width:900px){
     .journal-page, .quiz-progress, .quiz-card, .results-card{
@@ -3293,11 +3376,13 @@ function transmuteGrade(rawPct){
   }
   return 60 + Math.floor(raw/4);
 }
-function honorLabel(avg){
+const DEFAULT_HONOR_THRESHOLDS = {highest:98, high:95, honors:90};
+function honorLabel(avg, thresholds){
+  const t = thresholds || DEFAULT_HONOR_THRESHOLDS;
   if(avg==null) return null;
-  if(avg>=98) return "With Highest Honors";
-  if(avg>=95) return "With High Honors";
-  if(avg>=90) return "With Honors";
+  if(avg>=t.highest) return "With Highest Honors";
+  if(avg>=t.high) return "With High Honors";
+  if(avg>=t.honors) return "With Honors";
   return null;
 }
 // A quarter entry is either:
@@ -3321,9 +3406,9 @@ function componentPct(entry, key){
   if(v==="" || v==null || isNaN(v)) return null;
   return Math.max(0, Math.min(100, Number(v)));
 }
-function computeQuarterGrade(subjectId, entry){
+function computeQuarterGrade(subjectId, entry, weightsOverride){
   if(!entry) return null;
-  const w = GRADE_WEIGHTS[subjectId];
+  const w = weightsOverride || GRADE_WEIGHTS[subjectId];
   if(!w) return null;
   const parts = ["ww","pt","qa"];
   let weightedSum = 0, weightUsed = 0;
@@ -3338,8 +3423,8 @@ function computeQuarterGrade(subjectId, entry){
   const rawPct = weightedSum/weightUsed;
   return transmuteGrade(rawPct);
 }
-function subjectFinalGrade(subjectId, gradesForSubject){
-  const vals = GRADE_QUARTERS.map(q=>computeQuarterGrade(subjectId, gradesForSubject && gradesForSubject[q.id])).filter(v=>v!=null);
+function subjectFinalGrade(subjectId, gradesForSubject, weightsOverride){
+  const vals = GRADE_QUARTERS.map(q=>computeQuarterGrade(subjectId, gradesForSubject && gradesForSubject[q.id], weightsOverride)).filter(v=>v!=null);
   if(!vals.length) return null;
   return vals.reduce((a,b)=>a+b,0)/vals.length;
 }
@@ -3348,8 +3433,8 @@ function subjectFinalGrade(subjectId, gradesForSubject){
 function subjectAdjust(gradesForSubject){
   return (gradesForSubject && Number(gradesForSubject.adjust)) || 0;
 }
-function subjectDisplayFinal(subjectId, gradesForSubject){
-  const base = subjectFinalGrade(subjectId, gradesForSubject);
+function subjectDisplayFinal(subjectId, gradesForSubject, weightsOverride){
+  const base = subjectFinalGrade(subjectId, gradesForSubject, weightsOverride);
   if(base==null) return null;
   return Math.max(60, Math.min(100, Math.round(base) + subjectAdjust(gradesForSubject)));
 }
@@ -3363,6 +3448,34 @@ function loadGrades(){
 }
 function saveGrades(g){
   try{ localStorage.setItem(GRADES_KEY, JSON.stringify(g)); }catch(e){}
+  queueCloudSync();
+}
+
+// Editable copy of GRADE_WEIGHTS / DEFAULT_HONOR_THRESHOLDS, so a parent can
+// retune the WW/PT/QA split per subject and the honor-roll cutoffs without
+// touching code. Falls back to the code defaults for any subject missing
+// from a saved (older) config.
+const GRADE_CONFIG_KEY = "gs4_grade_config_v1";
+function defaultGradeConfig(){
+  const weights = {};
+  Object.keys(GRADE_WEIGHTS).forEach(k=>{ weights[k] = {...GRADE_WEIGHTS[k]}; });
+  return {weights, honors: {...DEFAULT_HONOR_THRESHOLDS}};
+}
+function loadGradeConfig(){
+  const def = defaultGradeConfig();
+  try{
+    const raw = localStorage.getItem(GRADE_CONFIG_KEY);
+    if(raw){
+      const saved = JSON.parse(raw);
+      const weights = {...def.weights, ...(saved.weights||{})};
+      Object.keys(weights).forEach(k=>{ weights[k] = {...def.weights[k], ...(saved.weights && saved.weights[k])}; });
+      return {weights, honors: {...def.honors, ...(saved.honors||{})}};
+    }
+  }catch(e){}
+  return def;
+}
+function saveGradeConfig(cfg){
+  try{ localStorage.setItem(GRADE_CONFIG_KEY, JSON.stringify(cfg)); }catch(e){}
   queueCloudSync();
 }
 
@@ -4496,27 +4609,87 @@ function QuizRunner({questions, accent, onFinish, tagLabel, onStop, showStopInli
 const CONFETTI_COLORS = ["var(--q1)","var(--q2)","var(--q3)","var(--q4)","var(--gold)"];
 const REWARD_CONFETTI_COLORS = ["var(--aw-cyan)","var(--aw-magenta)","var(--aw-purple)","var(--gold)","#ffffff"];
 const PERFECT_CONFETTI_COLORS = ["var(--aw-cyan)","var(--aw-magenta)","var(--aw-purple)","var(--gold)","#ffffff","var(--q1)","var(--q2)","var(--q3)"];
-function Confetti({variant, big}){
-  const palette = variant === "perfect" ? PERFECT_CONFETTI_COLORS : variant === "reward" ? REWARD_CONFETTI_COLORS : CONFETTI_COLORS;
-  const count = big ? 90 : 18;
-  const pieces = React.useMemo(()=>Array.from({length:count}, (_,i)=>{
-    const dir = Math.random()>0.5 ? 1 : -1;
-    const spread = big ? 220 : 60;
+// warm soft glow tones used for the dark-mode "fireflies" celebration instead of falling confetti
+const FIREFLY_COLORS = ["#FFE066","#B4FF6B","#7CFFCB","#FFD37C","#FFF3B0"];
+/* Subtle twinkling starfield shown behind everything while dark mode is on. */
+function Starfield(){
+  const stars = React.useMemo(()=>Array.from({length:70}, (_,i)=>{
+    const size = 1 + Math.random()*2.2;
     return {
-      left: big ? Math.random()*100 : 4 + Math.random()*92,
-      dxMid: (dir * (10 + Math.random()*spread*0.6))+"px",
-      dx: (dir * (Math.random()*spread))+"px",
-      rotMid: (Math.random()*260+120)+"deg",
-      rot: (Math.random()*680+260)+"deg",
-      delay: (Math.random()*(big?0.6:0.25))+"s",
-      dur: (big ? 1.8+Math.random()*1.1 : 1.1+Math.random()*0.6)+"s",
-      color: palette[i % palette.length],
-      round: Math.random()>0.5
+      top: Math.random()*100,
+      left: Math.random()*100,
+      size,
+      dur: (2.2 + Math.random()*3.5)+"s",
+      delay: (Math.random()*4)+"s",
+      min: (0.05 + Math.random()*0.2).toFixed(2),
+      max: (0.55 + Math.random()*0.45).toFixed(2)
     };
-  }), [variant, big, count]);
+  }), []);
+  return (
+    <div className="starfield" aria-hidden="true">
+      {stars.map((s,i)=>(
+        <div key={i} className="starfield-star" style={{
+          top:s.top+"%", left:s.left+"%", width:s.size+"px", height:s.size+"px",
+          animationDuration:s.dur, animationDelay:s.delay,
+          "--star-min":s.min, "--star-max":s.max
+        }}/>
+      ))}
+    </div>
+  );
+}
+function Confetti({variant, big}){
+  const dark = typeof document !== "undefined" && document.body.classList.contains("dark-mode");
+  const palette = variant === "perfect" ? PERFECT_CONFETTI_COLORS : variant === "reward" ? REWARD_CONFETTI_COLORS : CONFETTI_COLORS;
+  const count = dark ? (big ? 55 : 14) : (big ? 90 : 18);
+
+  const items = React.useMemo(()=>{
+    if(dark){
+      const rand = (min,max)=> min + Math.random()*(max-min);
+      return Array.from({length:count}, (_,i)=>({
+        left: big ? Math.random()*100 : 6 + Math.random()*88,
+        size: (big ? rand(6,10) : rand(5,8)).toFixed(1)+"px",
+        dx1: rand(-16,16)+"px", dx2: rand(-22,22)+"px", dx3: rand(-18,18)+"px",
+        dx4: rand(-24,24)+"px", dx5: rand(-14,14)+"px",
+        delay: (Math.random()*(big?3.2:1.4))+"s",
+        dur: (big ? rand(4.2,7.4) : rand(3.2,5.6))+"s",
+        color: FIREFLY_COLORS[i % FIREFLY_COLORS.length]
+      }));
+    }
+    const dir0 = ()=> Math.random()>0.5 ? 1 : -1;
+    const spread = big ? 220 : 60;
+    return Array.from({length:count}, (_,i)=>{
+      const dir = dir0();
+      return {
+        left: big ? Math.random()*100 : 4 + Math.random()*92,
+        dxMid: (dir * (10 + Math.random()*spread*0.6))+"px",
+        dx: (dir * (Math.random()*spread))+"px",
+        rotMid: (Math.random()*260+120)+"deg",
+        rot: (Math.random()*680+260)+"deg",
+        delay: (Math.random()*(big?0.6:0.25))+"s",
+        dur: (big ? 1.8+Math.random()*1.1 : 1.1+Math.random()*0.6)+"s",
+        color: palette[i % palette.length],
+        round: Math.random()>0.5
+      };
+    });
+  }, [variant, big, count, dark]);
+
+  if(dark){
+    return (
+      <div className={"confetti-wrap firefly-wrap" + (big ? " big" : "")} aria-hidden="true">
+        {items.map((f,i)=>(
+          <div key={i} className="firefly-piece" style={{
+            left:f.left+"%", width:f.size, height:f.size, background:f.color,
+            boxShadow: "0 0 6px 2px "+f.color+", 0 0 16px 6px "+f.color+"66",
+            animationDelay:f.delay, animationDuration:f.dur,
+            "--dx1":f.dx1, "--dx2":f.dx2, "--dx3":f.dx3, "--dx4":f.dx4, "--dx5":f.dx5
+          }}/>
+        ))}
+      </div>
+    );
+  }
   return (
     <div className={"confetti-wrap" + (big ? " big" : "")} aria-hidden="true">
-      {pieces.map((p,i)=>(
+      {items.map((p,i)=>(
         <div key={i} className="confetti-piece" style={{
           left:p.left+"%", background:p.color,
           borderRadius: p.round ? "50%" : "2px",
@@ -4623,7 +4796,7 @@ function ResultsView({answers, accent, onRetry, onDone, title}){
    RICH-TEXT NOTE EDITOR — a single formattable lesson-note block
    (bold/italic/underline/list/font/size/color, incl. Ctrl+B/I/U)
    ========================================================= */
-function NoteEditor({initialHtml, registerRef, onRemove, canRemove, index}){
+function NoteEditor({initialHtml, initialName, onNameChange, registerRef, onRemove, canRemove, index}){
   const divRef = useRef(null);
   const savedRange = useRef(null);
 
@@ -4672,7 +4845,15 @@ function NoteEditor({initialHtml, registerRef, onRemove, canRemove, index}){
   return (
     <div className="note-block">
       <div className="note-block-head">
-        <span className="note-block-num">📝 Note {index}</span>
+        <span className="note-block-num">📝</span>
+        <input
+          type="text"
+          className="note-name-input"
+          value={initialName}
+          onChange={e=>onNameChange(e.target.value)}
+          placeholder={"Note " + index}
+          title="Rename this lesson note"
+        />
         {canRemove && (
           <button type="button" className="note-remove-btn" onClick={onRemove} title="Remove this note">✕ Remove</button>
         )}
@@ -4728,12 +4909,16 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
 
   const initialNotes = useMemo(()=>{
     const n = getLessonNotes(lesson);
-    const withIds = (n.length ? n : [{html:""}]).map(b=>({id: b.id || newNoteId(), html: b.html || ""}));
+    const withIds = (n.length ? n : [{html:""}]).map(b=>({id: b.id || newNoteId(), html: b.html || "", name: b.name || ""}));
     return withIds;
   }, [lesson.id]);
-  const [noteBlocks, setNoteBlocks] = useState(()=>initialNotes.map(b=>({id: b.id})));
+  const [noteBlocks, setNoteBlocks] = useState(()=>initialNotes.map(b=>({id: b.id, name: b.name})));
   const initialHtmlRef = useRef(Object.fromEntries(initialNotes.map(b=>[b.id, b.html])));
   const noteRefs = useRef({});
+
+  function renameNote(id, name){
+    setNoteBlocks(prev => prev.map(b => b.id === id ? {...b, name} : b));
+  }
 
   const initialVideos = useMemo(()=>{
     const v = getLessonVideos(lesson);
@@ -4744,7 +4929,7 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
   function addNote(){
     const id = newNoteId();
     initialHtmlRef.current[id] = "";
-    setNoteBlocks(prev => [...prev, {id}]);
+    setNoteBlocks(prev => [...prev, {id, name: ""}]);
   }
   function removeNote(id){
     setNoteBlocks(prev => prev.length > 1 ? prev.filter(b=>b.id !== id) : prev);
@@ -4759,7 +4944,7 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
     const notes = noteBlocks.map(b=>{
       const el = noteRefs.current[b.id];
       const html = el ? sanitizeHtml(el.innerHTML) : (initialHtmlRef.current[b.id] || "");
-      return {id: b.id, html};
+      return {id: b.id, html, name: (b.name || "").trim()};
     });
     const youtubeUrls = videoLinks.map(v=>v.trim()).filter(Boolean);
     onSave({title: title.trim() || lesson.title, sub: sub.trim(), notes, youtubeUrls});
@@ -4777,6 +4962,8 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
         <NoteEditor
           key={b.id}
           initialHtml={initialHtmlRef.current[b.id] || ""}
+          initialName={b.name || ""}
+          onNameChange={name=>renameNote(b.id, name)}
           registerRef={el=>{ noteRefs.current[b.id] = el; }}
           onRemove={()=>removeNote(b.id)}
           canRemove={noteBlocks.length > 1}
@@ -4970,6 +5157,7 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
   const [selected, setSelected] = useState(new Set());
   const [editingIndex, setEditingIndex] = useState(null);
   const [draft, setDraft] = useState(null);
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   function startEdit(i){
     setEditingIndex(i);
@@ -5313,10 +5501,60 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
     setSelected(new Set());
   }
 
+  if(showBulkImport){
+    return (
+      <div className="journal-page">
+        <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8}}>
+          <h3 style={{margin:0}}>➕ Bulk Import from JSON</h3>
+          <button className="btn btn-ghost btn-sm" onClick={()=>setShowBulkImport(false)}>← Back to Question Bank</button>
+        </div>
+        <p className="sub">Paste an array of questions, or use the copy button on any format below as a starting point.</p>
+        <CopyableJson label="🔤 Multiple Choice"
+          json={'[{"q":"...","options":["A","B","C","D"],"correct":0,"explain":"...","topic":"Comparing"}]'} />
+        <CopyableJson label="✅ True / False"
+          json={'[{"type":"tf","q":"...","correct":0,"explain":"...","topic":"Ordering"}]'}
+          note='correct: 0 = True, 1 = False' />
+        <CopyableJson label="🇵🇭 Tama o Mali"
+          json={'[{"type":"tama","q":"...","correct":0,"explain":"...","topic":"Ordering"}]'}
+          note='correct: 0 = Tama, 1 = Mali' />
+        <CopyableJson label="✍️ Fill in the Blank"
+          json={'[{"type":"fill","q":"...","answer":"...","explain":"...","topic":"Rounding"}]'} />
+        <CopyableJson label="🔗 Matching"
+          json={'[{"type":"match","q":"Match the scientist to their invention","pairs":[{"left":"Edison","right":"Light bulb"},{"left":"Bell","right":"Telephone"}],"explain":"...","topic":"Inventors"}]'} />
+        <CopyableJson label="🧩 Drag and Drop"
+          json={'[{"type":"dragdrop","q":"Sort into Solid, Liquid, Gas","categories":["Solid","Liquid","Gas"],"items":[{"label":"Ice","category":"Solid"},{"label":"Water","category":"Liquid"},{"label":"Steam","category":"Gas"}],"explain":"...","topic":"Matter"}]'}
+          note={'Each item\'s "category" must exactly match one of the "categories".'} />
+        <CopyableJson label="📋 Ordering / Sequencing"
+          json={'[{"type":"order","q":"Arrange the butterfly life cycle","items":["Egg","Larva","Pupa","Adult"],"explain":"...","topic":"Life Cycles"}]'}
+          note={'List "items" in the correct order — they\'ll be shuffled for the student.'} />
+        <CopyableJson label="🖼️ Label the Parts"
+          json={'[{"type":"label","q":"Label the parts of the plant cell","image":"https://example.com/cell.png","points":[{"x":20,"y":30,"label":"Nucleus"},{"x":50,"y":60,"label":"Cell wall"}],"explain":"...","topic":"Cells"}]'}
+          note='"x"/"y" are % position on the image, 0–100. You can also paste just "image" and "q" with no "points", then click ✏️ Edit to click on the picture and drop pins.' />
+        <CopyableJson label="🔢 Number Pattern"
+          json={'[{"type":"pattern","q":"Fill in the missing numbers","sequence":[2,4,"_",8,"_","_",12],"blanks":[6,10,11],"explain":"...","topic":"Skip Counting"}]'}
+          note={'Put "_" in "sequence" for each blank, in order, then give each blank\'s answer in "blanks".'} />
+        <p className="sub">"topic" is optional on all types — leave it out (or empty) for questions with no topic.</p>
+        <label className="field-label">Topic for this batch (optional)</label>
+        <input className="text-input" list="topic-suggestions" value={bulkTopic} onChange={e=>setBulkTopic(e.target.value)} placeholder="e.g. Comparing — applied to any question below with no topic of its own" />
+        <datalist id="topic-suggestions">
+          {topics.map(t=>(<option key={t} value={t} />))}
+        </datalist>
+        <p className="fill-hint">If a question in the JSON already has its own "topic", that's kept. Otherwise this batch topic is used. Leave blank for no topic.</p>
+        <textarea className="text-area" rows={8} value={bulkText} onChange={e=>setBulkText(e.target.value)} placeholder="Paste JSON array here..."></textarea>
+        <div className="learn-footer" style={{gap:10}}>
+          <button className="btn btn-primary" style={{background:accent}} onClick={()=>handleBulkImport("append")}>➕ Append to Bank</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="journal-page">
-      <h3>Question Bank {questions.length ? "(" + questions.length + ")" : ""}</h3>
-      {questions.length === 0 && <p className="sub">No questions yet. Paste a JSON list below to add multiple choice, true/false, tama o mali, fill-in-the-blank, matching, drag-and-drop, ordering, label-the-parts, or number-pattern questions.</p>}
+      <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8}}>
+        <h3 style={{margin:0}}>Question Bank {questions.length ? "(" + questions.length + ")" : ""}</h3>
+        <button className="btn btn-ghost btn-sm" onClick={()=>setShowBulkImport(true)}>➕ JSON</button>
+      </div>
+      {questions.length === 0 && <p className="sub">No questions yet. Tap "JSON" above to bulk import multiple choice, true/false, tama o mali, fill-in-the-blank, matching, drag-and-drop, ordering, label-the-parts, or number-pattern questions.</p>}
 
       {questions.length > 0 && (
         <div className="bank-toolbar">
@@ -5633,46 +5871,6 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
           </div>
         );
       })}
-
-      <div style={{marginTop:24}}>
-        <h3>➕ Bulk Import from JSON</h3>
-        <p className="sub">Paste an array of questions, or use the copy button on any format below as a starting point.</p>
-        <CopyableJson label="🔤 Multiple Choice"
-          json={'[{"q":"...","options":["A","B","C","D"],"correct":0,"explain":"...","topic":"Comparing"}]'} />
-        <CopyableJson label="✅ True / False"
-          json={'[{"type":"tf","q":"...","correct":0,"explain":"...","topic":"Ordering"}]'}
-          note='correct: 0 = True, 1 = False' />
-        <CopyableJson label="🇵🇭 Tama o Mali"
-          json={'[{"type":"tama","q":"...","correct":0,"explain":"...","topic":"Ordering"}]'}
-          note='correct: 0 = Tama, 1 = Mali' />
-        <CopyableJson label="✍️ Fill in the Blank"
-          json={'[{"type":"fill","q":"...","answer":"...","explain":"...","topic":"Rounding"}]'} />
-        <CopyableJson label="🔗 Matching"
-          json={'[{"type":"match","q":"Match the scientist to their invention","pairs":[{"left":"Edison","right":"Light bulb"},{"left":"Bell","right":"Telephone"}],"explain":"...","topic":"Inventors"}]'} />
-        <CopyableJson label="🧩 Drag and Drop"
-          json={'[{"type":"dragdrop","q":"Sort into Solid, Liquid, Gas","categories":["Solid","Liquid","Gas"],"items":[{"label":"Ice","category":"Solid"},{"label":"Water","category":"Liquid"},{"label":"Steam","category":"Gas"}],"explain":"...","topic":"Matter"}]'}
-          note={'Each item\'s "category" must exactly match one of the "categories".'} />
-        <CopyableJson label="📋 Ordering / Sequencing"
-          json={'[{"type":"order","q":"Arrange the butterfly life cycle","items":["Egg","Larva","Pupa","Adult"],"explain":"...","topic":"Life Cycles"}]'}
-          note={'List "items" in the correct order — they\'ll be shuffled for the student.'} />
-        <CopyableJson label="🖼️ Label the Parts"
-          json={'[{"type":"label","q":"Label the parts of the plant cell","image":"https://example.com/cell.png","points":[{"x":20,"y":30,"label":"Nucleus"},{"x":50,"y":60,"label":"Cell wall"}],"explain":"...","topic":"Cells"}]'}
-          note='"x"/"y" are % position on the image, 0–100. You can also paste just "image" and "q" with no "points", then click ✏️ Edit to click on the picture and drop pins.' />
-        <CopyableJson label="🔢 Number Pattern"
-          json={'[{"type":"pattern","q":"Fill in the missing numbers","sequence":[2,4,"_",8,"_","_",12],"blanks":[6,10,11],"explain":"...","topic":"Skip Counting"}]'}
-          note={'Put "_" in "sequence" for each blank, in order, then give each blank\'s answer in "blanks".'} />
-        <p className="sub">"topic" is optional on all types — leave it out (or empty) for questions with no topic.</p>
-        <label className="field-label">Topic for this batch (optional)</label>
-        <input className="text-input" list="topic-suggestions" value={bulkTopic} onChange={e=>setBulkTopic(e.target.value)} placeholder="e.g. Comparing — applied to any question below with no topic of its own" />
-        <datalist id="topic-suggestions">
-          {topics.map(t=>(<option key={t} value={t} />))}
-        </datalist>
-        <p className="fill-hint">If a question in the JSON already has its own "topic", that's kept. Otherwise this batch topic is used. Leave blank for no topic.</p>
-        <textarea className="text-area" rows={8} value={bulkText} onChange={e=>setBulkText(e.target.value)} placeholder="Paste JSON array here..."></textarea>
-        <div className="learn-footer" style={{gap:10}}>
-          <button className="btn btn-primary" style={{background:accent}} onClick={()=>handleBulkImport("append")}>➕ Append to Bank</button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -5691,6 +5889,7 @@ function App(){
   const [activity, setActivity] = useState(loadActivity());
   const [generalKnown, setGeneralKnown] = useState(loadGeneralKnown());
   const [grades, setGrades] = useState(loadGrades());
+  const [gradeConfig, setGradeConfig] = useState(loadGradeConfig());
   const [nav, setNav] = useState({screen:"dashboard"});
   const [quizSession, setQuizSession] = useState(null); // {kind:'lesson'|'long', questions, accent, title, key}
   const [saveFlash, setSaveFlash] = useState(false);
@@ -5705,7 +5904,11 @@ function App(){
   useEffect(()=>{ saveActivity(activity); }, [activity]);
   useEffect(()=>{ saveGeneralKnown(generalKnown); }, [generalKnown]);
   useEffect(()=>{ saveGrades(grades); }, [grades]);
+  useEffect(()=>{ saveGradeConfig(gradeConfig); }, [gradeConfig]);
   useEffect(()=>{ setSoundEnabled(settings.soundEnabled !== false); }, [settings.soundEnabled]);
+  useEffect(()=>{
+    document.body.classList.toggle("dark-mode", !!settings.darkMode);
+  }, [settings.darkMode]);
 
   useEffect(()=>{
     // If the background Firebase pull finds newer data than what we
@@ -5720,6 +5923,7 @@ function App(){
       setActivity(loadActivity());
       setGeneralKnown(loadGeneralKnown());
       setGrades(loadGrades());
+      setGradeConfig(loadGradeConfig());
     }
     window.addEventListener("gs4-cloud-synced", onCloudSynced);
     return () => window.removeEventListener("gs4-cloud-synced", onCloudSynced);
@@ -5873,6 +6077,18 @@ function App(){
       return {...prev, [subjectId]: subj};
     });
   }
+  function setSubjectWeight(subjectId, key, value){
+    setGradeConfig(prev=>({
+      ...prev,
+      weights: {...prev.weights, [subjectId]: {...prev.weights[subjectId], [key]: value}}
+    }));
+  }
+  function setHonorThreshold(key, value){
+    setGradeConfig(prev=>({...prev, honors: {...prev.honors, [key]: value}}));
+  }
+  function resetGradeConfig(){
+    setGradeConfig(defaultGradeConfig());
+  }
   function adjustSubjectFinal(subjectId, delta){
     setGrades(prev=>{
       const subj = {...(prev[subjectId]||{})};
@@ -6017,7 +6233,23 @@ function App(){
           })}
         </div>
 
-        <div className="footer-note">SACRED HEART ACADEMY OF PASIG · GRADE SCHOOL DEPARTMENT</div>
+        <div className="footer-note">
+          SACRED{" "}
+          <span
+            className="footer-heart-trigger"
+            title="Sacred Heart Academy of Pasig"
+            onClick={()=>{
+              const entered = window.prompt("💀😈 Enter the SECRET CODE, if you dare... 😈💀");
+              if(entered === null) return;
+              if(entered === "g456"){
+                updateSettings({darkMode: !settings.darkMode});
+              } else {
+                window.alert("👻 Nope! That's not the secret code, try again... 👻");
+              }
+            }}
+          >HEART</span>{" "}
+          ACADEMY OF PASIG · GRADE SCHOOL DEPARTMENT
+        </div>
       </React.Fragment>
     );
   }
@@ -6061,15 +6293,17 @@ function App(){
   function GradesScreen(){
     const [openSubject, setOpenSubject] = useState(null);
     const [selectedQuarter, setSelectedQuarter] = useState(GRADE_QUARTERS[0].id);
+    const [showSettings, setShowSettings] = useState(false);
 
-    const subjectFinals = GRADED_SUBJECTS.map(s=>({s, final: subjectDisplayFinal(s.id, grades[s.id])}));
+    const weightFor = sid => gradeConfig.weights[sid] || GRADE_WEIGHTS[sid];
+    const subjectFinals = GRADED_SUBJECTS.map(s=>({s, final: subjectDisplayFinal(s.id, grades[s.id], weightFor(s.id))}));
     const withGrade = subjectFinals.filter(x=>x.final!=null);
     const generalAvg = withGrade.length ? withGrade.reduce((a,x)=>a+x.final,0)/withGrade.length : null;
-    const honor = honorLabel(generalAvg);
+    const honor = honorLabel(generalAvg, gradeConfig.honors);
 
     // Column averages across every subject, for the report-card footer row.
     const quarterAverages = GRADE_QUARTERS.map(q=>{
-      const vals = GRADED_SUBJECTS.map(s=>computeQuarterGrade(s.id, (grades[s.id]||{})[q.id])).filter(v=>v!=null);
+      const vals = GRADED_SUBJECTS.map(s=>computeQuarterGrade(s.id, (grades[s.id]||{})[q.id], weightFor(s.id))).filter(v=>v!=null);
       return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
     });
 
@@ -6091,7 +6325,68 @@ function App(){
             <div className="qnum">Report Card</div>
             <h1 style={{margin:0, fontSize:"22px"}}>🎓 Grades</h1>
           </div>
+          <button
+            className="backbtn"
+            style={{marginLeft:"auto"}}
+            title="Grading settings"
+            onClick={()=>{ Sound.nav(); setShowSettings(v=>!v); }}
+          >⚙️</button>
         </div>
+
+        {showSettings && (
+          <div className="passport rc-passport" onClick={e=>e.stopPropagation()}>
+            <div className="passport-title" style={{display:"flex", alignItems:"center", justifyContent:"space-between"}}>
+              <span>Grading Settings</span>
+              <button
+                className="smeta"
+                style={{background:"none", border:"none", cursor:"pointer", textDecoration:"underline"}}
+                onClick={()=>{ Sound.tap(); resetGradeConfig(); }}
+              >Reset to defaults</button>
+            </div>
+
+            <div className="field-label" style={{marginTop:6}}>Honor roll cutoffs (general average)</div>
+            <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:16}}>
+              {[["highest","Highest Honors"],["high","High Honors"],["honors","With Honors"]].map(([key,label])=>(
+                <div key={key}>
+                  <label className="field-label">{label}</label>
+                  <input
+                    className="text-input"
+                    type="number" min="0" max="100" inputMode="decimal"
+                    value={gradeConfig.honors[key] ?? ""}
+                    onChange={e=>setHonorThreshold(key, e.target.value===""? "" : Number(e.target.value))}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="field-label">Transmutation weights per subject (Written Work / Performance Task / Quarterly Assessment)</div>
+            <div style={{display:"grid", gap:10}}>
+              {GRADED_SUBJECTS.map(s=>{
+                const w = weightFor(s.id);
+                return (
+                  <div key={s.id} style={{display:"grid", gridTemplateColumns:"auto 1fr 1fr 1fr", gap:8, alignItems:"center"}}>
+                    <div className="smeta" style={{whiteSpace:"nowrap"}}>{s.icon} {s.shortName}</div>
+                    {[["ww","WW"],["pt","PT"],["qa","QA"]].map(([key,label])=>(
+                      <div key={key}>
+                        <label className="field-label">{label} %</label>
+                        <input
+                          className="text-input"
+                          type="number" min="0" max="100" inputMode="decimal"
+                          value={Math.round((w[key]??0)*100)}
+                          onChange={e=>{
+                            const pct = e.target.value===""? "" : Number(e.target.value);
+                            setSubjectWeight(s.id, key, pct===""? "" : pct/100);
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="smeta" style={{marginTop:8}}>WW + PT + QA should add up to 100% per subject.</div>
+          </div>
+        )}
 
         <div className="passport rc-passport">
           <div className="passport-title">Report Card — All Subjects</div>
@@ -6110,7 +6405,7 @@ function App(){
                 <div key={s.id} className="rc-row" style={{cursor:"pointer"}} onClick={()=>{ setOpenSubject(s.id); Sound.nav(); }}>
                   <div className="rc-subj"><span>{s.icon}</span><span>{s.shortName}</span></div>
                   {GRADE_QUARTERS.map(q=>{
-                    const g = computeQuarterGrade(s.id, subjGrades[q.id]);
+                    const g = computeQuarterGrade(s.id, subjGrades[q.id], weightFor(s.id));
                     return <div key={q.id} className="rc-cell">{g!=null ? g : "—"}</div>;
                   })}
                   <div className="rc-final-wrap">
@@ -6150,9 +6445,9 @@ function App(){
         </div>
         {GRADED_SUBJECTS.map(s=>{
           const subjGrades = grades[s.id] || {};
-          const final = subjectDisplayFinal(s.id, subjGrades);
+          const w = weightFor(s.id);
+          const final = subjectDisplayFinal(s.id, subjGrades, w);
           const isOpen = openSubject===s.id;
-          const w = GRADE_WEIGHTS[s.id];
           return (
             <div key={s.id} className="subject-card" style={{cursor:"pointer", marginBottom:12}} onClick={()=>toggleSubject(s.id)}>
               <div style={{display:"flex", alignItems:"center", justifyContent:"space-between"}}>
@@ -6182,7 +6477,7 @@ function App(){
                   {GRADE_QUARTERS.filter(q=>q.id===selectedQuarter).map(q=>{
                     const entry = subjGrades[q.id] || {mode:"final"};
                     const mode = entry.mode || "final";
-                    const qGrade = computeQuarterGrade(s.id, entry);
+                    const qGrade = computeQuarterGrade(s.id, entry, w);
                     return (
                       <div key={q.id} className="grade-qbox">
                         <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10, flexWrap:"wrap", gap:8}}>
@@ -6470,7 +6765,7 @@ function App(){
       const best = rec && rec.best;
       const qCount = getQuestions(l.id).length;
       return (
-        <button key={l.id} className="lesson-card" style={{width:"100%", border:"2px solid var(--line)", background:"#fff", animationDelay:Math.min(counter*0.04,0.4)+"s"}} onClick={()=>goLesson(subject.id, quarter.id, l.id)}>
+        <button key={l.id} className="lesson-card" style={{width:"100%", border:"2px solid var(--line)", animationDelay:Math.min(counter*0.04,0.4)+"s"}} onClick={()=>goLesson(subject.id, quarter.id, l.id)}>
           <div className="lesson-num" style={{background:quarter.color}}>{counter}</div>
           <div className="lesson-body">
             <h3>{l.title}</h3>
@@ -6700,7 +6995,7 @@ function App(){
                 return notes.map((note, i)=>(
                   multiple ? (
                     <div className="note-card" key={note.id || i}>
-                      <div className="note-card-head">📝 Note {i+1}</div>
+                      <div className="note-card-head">📝 {note.name && note.name.trim() ? note.name.trim() : "Note " + (i+1)}</div>
                       <div className="note-view" dangerouslySetInnerHTML={{__html: note.html}}></div>
                     </div>
                   ) : (
@@ -6874,6 +7169,13 @@ function App(){
         </div>
       </div>
       <div className="header-actions">
+        {settings.darkMode && (
+          <button
+            className="settings-btn"
+            title="Turn off dark mode"
+            onClick={()=>updateSettings({darkMode: false})}
+          >☀️</button>
+        )}
         <button
           className="settings-btn"
           title={settings.soundEnabled !== false ? "Mute sound" : "Unmute sound"}
@@ -6904,6 +7206,7 @@ function App(){
 
   return (
     <React.Fragment>
+      {settings.darkMode && <Starfield/>}
       {!nav.subjectId && headerBar}
       {saveFlash && <div className="save-toast">{saveFlash}</div>}
       <div key={screenKey} className="screen-enter">{content}</div>
