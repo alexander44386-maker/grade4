@@ -3921,20 +3921,28 @@ function loadStoryVoiceLangPref(){
 function saveStoryVoiceLangPref(v){
   try{ localStorage.setItem(STORY_VOICE_LANG_KEY, v || ""); }catch(e){}
 }
-let _storyVoiceCache = {};
+// Some browsers/OSes tag the Filipino voice with the older Tagalog code
+// ("tl") instead of "fil" (or vice versa) — treat those as the same
+// language so picking either one in the dropdown reliably finds it.
+const STORY_LANG_ALIASES = { fil: ["fil","tl"], tl: ["tl","fil"] };
 function getStoryVoices(langPrefix){
   if(!('speechSynthesis' in window)) return [];
-  const key = langPrefix || "";
-  if(_storyVoiceCache[key]) return _storyVoiceCache[key];
+  const key = (langPrefix || "").toLowerCase();
+  // Always read straight from the browser instead of keeping our own
+  // cache on top of it. speechSynthesis.getVoices() is already cheap, and
+  // the old custom cache was the actual bug: once a language's entry was
+  // cached, later selecting a DIFFERENT language could still end up
+  // reusing a stale/empty cache entry from before voices had finished
+  // loading, so the story kept speaking in the previously-selected
+  // (or default) language instead of the newly-selected one.
   const all = speechSynthesis.getVoices();
-  const filtered = key
-    ? all.filter(v=> v.lang && v.lang.toLowerCase().startsWith(key.toLowerCase()))
-    : all.filter(v=>/^en/i.test(v.lang));
-  _storyVoiceCache[key] = filtered.length ? filtered : all;
-  return _storyVoiceCache[key];
-}
-if(typeof window !== "undefined" && 'speechSynthesis' in window){
-  speechSynthesis.addEventListener('voiceschanged', ()=>{ _storyVoiceCache = {}; });
+  if(!key) return all.filter(v=>/^en/i.test(v.lang));
+  const codes = STORY_LANG_ALIASES[key] || [key];
+  // No silent fallback to "all voices" here on purpose — if nothing
+  // actually matches the selected language, playStory() below falls back
+  // to just hinting the browser via utterance.lang instead of picking a
+  // random unrelated voice.
+  return all.filter(v=> v.lang && codes.some(c=> v.lang.toLowerCase().startsWith(c)));
 }
 // Scans whatever voices this browser/device actually has installed and
 // returns one entry per distinct language (e.g. Filipino only shows up
@@ -4011,14 +4019,27 @@ function playStory(text, {onSegment, onEnd, lang} = {}){
     const info = voiceMap[seg.speaker || STORY_NARRATOR_KEY] || {voice:null, pitch:1, rateBase:1};
     const emo = storyEmotionForLine(seg.text);
     const u = new SpeechSynthesisUtterance(seg.text);
-    if(info.voice){ u.voice = info.voice; u.lang = info.voice.lang; }
+    if(info.voice){
+      u.voice = info.voice;
+      u.lang = info.voice.lang;
+    } else if(lang){
+      // No installed voice exactly matches the selected language — still
+      // hint the browser toward it via lang instead of leaving it unset
+      // (which is what silently produced "still plays default").
+      u.lang = lang;
+    }
     u.pitch = Math.max(0.4, Math.min(2, info.pitch * emo.pitchMult));
     u.rate = Math.max(0.6, Math.min(1.5, info.rateBase * emo.rateMult));
     u.volume = emo.volume;
     if(onSegment) onSegment(i, seg);
     u.onend = ()=>{ i++; speakNext(); };
     u.onerror = ()=>{ i++; speakNext(); };
-    speechSynthesis.speak(u);
+    // Chrome has a long-standing bug where speak() called right after
+    // cancel() (which we just did above, and which also happens on every
+    // language switch since handleLangChange stops playback) can get
+    // dropped or silently keep using the previous utterance's voice. A
+    // short delay before the first speak() call avoids that race.
+    setTimeout(()=>{ if(!stopped) speechSynthesis.speak(u); }, i === 0 ? 40 : 0);
   }
   speakNext();
   return { stop(){ stopped = true; speechSynthesis.cancel(); } };
