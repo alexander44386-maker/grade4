@@ -579,6 +579,37 @@
   .note-card .note-view{margin-bottom:0;padding:16px;}
   .note-card:last-child{margin-bottom:0;}
 
+  /* ---------- STORY BLOCKS (editor + read-aloud playback) ---------- */
+  .note-add-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  .story-hint{
+    font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin:0;
+    padding:9px 12px;background:var(--card);border-bottom:2px solid var(--line);
+  }
+  .story-textarea{
+    width:100%;min-height:140px;padding:12px 14px;font-size:15px;line-height:1.6;
+    color:var(--ink);background:var(--card);border:none;outline:none;
+    font-family:'Nunito',sans-serif;resize:vertical;box-sizing:border-box;
+  }
+  .story-textarea::placeholder{color:var(--ink-soft);opacity:.6;}
+  .note-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .story-play-btn{
+    font-family:'Fredoka';font-weight:700;font-size:12px;text-transform:none;letter-spacing:0;
+    background:var(--night);color:#fff;border:none;padding:6px 12px;border-radius:999px;
+    cursor:pointer;white-space:nowrap;transition:transform .12s ease;
+  }
+  .story-play-btn:active{transform:scale(0.95);}
+  .story-body{padding:16px;}
+  .story-line{
+    margin:0 0 10px;font-size:15px;line-height:1.6;padding:6px 10px;border-radius:10px;
+    transition:background .2s ease;
+  }
+  .story-line:last-child{margin-bottom:0;}
+  .story-line.narration{color:var(--ink);font-style:italic;}
+  .story-line.dialogue{color:var(--ink);background:var(--paper);}
+  .story-speaker{font-weight:800;color:var(--night);font-style:normal;margin-right:4px;}
+  .story-line.active{background:var(--q1-soft);box-shadow:0 0 0 2px var(--q1) inset;}
+  .story-json-panel{padding:12px 14px;background:var(--card);display:flex;flex-direction:column;}
+
   /* ---------- YOUTUBE VIDEO EMBED ---------- */
   .video-embed{
     position:relative; width:100%; padding-top:56.25%; /* 16:9 */
@@ -3852,6 +3883,114 @@ function youtubeEmbedId(url){
   }catch(e){ /* not a valid URL */ }
   return null;
 }
+/* =========================================================
+   STORY NARRATION — reads a Story note block aloud using the browser's
+   built-in speech synthesis (Web Speech API). No paid API/key involved,
+   so this can't do real emotional voice acting; instead it:
+   - splits each line into "Speaker: text" (dialogue) vs plain narration,
+   - assigns each named character a consistent, distinct system voice,
+   - nudges pitch/rate/volume per line from punctuation (!, ?, ..., CAPS)
+     as a lightweight stand-in for emotion.
+   Convention taught to the teacher in the editor: a line written as
+   "Maya: Where did the cat go?" makes "Maya" speak that line; any other
+   line is read as narration.
+   ========================================================= */
+function parseStorySegments(text){
+  const lines = String(text || "").split(/\n+/).map(l=>l.trim()).filter(Boolean);
+  return lines.map(line=>{
+    const m = line.match(/^([A-Za-z][A-Za-z0-9 '’-]{0,24}):\s*(.+)$/);
+    if(m) return {speaker: m[1].trim(), text: m[2].trim()};
+    return {speaker: null, text: line};
+  });
+}
+const STORY_NARRATOR_KEY = "__narrator__";
+let _storyVoiceCache = null;
+function getStoryVoices(){
+  if(!('speechSynthesis' in window)) return [];
+  if(_storyVoiceCache) return _storyVoiceCache;
+  const all = speechSynthesis.getVoices();
+  const en = all.filter(v=>/^en/i.test(v.lang));
+  _storyVoiceCache = en.length ? en : all;
+  return _storyVoiceCache;
+}
+if(typeof window !== "undefined" && 'speechSynthesis' in window){
+  speechSynthesis.onvoiceschanged = ()=>{ _storyVoiceCache = null; };
+}
+// Deterministic per-character voice+pitch assignment so the same
+// character sounds the same every read, and different characters
+// (and the narrator) sound distinct from each other.
+function assignStoryVoices(segments){
+  const voices = getStoryVoices();
+  const names = Array.from(new Set(segments.map(s=>s.speaker || STORY_NARRATOR_KEY)));
+  const pitchSteps = [1, 1.3, 0.75, 1.5, 0.6, 1.15, 0.9, 1.4];
+  const map = {};
+  let charIdx = 0;
+  names.forEach(name=>{
+    if(name === STORY_NARRATOR_KEY){
+      map[name] = {voice: voices[0] || null, pitch: 1, rateBase: 0.95};
+      return;
+    }
+    const voice = voices.length ? voices[(charIdx + 1) % voices.length] : null;
+    map[name] = {voice, pitch: pitchSteps[charIdx % pitchSteps.length], rateBase: 1};
+    charIdx++;
+  });
+  return map;
+}
+// Cheap punctuation/caps-based "emotion" — free browser TTS has no real
+// emotional inflection to draw on, so this is an approximation only.
+function storyEmotionForLine(text){
+  const isShout = /\b[A-Z]{3,}\b/.test(text);
+  const hasExclaim = /!/.test(text);
+  const hasQuestion = /\?/.test(text);
+  const isTrailing = /\.\.\.\s*$/.test(text);
+  if(isShout) return {rateMult:1.12, pitchMult:1.18, volume:1};
+  if(hasExclaim) return {rateMult:1.08, pitchMult:1.12, volume:1};
+  if(hasQuestion) return {rateMult:1, pitchMult:1.08, volume:1};
+  if(isTrailing) return {rateMult:0.85, pitchMult:1, volume:0.85};
+  return {rateMult:1, pitchMult:1, volume:1};
+}
+// Plays a story's segments in order via speechSynthesis's own queue.
+// Returns a controller with .stop(); calls onSegment(idx) as each line
+// starts (for highlighting) and onEnd() when the story finishes/stops.
+function playStory(text, {onSegment, onEnd} = {}){
+  if(!('speechSynthesis' in window)){ if(onEnd) onEnd(); return null; }
+  speechSynthesis.cancel();
+  const segments = parseStorySegments(text);
+  if(!segments.length){ if(onEnd) onEnd(); return null; }
+  const voiceMap = assignStoryVoices(segments);
+  let i = 0;
+  let stopped = false;
+  function speakNext(){
+    if(stopped) return;
+    if(i >= segments.length){ if(onEnd) onEnd(); return; }
+    const seg = segments[i];
+    const info = voiceMap[seg.speaker || STORY_NARRATOR_KEY] || {voice:null, pitch:1, rateBase:1};
+    const emo = storyEmotionForLine(seg.text);
+    const u = new SpeechSynthesisUtterance(seg.text);
+    if(info.voice) u.voice = info.voice;
+    u.pitch = Math.max(0.4, Math.min(2, info.pitch * emo.pitchMult));
+    u.rate = Math.max(0.6, Math.min(1.5, info.rateBase * emo.rateMult));
+    u.volume = emo.volume;
+    if(onSegment) onSegment(i, seg);
+    u.onend = ()=>{ i++; speakNext(); };
+    u.onerror = ()=>{ i++; speakNext(); };
+    speechSynthesis.speak(u);
+  }
+  speakNext();
+  return { stop(){ stopped = true; speechSynthesis.cancel(); } };
+}
+
+// Converts the {name, lines:[{speaker,text}]} / bare-array JSON format (the
+// format handed to ChatGPT/Claude so it can write a story as JSON) into the
+// plain "Name: text" convention the story textarea and playStory() use.
+function storyLinesToText(lines){
+  return lines.map(l=>{
+    const text = String((l && l.text) || "").trim();
+    const speaker = l && l.speaker ? String(l.speaker).trim() : "";
+    return speaker ? (speaker + ": " + text) : text;
+  }).filter(Boolean).join("\n\n");
+}
+
 function shuffle(arr){
   const a = arr.slice();
   for(let i=a.length-1;i>0;i--){
@@ -5056,6 +5195,154 @@ function NoteEditor({initialHtml, initialName, onNameChange, registerRef, onRemo
 }
 
 /* =========================================================
+   STORY EDITOR — a plain-text block that gets read aloud with a
+   different voice per character (see playStory() above for how).
+   ========================================================= */
+function StoryEditor({initialText, initialName, onNameChange, registerRef, onRemove, canRemove, index}){
+  const taRef = useRef(null);
+  const [showJsonPaste, setShowJsonPaste] = useState(false);
+  const [jsonText, setJsonText] = useState("");
+  const [jsonError, setJsonError] = useState("");
+
+  useEffect(()=>{
+    if(taRef.current){
+      taRef.current.value = initialText || "";
+      registerRef(taRef.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handleConvertJson(){
+    let parsed;
+    try{
+      parsed = JSON.parse(jsonText);
+    }catch(e){
+      setJsonError("That's not valid JSON — check for a missing comma or bracket.");
+      return;
+    }
+    const lines = Array.isArray(parsed) ? parsed : parsed && Array.isArray(parsed.lines) ? parsed.lines : null;
+    if(!lines || !lines.length){
+      setJsonError('Expected either an array of lines, or {"name":"...", "lines":[...]}.');
+      return;
+    }
+    const text = storyLinesToText(lines);
+    if(!text){
+      setJsonError("No usable lines found in that JSON.");
+      return;
+    }
+    if(taRef.current) taRef.current.value = text;
+    if(!Array.isArray(parsed) && parsed.name && !initialName){
+      onNameChange(String(parsed.name));
+    }
+    setJsonError("");
+    setJsonText("");
+    setShowJsonPaste(false);
+  }
+
+  const STORY_JSON_SAMPLE = '{\n  "name": "The Lost Cat",\n  "lines": [\n    { "speaker": null, "text": "Once upon a time, in a quiet village, there lived a curious cat named Whiskers." },\n    { "speaker": "Maya", "text": "Where did the cat go?" },\n    { "speaker": null, "text": "The cat had been hiding under the table the whole time!" },\n    { "speaker": "Whiskers", "text": "Meow! I was just exploring!" }\n  ]\n}';
+
+  return (
+    <div className="note-block story-block">
+      <div className="note-block-head">
+        <span className="note-block-num">🎭</span>
+        <input
+          type="text"
+          className="note-name-input"
+          value={initialName}
+          onChange={e=>onNameChange(e.target.value)}
+          placeholder={"Story " + index}
+          title="Rename this story"
+        />
+        <button type="button" className="note-remove-btn" style={{color:"var(--night)"}} onClick={()=>setShowJsonPaste(v=>!v)} title="Paste a JSON-formatted story instead of typing it">
+          {showJsonPaste ? "✕ Close JSON" : "📋 Paste JSON"}
+        </button>
+        {canRemove && (
+          <button type="button" className="note-remove-btn" onClick={onRemove} title="Remove this story">✕ Remove</button>
+        )}
+      </div>
+      {showJsonPaste ? (
+        <div className="story-json-panel">
+          <p className="story-hint">
+            Paste a story written in JSON (this is the format to hand ChatGPT/Claude so it can write one for you):
+          </p>
+          <CopyableJson label="📄 Sample story JSON" json={STORY_JSON_SAMPLE} note='"speaker": null (or leave it out) means narration; any other name makes that character speak the line.' />
+          <textarea
+            className="story-textarea"
+            rows={6}
+            value={jsonText}
+            onChange={e=>{ setJsonText(e.target.value); setJsonError(""); }}
+            placeholder='Paste JSON here, e.g. {"name":"...", "lines":[{"speaker":null,"text":"..."}]}'
+          ></textarea>
+          {jsonError && <div className="sub" style={{color:"var(--bad)", marginTop:4}}>{jsonError}</div>}
+          <button type="button" className="btn btn-primary btn-sm" style={{marginTop:8, alignSelf:"flex-start"}} onClick={handleConvertJson}>✅ Convert &amp; Fill In Story</button>
+        </div>
+      ) : (
+        <>
+          <p className="story-hint">
+            🎙️ Start a line with <b>Character:</b> and it'll be read in a distinct voice — e.g. "Maya: Where did the cat go?".
+            Any line without a name is read as calm narration. Punctuation gives a little emotion too (!, ?, ...).
+          </p>
+          <textarea
+            ref={taRef}
+            className="story-textarea"
+            rows={8}
+            placeholder={"Once upon a time, in a quiet village...\n\nMaya: Where did the cat go?\n\nThe cat was hiding under the table the whole time!"}
+          ></textarea>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* =========================================================
+   STORY CARD — displays a story block with a Play button that reads it
+   aloud via playStory() (different voice per character, light emotion
+   from punctuation). Highlights the line currently being spoken.
+   ========================================================= */
+function StoryCard({note, index}){
+  const [playing, setPlaying] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(-1);
+  const controllerRef = useRef(null);
+  const segments = useMemo(()=>parseStorySegments(note.text || ""), [note.text]);
+
+  function stopPlayback(){
+    if(controllerRef.current) controllerRef.current.stop();
+    controllerRef.current = null;
+    setPlaying(false);
+    setActiveIdx(-1);
+  }
+  function handlePlay(){
+    if(playing){ stopPlayback(); return; }
+    setPlaying(true);
+    controllerRef.current = playStory(note.text || "", {
+      onSegment: idx => setActiveIdx(idx),
+      onEnd: () => { controllerRef.current = null; setPlaying(false); setActiveIdx(-1); }
+    });
+  }
+  useEffect(()=>()=>{ if(controllerRef.current) controllerRef.current.stop(); }, []);
+
+  return (
+    <div className="note-card story-card">
+      <div className="note-card-head">
+        <span>🎭 {note.name && note.name.trim() ? note.name.trim() : "Story " + index}</span>
+        <button type="button" className="story-play-btn" onClick={handlePlay}>
+          {playing ? "⏹ Stop" : "▶️ Play"}
+        </button>
+      </div>
+      <div className="story-body">
+        {segments.length === 0 ? (
+          <p className="story-line narration">This story is empty — add some text in the editor.</p>
+        ) : segments.map((seg, i)=>(
+          <p key={i} className={"story-line " + (seg.speaker ? "dialogue" : "narration") + (i === activeIdx ? " active" : "")}>
+            {seg.speaker && <span className="story-speaker">{seg.speaker}:</span>}{seg.text}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
    LESSON EDIT FORM — lets the teacher type in the school's own topic content
    ========================================================= */
 function LessonEditForm({lesson, accent, onSave, onCancel}){
@@ -5064,12 +5351,17 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
 
   const initialNotes = useMemo(()=>{
     const n = getLessonNotes(lesson);
-    const withIds = (n.length ? n : [{html:""}]).map(b=>({id: b.id || newNoteId(), html: b.html || "", name: b.name || ""}));
+    const withIds = (n.length ? n : [{html:"", type:"note"}]).map(b=>({
+      id: b.id || newNoteId(), html: b.html || "", text: b.text || "",
+      name: b.name || "", type: b.type === "story" ? "story" : "note"
+    }));
     return withIds;
   }, [lesson.id]);
-  const [noteBlocks, setNoteBlocks] = useState(()=>initialNotes.map(b=>({id: b.id, name: b.name})));
-  const initialHtmlRef = useRef(Object.fromEntries(initialNotes.map(b=>[b.id, b.html])));
+  const [noteBlocks, setNoteBlocks] = useState(()=>initialNotes.map(b=>({id: b.id, name: b.name, type: b.type})));
+  const initialHtmlRef = useRef(Object.fromEntries(initialNotes.filter(b=>b.type!=="story").map(b=>[b.id, b.html])));
+  const initialTextRef = useRef(Object.fromEntries(initialNotes.filter(b=>b.type==="story").map(b=>[b.id, b.text])));
   const noteRefs = useRef({});
+  const storyRefs = useRef({});
 
   function renameNote(id, name){
     setNoteBlocks(prev => prev.map(b => b.id === id ? {...b, name} : b));
@@ -5081,15 +5373,18 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
   }, [lesson.id]);
   const [videoLinks, setVideoLinks] = useState(initialVideos);
 
-  function addNote(){
+  function addNote(type){
     const id = newNoteId();
-    initialHtmlRef.current[id] = "";
-    setNoteBlocks(prev => [...prev, {id, name: ""}]);
+    if(type === "story"){ initialTextRef.current[id] = ""; }
+    else { initialHtmlRef.current[id] = ""; }
+    setNoteBlocks(prev => [...prev, {id, name: "", type: type === "story" ? "story" : "note"}]);
   }
   function removeNote(id){
     setNoteBlocks(prev => prev.length > 1 ? prev.filter(b=>b.id !== id) : prev);
     delete noteRefs.current[id];
+    delete storyRefs.current[id];
     delete initialHtmlRef.current[id];
+    delete initialTextRef.current[id];
   }
   function addVideo(){ setVideoLinks(prev => [...prev, ""]); }
   function removeVideo(idx){ setVideoLinks(prev => prev.filter((_,i)=>i!==idx)); }
@@ -5097,9 +5392,14 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
 
   function handleSave(){
     const notes = noteBlocks.map(b=>{
+      if(b.type === "story"){
+        const el = storyRefs.current[b.id];
+        const text = el ? el.value : (initialTextRef.current[b.id] || "");
+        return {id: b.id, type: "story", text, name: (b.name || "").trim()};
+      }
       const el = noteRefs.current[b.id];
       const html = el ? sanitizeHtml(el.innerHTML) : (initialHtmlRef.current[b.id] || "");
-      return {id: b.id, html, name: (b.name || "").trim()};
+      return {id: b.id, type: "note", html, name: (b.name || "").trim()};
     });
     const youtubeUrls = videoLinks.map(v=>v.trim()).filter(Boolean);
     onSave({title: title.trim() || lesson.title, sub: sub.trim(), notes, youtubeUrls});
@@ -5114,18 +5414,34 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
 
       <label className="field-label">📝 Lesson Notes</label>
       {noteBlocks.map((b, i)=>(
-        <NoteEditor
-          key={b.id}
-          initialHtml={initialHtmlRef.current[b.id] || ""}
-          initialName={b.name || ""}
-          onNameChange={name=>renameNote(b.id, name)}
-          registerRef={el=>{ noteRefs.current[b.id] = el; }}
-          onRemove={()=>removeNote(b.id)}
-          canRemove={noteBlocks.length > 1}
-          index={i+1}
-        />
+        b.type === "story" ? (
+          <StoryEditor
+            key={b.id}
+            initialText={initialTextRef.current[b.id] || ""}
+            initialName={b.name || ""}
+            onNameChange={name=>renameNote(b.id, name)}
+            registerRef={el=>{ storyRefs.current[b.id] = el; }}
+            onRemove={()=>removeNote(b.id)}
+            canRemove={noteBlocks.length > 1}
+            index={i+1}
+          />
+        ) : (
+          <NoteEditor
+            key={b.id}
+            initialHtml={initialHtmlRef.current[b.id] || ""}
+            initialName={b.name || ""}
+            onNameChange={name=>renameNote(b.id, name)}
+            registerRef={el=>{ noteRefs.current[b.id] = el; }}
+            onRemove={()=>removeNote(b.id)}
+            canRemove={noteBlocks.length > 1}
+            index={i+1}
+          />
+        )
       ))}
-      <button type="button" className="btn btn-ghost btn-sm" onClick={addNote} style={{marginTop:6}}>➕ Add Another Lesson Note</button>
+      <div className="note-add-row">
+        <button type="button" className="btn btn-ghost btn-sm" onClick={()=>addNote("note")}>➕ Add Lesson Note</button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={()=>addNote("story")}>🎭 Add Story</button>
+      </div>
 
       <label className="field-label" style={{marginTop:22}}>📺 YouTube Video Links (optional)</label>
       {videoLinks.map((url, idx)=>{
@@ -7559,7 +7875,9 @@ function App(){
                 const notesBlock = (
                   <div className="learn-notes-col">
                     {notes.map((note, i)=>(
-                      multiple ? (
+                      note.type === "story" ? (
+                        <StoryCard key={note.id || i} note={note} index={i+1} />
+                      ) : multiple ? (
                         <div className="note-card" key={note.id || i}>
                           <div className="note-card-head">📝 {note.name && note.name.trim() ? note.name.trim() : "Note " + (i+1)}</div>
                           <div className="note-view" dangerouslySetInnerHTML={{__html: note.html}}></div>
