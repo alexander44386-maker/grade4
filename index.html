@@ -5203,14 +5203,19 @@ function StoryEditor({initialText, initialName, onNameChange, registerRef, onRem
   const [showJsonPaste, setShowJsonPaste] = useState(false);
   const [jsonText, setJsonText] = useState("");
   const [jsonError, setJsonError] = useState("");
+  const pendingTextRef = useRef(null);
 
   useEffect(()=>{
     if(taRef.current){
-      taRef.current.value = initialText || "";
+      // If a JSON conversion happened while the plain-text textarea was
+      // unmounted (JSON panel open), apply the pending converted text now
+      // that it's back in the DOM; otherwise fall back to initialText.
+      taRef.current.value = pendingTextRef.current != null ? pendingTextRef.current : (initialText || "");
+      pendingTextRef.current = null;
       registerRef(taRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [showJsonPaste]);
 
   function handleConvertJson(){
     let parsed;
@@ -5230,7 +5235,10 @@ function StoryEditor({initialText, initialName, onNameChange, registerRef, onRem
       setJsonError("No usable lines found in that JSON.");
       return;
     }
-    if(taRef.current) taRef.current.value = text;
+    // The plain-text textarea (taRef) is unmounted while this JSON panel is
+    // showing, so we can't write to it directly here — stash it and let the
+    // effect above apply it once the textarea remounts.
+    pendingTextRef.current = text;
     if(!Array.isArray(parsed) && parsed.name && !initialName){
       onNameChange(String(parsed.name));
     }
