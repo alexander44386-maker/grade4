@@ -598,6 +598,12 @@
     cursor:pointer;white-space:nowrap;transition:transform .12s ease;
   }
   .story-play-btn:active{transform:scale(0.95);}
+  .story-head-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  .story-lang-select{
+    font-family:'Nunito',sans-serif;font-weight:700;font-size:11px;
+    background:var(--card);color:var(--ink);border:2px solid var(--night);
+    padding:5px 8px;border-radius:999px;cursor:pointer;max-width:150px;
+  }
   .story-body{padding:16px;}
   .story-line{
     margin:0 0 10px;font-size:15px;line-height:1.6;padding:6px 10px;border-radius:10px;
@@ -3904,23 +3910,61 @@ function parseStorySegments(text){
   });
 }
 const STORY_NARRATOR_KEY = "__narrator__";
-let _storyVoiceCache = null;
-function getStoryVoices(){
+// Which language's voices to read stories with, persisted across sessions.
+// "" means the original default behavior (prefer English, fall back to
+// whatever's installed). Any other value is a language code taken straight
+// from an installed voice's lang tag (e.g. "fil", "tl", "es").
+const STORY_VOICE_LANG_KEY = "grade4-story-voice-lang";
+function loadStoryVoiceLangPref(){
+  try{ return localStorage.getItem(STORY_VOICE_LANG_KEY) || ""; }catch(e){ return ""; }
+}
+function saveStoryVoiceLangPref(v){
+  try{ localStorage.setItem(STORY_VOICE_LANG_KEY, v || ""); }catch(e){}
+}
+let _storyVoiceCache = {};
+function getStoryVoices(langPrefix){
   if(!('speechSynthesis' in window)) return [];
-  if(_storyVoiceCache) return _storyVoiceCache;
+  const key = langPrefix || "";
+  if(_storyVoiceCache[key]) return _storyVoiceCache[key];
   const all = speechSynthesis.getVoices();
-  const en = all.filter(v=>/^en/i.test(v.lang));
-  _storyVoiceCache = en.length ? en : all;
-  return _storyVoiceCache;
+  const filtered = key
+    ? all.filter(v=> v.lang && v.lang.toLowerCase().startsWith(key.toLowerCase()))
+    : all.filter(v=>/^en/i.test(v.lang));
+  _storyVoiceCache[key] = filtered.length ? filtered : all;
+  return _storyVoiceCache[key];
 }
 if(typeof window !== "undefined" && 'speechSynthesis' in window){
-  speechSynthesis.onvoiceschanged = ()=>{ _storyVoiceCache = null; };
+  speechSynthesis.addEventListener('voiceschanged', ()=>{ _storyVoiceCache = {}; });
+}
+// Scans whatever voices this browser/device actually has installed and
+// returns one entry per distinct language (e.g. Filipino only shows up
+// here if a Filipino/Tagalog voice is installed on the device) — this way
+// the picker never offers a language that would silently fall back to
+// something else.
+function getStoryLanguageOptions(){
+  if(!('speechSynthesis' in window)) return [];
+  const all = speechSynthesis.getVoices();
+  const seen = new Map();
+  all.forEach(v=>{
+    if(!v.lang) return;
+    const code = v.lang.split(/[-_]/)[0].toLowerCase();
+    if(!seen.has(code)) seen.set(code, v.lang);
+  });
+  let dn = null;
+  try{ dn = new Intl.DisplayNames(['en'], {type:'language'}); }catch(e){}
+  const options = Array.from(seen.keys()).map(code=>{
+    let label = code.toUpperCase();
+    try{ if(dn){ const name = dn.of(code); if(name) label = name; } }catch(e){}
+    return {code, label};
+  });
+  options.sort((a,b)=>a.label.localeCompare(b.label));
+  return options;
 }
 // Deterministic per-character voice+pitch assignment so the same
 // character sounds the same every read, and different characters
 // (and the narrator) sound distinct from each other.
-function assignStoryVoices(segments){
-  const voices = getStoryVoices();
+function assignStoryVoices(segments, langPrefix){
+  const voices = getStoryVoices(langPrefix);
   const names = Array.from(new Set(segments.map(s=>s.speaker || STORY_NARRATOR_KEY)));
   const pitchSteps = [1, 1.3, 0.75, 1.5, 0.6, 1.15, 0.9, 1.4];
   const map = {};
@@ -3952,12 +3996,12 @@ function storyEmotionForLine(text){
 // Plays a story's segments in order via speechSynthesis's own queue.
 // Returns a controller with .stop(); calls onSegment(idx) as each line
 // starts (for highlighting) and onEnd() when the story finishes/stops.
-function playStory(text, {onSegment, onEnd} = {}){
+function playStory(text, {onSegment, onEnd, lang} = {}){
   if(!('speechSynthesis' in window)){ if(onEnd) onEnd(); return null; }
   speechSynthesis.cancel();
   const segments = parseStorySegments(text);
   if(!segments.length){ if(onEnd) onEnd(); return null; }
-  const voiceMap = assignStoryVoices(segments);
+  const voiceMap = assignStoryVoices(segments, lang);
   let i = 0;
   let stopped = false;
   function speakNext(){
@@ -5310,8 +5354,19 @@ function StoryEditor({initialText, initialName, onNameChange, registerRef, onRem
 function StoryCard({note, index}){
   const [playing, setPlaying] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
+  const [langOptions, setLangOptions] = useState(()=>getStoryLanguageOptions());
+  const [selectedLang, setSelectedLang] = useState(()=>loadStoryVoiceLangPref());
   const controllerRef = useRef(null);
   const segments = useMemo(()=>parseStorySegments(note.text || ""), [note.text]);
+
+  useEffect(()=>{
+    function refresh(){ setLangOptions(getStoryLanguageOptions()); }
+    refresh();
+    if('speechSynthesis' in window){
+      speechSynthesis.addEventListener('voiceschanged', refresh);
+      return ()=> speechSynthesis.removeEventListener('voiceschanged', refresh);
+    }
+  }, []);
 
   function stopPlayback(){
     if(controllerRef.current) controllerRef.current.stop();
@@ -5323,9 +5378,18 @@ function StoryCard({note, index}){
     if(playing){ stopPlayback(); return; }
     setPlaying(true);
     controllerRef.current = playStory(note.text || "", {
+      lang: selectedLang,
       onSegment: idx => setActiveIdx(idx),
       onEnd: () => { controllerRef.current = null; setPlaying(false); setActiveIdx(-1); }
     });
+  }
+  function handleLangChange(e){
+    const v = e.target.value;
+    setSelectedLang(v);
+    saveStoryVoiceLangPref(v);
+    // Switching languages mid-read would leave old-language audio queued;
+    // simplest and least surprising is to stop and let them hit Play again.
+    if(playing) stopPlayback();
   }
   useEffect(()=>()=>{ if(controllerRef.current) controllerRef.current.stop(); }, []);
 
@@ -5333,9 +5397,24 @@ function StoryCard({note, index}){
     <div className="note-card story-card">
       <div className="note-card-head">
         <span>🎭 {note.name && note.name.trim() ? note.name.trim() : "Story " + index}</span>
-        <button type="button" className="story-play-btn" onClick={handlePlay}>
-          {playing ? "⏹ Stop" : "▶️ Play"}
-        </button>
+        <div className="story-head-controls">
+          {langOptions.length > 0 && (
+            <select
+              className="story-lang-select"
+              value={selectedLang}
+              onChange={handleLangChange}
+              title="Voice language for this story"
+            >
+              <option value="">🔊 Default (English)</option>
+              {langOptions.filter(o=>o.code!=="en").map(o=>(
+                <option key={o.code} value={o.code}>🔊 {o.label}</option>
+              ))}
+            </select>
+          )}
+          <button type="button" className="story-play-btn" onClick={handlePlay}>
+            {playing ? "⏹ Stop" : "▶️ Play"}
+          </button>
+        </div>
       </div>
       <div className="story-body">
         {segments.length === 0 ? (
