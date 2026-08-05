@@ -4011,7 +4011,7 @@ function playStory(text, {onSegment, onEnd, lang} = {}){
     const info = voiceMap[seg.speaker || STORY_NARRATOR_KEY] || {voice:null, pitch:1, rateBase:1};
     const emo = storyEmotionForLine(seg.text);
     const u = new SpeechSynthesisUtterance(seg.text);
-    if(info.voice) u.voice = info.voice;
+    if(info.voice){ u.voice = info.voice; u.lang = info.voice.lang; }
     u.pitch = Math.max(0.4, Math.min(2, info.pitch * emo.pitchMult));
     u.rate = Math.max(0.6, Math.min(1.5, info.rateBase * emo.rateMult));
     u.volume = emo.volume;
