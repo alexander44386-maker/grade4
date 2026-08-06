@@ -4298,7 +4298,9 @@ async function callGeminiTTS(apiKey, part, voiceMap){
   if(!res.ok){
     let detail = "";
     try{ detail = (await res.text()).slice(0, 200); }catch(e){}
-    throw new Error(`Gemini TTS request failed (${res.status})${detail ? ": " + detail : ""}`);
+    const err = new Error(`Gemini TTS request failed (${res.status})${detail ? ": " + detail : ""}`);
+    err.status = res.status;
+    throw err;
   }
   const data = await res.json();
   const inlineData = data && data.candidates && data.candidates[0]
@@ -4325,7 +4327,7 @@ async function callGeminiTTS(apiKey, part, voiceMap){
 // noteId lets the cache tell two different story cards apart even if
 // their text briefly matches; text is still the real cache key driver
 // (edit a story and it's treated as new).
-function playStoryWithGemini(text, {onSegment, onEnd, onPartError, onPartRecovered, onProgress, onFallback, noteId, forceRegenerate} = {}){
+function playStoryWithGemini(text, {onSegment, onEnd, onPartError, onPartRecovered, onDownloadComplete, onProgress, onFallback, noteId, forceRegenerate} = {}){
   const apiKey = loadGeminiApiKey();
   const segments = parseStorySegments(text);
   if(!apiKey || !segments.length){
@@ -4381,7 +4383,10 @@ function playStoryWithGemini(text, {onSegment, onEnd, onPartError, onPartRecover
         return await callGeminiTTS(apiKey, part, voiceMap);
       }catch(e){
         if(stopped) throw e;
-        await new Promise(r => setTimeout(r, 800));
+        // Rate limits (429) need a much longer pause than a plain
+        // network hiccup, or the immediate retry just gets rate
+        // limited again.
+        await new Promise(r => setTimeout(r, e.status === 429 ? 6000 : 800));
         return await callGeminiTTS(apiKey, part, voiceMap);
       }
     }
@@ -4399,22 +4404,38 @@ function playStoryWithGemini(text, {onSegment, onEnd, onPartError, onPartRecover
     }
 
     async function retryFailedPartsInBackground(){
-      for(const idx of failedParts.slice()){
-        if(stopped) return;
-        await new Promise(r => setTimeout(r, 1500));
-        try{
-          const part = parts[idx];
-          const b64 = await callGeminiTTS(apiKey, part, voiceMap);
-          collected[idx] = b64;
-          try{ await setCachedStoryAudio(storyPartCacheKey(cacheKey, idx), b64); }catch(e){}
-          failedParts = failedParts.filter(i => i !== idx);
-          if(onPartRecovered) onPartRecovered(idx);
-        }catch(e){
-          console.warn("Background retry still failing for part", idx, e.message);
+      // Keeps making passes over whatever's still failing — spaced
+      // further apart each round — instead of trying once and giving
+      // up. This is what lets a part recover later once a rate limit
+      // window clears, rather than staying skipped forever.
+      const maxRounds = 8;
+      const roundDelays = [5000, 10000, 20000, 30000, 40000, 50000, 60000, 85000]; // sums to ~5 min
+      for(let round = 0; round < maxRounds && failedParts.length; round++){
+        for(const idx of failedParts.slice()){
+          if(stopped) return;
+          await new Promise(r => setTimeout(r, roundDelays[round]));
+          try{
+            const part = parts[idx];
+            const b64 = await callGeminiTTS(apiKey, part, voiceMap);
+            collected[idx] = b64;
+            try{ await setCachedStoryAudio(storyPartCacheKey(cacheKey, idx), b64); }catch(e){}
+            failedParts = failedParts.filter(i => i !== idx);
+            if(onPartRecovered) onPartRecovered(idx);
+          }catch(e){
+            console.warn(`Background retry (round ${round+1}/${maxRounds}) still failing for part`, idx, e.message);
+          }
         }
       }
-      if(!stopped && failedParts.length === 0 && collected.every(c => c)){
+      if(stopped) return;
+      if(failedParts.length === 0 && collected.every(c => c)){
         await finalizeAndCacheFullStory();
+        if(onDownloadComplete) onDownloadComplete({ success: true });
+      }else if(onDownloadComplete){
+        // Ran out of rounds and some part(s) never came through — tell
+        // the UI so it can stop saying "retrying" and show something
+        // the person can act on (e.g. try again later, or replay to
+        // re-trigger background retry from scratch).
+        onDownloadComplete({ success: false, missingParts: failedParts.length });
       }
     }
 
@@ -5876,6 +5897,16 @@ function StoryCard({note, index}){
           // retry after the story ended; refresh the "saved offline"
           // indicator in case that completed the full-story cache.
           setStatusMsg("✅ Recovered a missing part in the background.");
+          getCachedStoryAudio(cacheKey).then(b => setHasCachedAudio(!!b));
+        },
+        onDownloadComplete: ({success, missingParts}) => {
+          // Fires once (success or not) when the background retry loop
+          // finishes — this is the actual "are we done yet" answer.
+          if(success){
+            setStatusMsg("✅ Full story saved offline — no internet needed next time.");
+          }else{
+            setStatusMsg(`⚠️ Gave up after several tries — ${missingParts} part(s) still missing. Tap play again later to retry.`);
+          }
           getCachedStoryAudio(cacheKey).then(b => setHasCachedAudio(!!b));
         },
         onFallback: () => { setProgressText("🔊 Standard voice (no Gemini key set)"); setStatusMsg("ℹ️ No Gemini key saved — played with the standard voice instead."); }
