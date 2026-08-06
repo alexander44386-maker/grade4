@@ -4379,16 +4379,32 @@ function playStoryWithGemini(text, {onSegment, onEnd, onPartError, onPartRecover
     let globalIdx = 0;
 
     async function fetchPartWithRetry(part){
-      try{
-        return await callGeminiTTS(apiKey, part, voiceMap);
-      }catch(e){
-        if(stopped) throw e;
-        // Rate limits (429) need a much longer pause than a plain
-        // network hiccup, or the immediate retry just gets rate
-        // limited again.
-        await new Promise(r => setTimeout(r, e.status === 429 ? 6000 : 800));
-        return await callGeminiTTS(apiKey, part, voiceMap);
+      // Up to 3 attempts total (1 initial + 2 retries) with growing
+      // pauses in between. This matters most for part 0: the very
+      // first Gemini call in a session is the most likely to hit a
+      // transient cold-start error (timeout / 503 / momentary hiccup)
+      // before the API "warms up" — later parts rarely see this, since
+      // by then a call has already succeeded once. A single quick
+      // retry wasn't enough to reliably survive that window, so part 1
+      // kept getting marked failed and skipped while parts 2+ played
+      // fine. More attempts with longer backoff fixes that without
+      // slowing down the common case (first try usually just works).
+      const delays = [800, 3000];
+      let lastErr;
+      for(let attempt = 0; attempt <= delays.length; attempt++){
+        try{
+          return await callGeminiTTS(apiKey, part, voiceMap);
+        }catch(e){
+          lastErr = e;
+          if(stopped) throw e;
+          if(attempt === delays.length) break; // out of retries
+          // Rate limits (429) need a much longer pause than a plain
+          // network hiccup/cold-start, or the retry just gets rate
+          // limited again.
+          await new Promise(r => setTimeout(r, e.status === 429 ? 6000 : delays[attempt]));
+        }
       }
+      throw lastErr;
     }
 
     async function finalizeAndCacheFullStory(){
