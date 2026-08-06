@@ -4116,6 +4116,14 @@ function hashStoryText(text){
 function storyAudioCacheKey(noteId, text){
   return "story_" + (noteId || "x") + "_" + hashStoryText(text || "");
 }
+// Per-part sub-key so each Gemini TTS chunk can be saved to IndexedDB
+// the moment it downloads, independent of whether the other parts have
+// succeeded yet. Value stored under this key is the raw base64 PCM
+// string (not a Blob), so it can be re-collected and stitched later
+// without a blob<->base64 round trip.
+function storyPartCacheKey(cacheKey, partIdx){
+  return cacheKey + "_part" + partIdx;
+}
 async function getCachedStoryAudio(key){
   try{
     const db = await openStoryAudioDB();
@@ -4310,10 +4318,14 @@ async function callGeminiTTS(apiKey, part, voiceMap){
 // onProgress({part, total, phase}) fires per part — phase is "loading"
 // while the API call is in flight, then "playing" once audio starts —
 // so the UI can show "generating part 2 of 5" / "playing part 2 of 5".
+// onPartError(err, partIdx) fires when a part fails after its one
+// immediate retry and playback skips ahead. onPartRecovered(partIdx)
+// fires later if a background retry (after the story ends) succeeds in
+// filling that gap — useful for clearing an earlier warning in the UI.
 // noteId lets the cache tell two different story cards apart even if
 // their text briefly matches; text is still the real cache key driver
 // (edit a story and it's treated as new).
-function playStoryWithGemini(text, {onSegment, onEnd, onPartError, onProgress, onFallback, noteId, forceRegenerate} = {}){
+function playStoryWithGemini(text, {onSegment, onEnd, onPartError, onPartRecovered, onProgress, onFallback, noteId, forceRegenerate} = {}){
   const apiKey = loadGeminiApiKey();
   const segments = parseStorySegments(text);
   if(!apiKey || !segments.length){
@@ -4350,24 +4362,69 @@ function playStoryWithGemini(text, {onSegment, onEnd, onPartError, onProgress, o
       if(cached && !stopped){ playWholeBlob(cached, true); return; }
     }
     // No cached full-story audio yet (or a fresh version was requested) —
-    // generate every part now, playing progressively, while also saving
-    // each part's raw audio so the complete story can be stitched into
-    // one file and stored once every part has succeeded.
+    // generate every part now, playing progressively. Each part's raw
+    // audio is saved to IndexedDB the moment it downloads (under its own
+    // sub-key), independent of the other parts, so partial progress is
+    // never lost. A part that fails gets one immediate retry; if that
+    // also fails, playback skips ahead (never blocks the story) but the
+    // part is queued and retried again in the background after the
+    // story finishes, filling the gap and re-saving as it goes, until
+    // every part is present and the full stitched file can be cached.
     const parts = chunkStoryForGemini(segments);
     const voiceMap = assignGeminiVoices(segments);
     const collected = new Array(parts.length).fill(null);
-    let anyPartFailed = false;
+    let failedParts = [];
     let globalIdx = 0;
+
+    async function fetchPartWithRetry(part){
+      try{
+        return await callGeminiTTS(apiKey, part, voiceMap);
+      }catch(e){
+        if(stopped) throw e;
+        await new Promise(r => setTimeout(r, 800));
+        return await callGeminiTTS(apiKey, part, voiceMap);
+      }
+    }
+
+    async function finalizeAndCacheFullStory(){
+      if(onProgress) onProgress({ part: parts.length, total: parts.length, phase: "saving" });
+      try{
+        const fullBlob = base64PcmChunksToWavBlob(collected);
+        await setCachedStoryAudio(cacheKey, fullBlob);
+        // Full story is saved now — the per-part entries are redundant.
+        for(let i=0;i<parts.length;i++){
+          deleteCachedStoryAudio(storyPartCacheKey(cacheKey, i)).catch(()=>{});
+        }
+      }catch(e){ console.warn("Could not save story audio to device storage:", e); }
+    }
+
+    async function retryFailedPartsInBackground(){
+      for(const idx of failedParts.slice()){
+        if(stopped) return;
+        await new Promise(r => setTimeout(r, 1500));
+        try{
+          const part = parts[idx];
+          const b64 = await callGeminiTTS(apiKey, part, voiceMap);
+          collected[idx] = b64;
+          try{ await setCachedStoryAudio(storyPartCacheKey(cacheKey, idx), b64); }catch(e){}
+          failedParts = failedParts.filter(i => i !== idx);
+          if(onPartRecovered) onPartRecovered(idx);
+        }catch(e){
+          console.warn("Background retry still failing for part", idx, e.message);
+        }
+      }
+      if(!stopped && failedParts.length === 0 && collected.every(c => c)){
+        await finalizeAndCacheFullStory();
+      }
+    }
 
     async function playPart(partIdx){
       if(stopped) return;
       if(partIdx >= parts.length){
-        if(!anyPartFailed && collected.every(c => c)){
-          if(onProgress) onProgress({ part: parts.length, total: parts.length, phase: "saving" });
-          try{
-            const fullBlob = base64PcmChunksToWavBlob(collected);
-            await setCachedStoryAudio(cacheKey, fullBlob);
-          }catch(e){ console.warn("Could not save story audio to device storage:", e); }
+        if(failedParts.length === 0 && collected.every(c => c)){
+          await finalizeAndCacheFullStory();
+        }else if(failedParts.length){
+          retryFailedPartsInBackground(); // runs after onEnd, doesn't block playback
         }
         if(onEnd) onEnd();
         return;
@@ -4377,8 +4434,14 @@ function playStoryWithGemini(text, {onSegment, onEnd, onPartError, onProgress, o
       if(onProgress) onProgress({ part: partIdx+1, total: parts.length, phase: "loading" });
       function advance(){ globalIdx += part.lines.length; playPart(partIdx+1); }
       try{
-        const b64 = await callGeminiTTS(apiKey, part, voiceMap);
-        if(stopped) return;
+        // Reuse a part saved by an earlier attempt (this session or a
+        // prior background retry) instead of re-downloading it.
+        let b64 = await getCachedStoryAudio(storyPartCacheKey(cacheKey, partIdx));
+        if(!b64){
+          b64 = await fetchPartWithRetry(part);
+          if(stopped) return;
+          try{ await setCachedStoryAudio(storyPartCacheKey(cacheKey, partIdx), b64); }catch(e){}
+        }
         collected[partIdx] = b64;
         const blob = pcm16ToWavBlob(b64);
         const url = URL.createObjectURL(blob);
@@ -4389,7 +4452,7 @@ function playStoryWithGemini(text, {onSegment, onEnd, onPartError, onProgress, o
         audioEl.play().catch(advance);
       }catch(e){
         console.warn("Gemini TTS part failed, skipping:", e.message);
-        anyPartFailed = true;
+        failedParts.push(partIdx);
         if(onPartError) onPartError(e, partIdx);
         advance();
       }
@@ -5807,7 +5870,14 @@ function StoryCard({note, index}){
           else setProgressText(`✨ Gemini — playing part ${part} of ${total}`);
         },
         onEnd: () => { controllerRef.current = null; setPlaying(false); setActiveIdx(-1); setProgressText(""); getCachedStoryAudio(cacheKey).then(b=>setHasCachedAudio(!!b)); },
-        onPartError: () => setStatusMsg("⚠️ A part had trouble — skipped ahead so the story keeps going."),
+        onPartError: () => setStatusMsg("⚠️ A part had trouble — skipped ahead so the story keeps going. Retrying quietly in the background…"),
+        onPartRecovered: () => {
+          // A previously-skipped part was filled in by a background
+          // retry after the story ended; refresh the "saved offline"
+          // indicator in case that completed the full-story cache.
+          setStatusMsg("✅ Recovered a missing part in the background.");
+          getCachedStoryAudio(cacheKey).then(b => setHasCachedAudio(!!b));
+        },
         onFallback: () => { setProgressText("🔊 Standard voice (no Gemini key set)"); setStatusMsg("ℹ️ No Gemini key saved — played with the standard voice instead."); }
       });
     } else {
