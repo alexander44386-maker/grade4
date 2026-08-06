@@ -4174,7 +4174,7 @@ function saveGeminiApiKey(key){
 }
 
 const GEMINI_TTS_MODEL = "gemini-3.1-flash-tts-preview";
-const GEMINI_TTS_URL = "https://generativelanguage.googleapis.com/v1beta/interactions";
+const GEMINI_TTS_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TTS_MODEL}:generateContent`;
 
 // Documented prebuilt voice names (Gemini TTS "Voice options" table,
 // ai.google.dev/gemini-api/docs/speech-generation#voices). This is a
@@ -4267,23 +4267,24 @@ async function callGeminiTTS(apiKey, part, voiceMap){
   const speakers = Array.from(part.speakerSet);
   const isMulti = speakers.length > 1;
   const linesText = part.lines.map(l => `${l.label}: ${l.text}`).join("\n");
-  const input = isMulti
+  const promptText = isMulti
     ? `TTS the following story for young children, in a warm, natural, gentle storytelling voice:\n${linesText}`
     : `Say in a warm, natural, gentle storytelling voice for young children:\n${part.lines.map(l=>l.text).join(" ")}`;
-  // Multi-speaker mode needs each speaker's name in generation_config to
+  // Multi-speaker mode needs each speaker's name in speechConfig to
   // exactly match the name used in the prompt text above.
   const speechConfig = isMulti
-    ? speakers.map(s => ({ speaker: s, voice: voiceMap[s] }))
-    : [{ voice: voiceMap[speakers[0]] }];
+    ? { multiSpeakerVoiceConfig: { speakerVoiceConfigs: speakers.map(s => ({
+        speaker: s,
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceMap[s] } }
+      })) } }
+    : { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceMap[speakers[0]] } } };
 
-  const res = await fetch(GEMINI_TTS_URL, {
+  const res = await fetch(`${GEMINI_TTS_URL}?key=${encodeURIComponent(apiKey)}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: GEMINI_TTS_MODEL,
-      input,
-      response_format: { type: "audio" },
-      generation_config: { speech_config: speechConfig }
+      contents: [{ parts: [{ text: promptText }] }],
+      generationConfig: { responseModalities: ["AUDIO"], speechConfig }
     })
   });
   if(!res.ok){
@@ -4292,7 +4293,10 @@ async function callGeminiTTS(apiKey, part, voiceMap){
     throw new Error(`Gemini TTS request failed (${res.status})${detail ? ": " + detail : ""}`);
   }
   const data = await res.json();
-  const b64 = data && data.output_audio && data.output_audio.data;
+  const inlineData = data && data.candidates && data.candidates[0]
+    && data.candidates[0].content && data.candidates[0].content.parts
+    && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].inlineData;
+  const b64 = inlineData && inlineData.data;
   if(!b64) throw new Error("Gemini TTS returned no audio");
   return b64;
 }
