@@ -4113,8 +4113,13 @@ function hashStoryText(text){
   for(let i=0;i<text.length;i++){ h = ((h*33) ^ text.charCodeAt(i)) >>> 0; }
   return h.toString(36) + "_" + text.length;
 }
-function storyAudioCacheKey(noteId, text){
-  return "story_" + (noteId || "x") + "_" + hashStoryText(text || "");
+function storyAudioCacheKey(noteId, text, genders){
+  // Folding the genders map into the hash means correcting a character's
+  // gender (via the JSON "genders" field) and re-saving is enough on its
+  // own to invalidate old cached audio — the story text didn't change,
+  // but the voice assignment needs to, so the old cache entry must miss.
+  const gendersPart = genders && Object.keys(genders).length ? "_g" + hashStoryText(JSON.stringify(genders)) : "";
+  return "story_" + (noteId || "x") + "_" + hashStoryText(text || "") + gendersPart;
 }
 // Per-part sub-key so each Gemini TTS chunk can be saved to IndexedDB
 // the moment it downloads, independent of whether the other parts have
@@ -4216,13 +4221,164 @@ const GEMINI_VOICE_STYLES = [
   "bright and energetic", "steady and reassuring", "soft and dreamy",
   "bold and adventurous", "kind and thoughtful"
 ];
-function assignGeminiVoices(segments){
+/* ---------------------------------------------------------------
+   GENDER-AWARE VOICE PICKING (best-effort, unofficial)
+   Google doesn't publish an official gender tag for the 30 preset
+   voices above — only vibe descriptors ("Firm", "Upbeat", "Youthful",
+   "Breathy", etc. in the Gemini TTS docs). The two pools below are a
+   curated, unofficial split based on how people who've actually
+   listened to all 30 voices commonly describe them. If Google ever
+   documents real genders for these, swap this list out for that.
+   --------------------------------------------------------------- */
+const GEMINI_VOICES_FEMALE_LEANING = [
+  "Kore","Zephyr","Leda","Aoede","Callirrhoe","Autonoe","Enceladus",
+  "Umbriel","Despina","Erinome","Laomedeia","Achernar","Pulcherrima",
+  "Vindemiatrix","Sulafat"
+];
+const GEMINI_VOICES_MALE_LEANING = [
+  "Puck","Charon","Fenrir","Orus","Iapetus","Algieba","Algenib",
+  "Rasalgethi","Alnilam","Schedar","Gacrux","Achird","Zubenelgenubi",
+  "Sadachbia","Sadaltager"
+];
+
+// Small curated name -> gender hint lists, weighted toward common
+// Filipino and English first names since most students using this app
+// are Filipino. This is a rough heuristic, not a real gender
+// classifier — it only decides which VOICE POOL to draw a character's
+// voice from, and anything it doesn't recognize falls through to the
+// safe, gender-neutral fallback below instead of being force-guessed.
+const MALE_NAME_HINTS = new Set([
+  "juan","jose","miguel","gabriel","daniel","matthew","matteo","marco",
+  "mark","paolo","paulo","carlo","carlos","antonio","anton","emmanuel",
+  "manuel","rafael","ramon","ricardo","eduardo","fernando","francisco",
+  "francis","angelo","dominic","vincent","vincente","benedict","benjamin",
+  "ben","noah","liam","ethan","lucas","luke","james","john","jacob",
+  "josh","joshua","aaron","adrian","andrei","andres","bryan","brian",
+  "christian","christopher","dennis","edward","eric","ferdinand","gerald",
+  "henry","ian","isaac","ivan","jaime","jayson","jason","jerome","jerald",
+  "jhon","joel","jonathan","joseph","julius","justin","kevin","kian",
+  "kurt","leo","leon","louie","louis","mario","martin","michael","nathan",
+  "nathaniel","nico","nicolas","noel","oliver","oscar","patrick","paul",
+  "peter","philip","raphael","raymond","rey","reyman","robert","rodel",
+  "romeo","ronald","russel","russell","ryan","samuel","sean","seth",
+  "simon","steven","timothy","tristan","victor","vince","warren","wesley",
+  "william","xander","zach","zachary"
+]);
+const FEMALE_NAME_HINTS = new Set([
+  "maria","mary","angel","angela","angelica","ana","anna","andrea",
+  "bianca","camille","carmela","carmen","catherine","kathryn","kate",
+  "charlene","cherry","chloe","christine","claire","clarisse","daniela",
+  "diana","dianne","elaine","elena","elizabeth","erica","erika","eva",
+  "faith","frances","francesca","gabriela","gabriella","grace","hannah",
+  "hazel","irish","isabel","isabella","jade","janella","janine","jasmine",
+  "jean","jennifer","jenny","jessica","jill","joan","joyce","judy","julia",
+  "juliana","karen","katrina","kimberly","kris","kristine","kyla","laarni",
+  "lea","leah","lian","liana","liza","louella","lourdes","lucia","luna",
+  "mae","maeve","maica","maricel","marielle","marife","marilou","marjorie",
+  "meg","megan","michelle","mika","mikaela","mira","monica","nadine",
+  "nica","nicole","nikki","nina","olivia","patricia","pauline","precious",
+  "princess","queenie","rachel","raine","regina","reign","rhea","rica",
+  "riza","rona","rosa","rose","rowena","sam","samantha","sarah","shaira",
+  "sharlene","shayne","sheena","sofia","sophia","stella","susan","tricia",
+  "trisha","valerie","vanessa","veronica","victoria","yna","yzabel","zoe"
+]);
+
+// Guesses which voice pool ("m" / "f" / null-for-neutral) a character
+// name leans toward. Checks the curated lists first, then falls back to
+// a couple of very soft common name-ending patterns, and finally gives
+// up cleanly (returns null) rather than guessing wildly — an
+// unrecognized/ambiguous name just draws from the full neutral pool.
+function guessNameGenderPool(rawName){
+  if(!rawName) return null;
+  const first = String(rawName).trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g, "");
+  if(!first) return null;
+  if(MALE_NAME_HINTS.has(first)) return "m";
+  if(FEMALE_NAME_HINTS.has(first)) return "f";
+  // Soft fallback pattern (Filipino/Spanish/English names ending in
+  // "a" skew female, e.g. Maria/Rosa/Liza; ending in "o" skew male,
+  // e.g. Marco/Paulo/Romeo) — deliberately conservative, so anything
+  // that doesn't fit either pattern just returns null (neutral).
+  if(/a$/.test(first)) return "f";
+  if(/o$/.test(first)) return "m";
+  return null;
+}
+
+// Picks a voice for `name` out of `pool` using a hash of the NAME
+// itself (not the character's array position), so:
+//   1) the same name always lands on the same voice, read after read
+//   2) short stories with only 1-2 characters stop always landing on
+//      voice[0]/voice[1] — the old bug, since index was just "which
+//      speaker happened to appear first" — and instead spread out
+//      across the whole gender-matched pool.
+// If the hashed voice is already taken by another character in this
+// same story, linearly probes forward to the next free slot in the
+// pool so two different characters don't end up sounding identical.
+function pickVoiceForName(name, pool, usedVoices){
+  const h = hashStoryText(String(name).toLowerCase());
+  const hNum = parseInt(h.split("_")[0], 36) || 0;
+  const idx = hNum % pool.length;
+  for(let tries=0; tries<pool.length; tries++){
+    const candidate = pool[(idx + tries) % pool.length];
+    if(!usedVoices.has(candidate)){
+      usedVoices.add(candidate);
+      return candidate;
+    }
+  }
+  return pool[idx]; // every voice in this pool already used (big cast) — reuse is unavoidable
+}
+
+// Normalizes whatever a person typed in the story JSON's "genders" map
+// ("boy", "girl", "male", "female", "m", "f", mixed case, etc.) down to
+// "m" / "f" / null. Anything unrecognized returns null so it falls
+// through to the name-guess heuristic instead of erroring out.
+function normalizeGenderValue(raw){
+  if(!raw) return null;
+  const v = String(raw).trim().toLowerCase();
+  if(v === "boy" || v === "male" || v === "m" || v === "man") return "m";
+  if(v === "girl" || v === "female" || v === "f" || v === "woman") return "f";
+  return null;
+}
+
+// `genderOverrides` is an optional {characterName: "boy"|"girl"|...} map,
+// straight from the story JSON's "genders" field — see STORY_JSON_SAMPLE.
+// An explicit override always wins over the name-guess heuristic, so a
+// name the guesser would get wrong (nicknames, invented character names,
+// names outside the curated lists, etc.) can just be stated directly.
+function assignGeminiVoices(segments, genderOverrides){
   const names = Array.from(new Set(segments.map(s=>s.speaker || "Narrator")));
   const map = {};
+  const usedVoices = new Set();
+  // Case-insensitive lookup, since a hand-typed or LLM-written "genders"
+  // map won't always match a speaker's capitalization exactly (e.g.
+  // "maya" in genders vs "Maya" as the speaker name).
+  const overridesLower = {};
+  if(genderOverrides){
+    Object.keys(genderOverrides).forEach(k => { overridesLower[k.trim().toLowerCase()] = genderOverrides[k]; });
+  }
   names.forEach((name, i)=>{
+    if(name === "Narrator"){
+      // The narrator's voice can be steered the same way a character's
+      // can — via a "Narrator" entry in the genders map — so a specific
+      // male/female voice pool is used instead of the full neutral pool.
+      // No override -> unchanged old behavior (draws from every voice).
+      const narratorGender = normalizeGenderValue(overridesLower["narrator"]);
+      const narratorPool = narratorGender === "f" ? GEMINI_VOICES_FEMALE_LEANING
+        : narratorGender === "m" ? GEMINI_VOICES_MALE_LEANING
+        : GEMINI_TTS_VOICES;
+      map[name] = {
+        voice: pickVoiceForName(name, narratorPool, usedVoices),
+        style: "calm and gentle storyteller"
+      };
+      return;
+    }
+    const overrideGender = normalizeGenderValue(overridesLower[name.trim().toLowerCase()]);
+    const genderPool = overrideGender || guessNameGenderPool(name);
+    const pool = genderPool === "f" ? GEMINI_VOICES_FEMALE_LEANING
+      : genderPool === "m" ? GEMINI_VOICES_MALE_LEANING
+      : GEMINI_TTS_VOICES; // unrecognized/ambiguous name -> safe neutral fallback (full pool)
     map[name] = {
-      voice: GEMINI_TTS_VOICES[i % GEMINI_TTS_VOICES.length],
-      style: name === "Narrator" ? "calm and gentle storyteller" : GEMINI_VOICE_STYLES[i % GEMINI_VOICE_STYLES.length]
+      voice: pickVoiceForName(name, pool, usedVoices),
+      style: GEMINI_VOICE_STYLES[i % GEMINI_VOICE_STYLES.length]
     };
   });
   return map;
@@ -4358,14 +4514,14 @@ async function callGeminiTTS(apiKey, part, voiceMap){
 // noteId lets the cache tell two different story cards apart even if
 // their text briefly matches; text is still the real cache key driver
 // (edit a story and it's treated as new).
-function playStoryWithGemini(text, {onSegment, onEnd, onPartError, onPartRecovered, onDownloadComplete, onProgress, onFallback, noteId, forceRegenerate} = {}){
+function playStoryWithGemini(text, {onSegment, onEnd, onPartError, onPartRecovered, onDownloadComplete, onProgress, onFallback, noteId, forceRegenerate, genders} = {}){
   const apiKey = loadGeminiApiKey();
   const segments = parseStorySegments(text);
   if(!apiKey || !segments.length){
     if(onFallback) onFallback();
     return playStory(text, {onSegment, onEnd});
   }
-  const cacheKey = storyAudioCacheKey(noteId, text);
+  const cacheKey = storyAudioCacheKey(noteId, text, genders);
   let stopped = false;
   let audioEl = null;
   let timeupdateHandler = null;
@@ -4404,7 +4560,7 @@ function playStoryWithGemini(text, {onSegment, onEnd, onPartError, onPartRecover
     // story finishes, filling the gap and re-saving as it goes, until
     // every part is present and the full stitched file can be cached.
     const parts = chunkStoryForGemini(segments);
-    const voiceMap = assignGeminiVoices(segments);
+    const voiceMap = assignGeminiVoices(segments, genders);
     const collected = new Array(parts.length).fill(null);
     let failedParts = [];
     let globalIdx = 0;
@@ -5768,12 +5924,23 @@ function NoteEditor({initialHtml, initialName, onNameChange, registerRef, onRemo
    STORY EDITOR — a plain-text block that gets read aloud with a
    different voice per character (see playStory() above for how).
    ========================================================= */
-function StoryEditor({initialText, initialName, onNameChange, registerRef, onRemove, canRemove, index}){
+function StoryEditor({initialText, initialName, initialGenders, onNameChange, onGendersChange, registerRef, onRemove, canRemove, index}){
   const taRef = useRef(null);
   const [showJsonPaste, setShowJsonPaste] = useState(false);
   const [jsonText, setJsonText] = useState("");
   const [jsonError, setJsonError] = useState("");
   const pendingTextRef = useRef(null);
+
+  // The narrator's voice (Gemini AI voice mode only) is just another entry
+  // in the same genders map the character voices already use, stored under
+  // the special key "Narrator" — see assignGeminiVoices(). "" means "no
+  // preference" (draws from the full voice pool, the old default behavior).
+  const narratorGenderRaw = (initialGenders && initialGenders["Narrator"]) || "";
+  function handleNarratorGenderChange(value){
+    const next = {...(initialGenders || {})};
+    if(value){ next["Narrator"] = value; } else { delete next["Narrator"]; }
+    onGendersChange && onGendersChange(next);
+  }
 
   useEffect(()=>{
     if(taRef.current){
@@ -5812,12 +5979,19 @@ function StoryEditor({initialText, initialName, onNameChange, registerRef, onRem
     if(!Array.isArray(parsed) && parsed.name && !initialName){
       onNameChange(String(parsed.name));
     }
+    // Optional {"genders": {"Maya":"girl", "Whiskers":"boy"}} map — only
+    // present on the object form, not the bare-array form. This is what
+    // lets the Gemini AI voice pick the right voice pool per character
+    // instead of guessing from the name alone (see assignGeminiVoices).
+    if(!Array.isArray(parsed) && parsed.genders && typeof parsed.genders === "object" && onGendersChange){
+      onGendersChange(parsed.genders);
+    }
     setJsonError("");
     setJsonText("");
     setShowJsonPaste(false);
   }
 
-  const STORY_JSON_SAMPLE = '{\n  "name": "The Lost Cat",\n  "lines": [\n    { "speaker": null, "text": "Once upon a time, in a quiet village, there lived a curious cat named Whiskers." },\n    { "speaker": "Maya", "text": "Where did the cat go?" },\n    { "speaker": null, "text": "The cat had been hiding under the table the whole time!" },\n    { "speaker": "Whiskers", "text": "Meow! I was just exploring!" }\n  ]\n}';
+  const STORY_JSON_SAMPLE = '{\n  "name": "The Lost Cat",\n  "genders": { "Maya": "girl", "Whiskers": "boy" },\n  "lines": [\n    { "speaker": null, "text": "Once upon a time, in a quiet village, there lived a curious cat named Whiskers." },\n    { "speaker": "Maya", "text": "Where did the cat go?" },\n    { "speaker": null, "text": "The cat had been hiding under the table the whole time!" },\n    { "speaker": "Whiskers", "text": "Meow! I was just exploring!" }\n  ]\n}';
 
   return (
     <div className="note-block story-block">
@@ -5843,7 +6017,7 @@ function StoryEditor({initialText, initialName, onNameChange, registerRef, onRem
           <p className="story-hint">
             Paste a story written in JSON (this is the format to hand ChatGPT/Claude so it can write one for you):
           </p>
-          <CopyableJson label="📄 Sample story JSON" json={STORY_JSON_SAMPLE} note='"speaker": null (or leave it out) means narration; any other name makes that character speak the line.' />
+          <CopyableJson label="📄 Sample story JSON" json={STORY_JSON_SAMPLE} note='"speaker": null (or leave it out) means narration; any other name makes that character speak the line. The optional top-level "genders" map ("boy"/"girl") tells the AI voice which character to voice as which — leave a name out of it and the app will just guess from the name instead. You can also set the narrator&apos;s voice by adding a "Narrator" entry to that map, or just use the "Narrator voice" dropdown below the story text.' />
           <textarea
             className="story-textarea"
             rows={6}
@@ -5866,6 +6040,25 @@ function StoryEditor({initialText, initialName, onNameChange, registerRef, onRem
             rows={8}
             placeholder={"Once upon a time, in a quiet village...\n\nMaya: Where did the cat go?\n\nThe cat was hiding under the table the whole time!"}
           ></textarea>
+          <p className="story-hint" style={{display:"flex", alignItems:"center", gap:6, flexWrap:"wrap"}}>
+            🎙️ Narrator voice (Gemini AI voice only):
+            <select
+              className="story-lang-select"
+              value={narratorGenderRaw}
+              onChange={e=>handleNarratorGenderChange(e.target.value)}
+              title="Which voice pool the narrator (unattributed lines) is picked from"
+            >
+              <option value="">Any</option>
+              <option value="girl">Female</option>
+              <option value="boy">Male</option>
+            </select>
+          </p>
+          {initialGenders && Object.keys(initialGenders).filter(n=>n!=="Narrator").length > 0 && (
+            <p className="story-hint">
+              🚻 Character genders set (from the last JSON paste): {Object.entries(initialGenders).filter(([n])=>n!=="Narrator").map(([n,g])=>`${n} (${g})`).join(", ")}.{" "}
+              <button type="button" className="note-remove-btn" style={{padding:"1px 8px"}} onClick={()=>onGendersChange && onGendersChange(narratorGenderRaw ? {"Narrator": narratorGenderRaw} : {})}>✕ Clear</button>
+            </p>
+          )}
         </>
       )}
     </div>
@@ -5893,12 +6086,24 @@ function StoryCard({note, index}){
   const geminiKey = useGeminiApiKey();
   const controllerRef = useRef(null);
   const segments = useMemo(()=>parseStorySegments(note.text || ""), [note.text]);
-  const cacheKey = useMemo(()=>storyAudioCacheKey(note.id, note.text || ""), [note.id, note.text]);
+  const cacheKey = useMemo(()=>storyAudioCacheKey(note.id, note.text || "", note.genders), [note.id, note.text, note.genders]);
 
   useEffect(()=>{
     let cancelled = false;
     getCachedStoryAudio(cacheKey).then(blob => { if(!cancelled) setHasCachedAudio(!!blob); });
     return ()=>{ cancelled = true; };
+  }, [cacheKey]);
+
+  // If any StoryCard triggers a global "clear ALL saved audio", every
+  // other open StoryCard needs to drop its own "saved offline" flag too
+  // — otherwise this card would keep saying "saved" even though its
+  // cached file was just wiped.
+  useEffect(()=>{
+    function onGlobalClear(){
+      getCachedStoryAudio(cacheKey).then(b => setHasCachedAudio(!!b));
+    }
+    window.addEventListener("story-audio-cache-cleared", onGlobalClear);
+    return ()=> window.removeEventListener("story-audio-cache-cleared", onGlobalClear);
   }, [cacheKey]);
 
   useEffect(()=>{
@@ -5929,6 +6134,7 @@ function StoryCard({note, index}){
       setProgressText(forceRegenerate ? "✨ Gemini — regenerating…" : "✨ Gemini — checking saved audio…");
       controllerRef.current = playStoryWithGemini(note.text || "", {
         noteId: note.id,
+        genders: note.genders,
         forceRegenerate: !!forceRegenerate,
         onSegment: idx => setActiveIdx(idx),
         onProgress: ({part, total, phase}) => {
@@ -6025,14 +6231,14 @@ function StoryCard({note, index}){
             <button
               type="button"
               className="note-remove-btn"
-              title="Delete the saved audio for this story and generate it fresh next time you press Play"
+              title="Delete the saved audio for just THIS story and generate it fresh next time you press Play — other stories' saved audio is untouched"
               onClick={async ()=>{
                 await deleteCachedStoryAudio(cacheKey);
                 setHasCachedAudio(false);
-                setStatusMsg("🗑️ Saved audio cleared — next Play will regenerate it.");
+                setStatusMsg("🗑️ This story's saved audio was cleared — next Play will regenerate it.");
               }}
             >
-              🗑️ Clear saved audio
+              🗑️ Clear this story's audio
             </button>
           )}
           <button type="button" className="story-play-btn" onClick={()=>handlePlay(false)}>
@@ -6088,11 +6294,12 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
     const n = getLessonNotes(lesson);
     const withIds = (n.length ? n : [{html:"", type:"note"}]).map(b=>({
       id: b.id || newNoteId(), html: b.html || "", text: b.text || "",
-      name: b.name || "", type: b.type === "story" ? "story" : "note"
+      name: b.name || "", type: b.type === "story" ? "story" : "note",
+      genders: (b.genders && typeof b.genders === "object") ? b.genders : {}
     }));
     return withIds;
   }, [lesson.id]);
-  const [noteBlocks, setNoteBlocks] = useState(()=>initialNotes.map(b=>({id: b.id, name: b.name, type: b.type})));
+  const [noteBlocks, setNoteBlocks] = useState(()=>initialNotes.map(b=>({id: b.id, name: b.name, type: b.type, genders: b.genders})));
   const initialHtmlRef = useRef(Object.fromEntries(initialNotes.filter(b=>b.type!=="story").map(b=>[b.id, b.html])));
   const initialTextRef = useRef(Object.fromEntries(initialNotes.filter(b=>b.type==="story").map(b=>[b.id, b.text])));
   const noteRefs = useRef({});
@@ -6100,6 +6307,9 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
 
   function renameNote(id, name){
     setNoteBlocks(prev => prev.map(b => b.id === id ? {...b, name} : b));
+  }
+  function updateGenders(id, genders){
+    setNoteBlocks(prev => prev.map(b => b.id === id ? {...b, genders} : b));
   }
 
   const initialVideos = useMemo(()=>{
@@ -6112,7 +6322,7 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
     const id = newNoteId();
     if(type === "story"){ initialTextRef.current[id] = ""; }
     else { initialHtmlRef.current[id] = ""; }
-    setNoteBlocks(prev => [...prev, {id, name: "", type: type === "story" ? "story" : "note"}]);
+    setNoteBlocks(prev => [...prev, {id, name: "", type: type === "story" ? "story" : "note", genders: {}}]);
   }
   function removeNote(id){
     setNoteBlocks(prev => prev.length > 1 ? prev.filter(b=>b.id !== id) : prev);
@@ -6130,7 +6340,7 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
       if(b.type === "story"){
         const el = storyRefs.current[b.id];
         const text = el ? el.value : (initialTextRef.current[b.id] || "");
-        return {id: b.id, type: "story", text, name: (b.name || "").trim()};
+        return {id: b.id, type: "story", text, name: (b.name || "").trim(), genders: b.genders || {}};
       }
       const el = noteRefs.current[b.id];
       const html = el ? sanitizeHtml(el.innerHTML) : (initialHtmlRef.current[b.id] || "");
@@ -6154,7 +6364,9 @@ function LessonEditForm({lesson, accent, onSave, onCancel}){
             key={b.id}
             initialText={initialTextRef.current[b.id] || ""}
             initialName={b.name || ""}
+            initialGenders={b.genders || {}}
             onNameChange={name=>renameNote(b.id, name)}
+            onGendersChange={genders=>updateGenders(b.id, genders)}
             registerRef={el=>{ storyRefs.current[b.id] = el; }}
             onRemove={()=>removeNote(b.id)}
             canRemove={noteBlocks.length > 1}
