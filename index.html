@@ -4202,10 +4202,29 @@ const GEMINI_TTS_VOICES = [
 // from the Gemini voice list, and using "Narrator" as the label for
 // unattributed lines since Gemini's multi-speaker mode requires every
 // speaker to be named.
+//
+// Each entry also carries a fixed "style" phrase (see GEMINI_VOICE_STYLES
+// below). A story is split into several "parts" and each part is its own
+// separate, stateless Gemini TTS call — the model has no memory of how it
+// voiced that character in an earlier part. Repeating the SAME style
+// phrase for a character in every part's prompt (see callGeminiTTS) gives
+// the model the same steering language to latch onto each time, which
+// keeps a character's delivery closer to consistent across parts even
+// though the underlying voiceName alone doesn't guarantee that.
+const GEMINI_VOICE_STYLES = [
+  "warm and cheerful", "calm and gentle", "playful and curious",
+  "bright and energetic", "steady and reassuring", "soft and dreamy",
+  "bold and adventurous", "kind and thoughtful"
+];
 function assignGeminiVoices(segments){
   const names = Array.from(new Set(segments.map(s=>s.speaker || "Narrator")));
   const map = {};
-  names.forEach((name, i)=>{ map[name] = GEMINI_TTS_VOICES[i % GEMINI_TTS_VOICES.length]; });
+  names.forEach((name, i)=>{
+    map[name] = {
+      voice: GEMINI_TTS_VOICES[i % GEMINI_TTS_VOICES.length],
+      style: name === "Narrator" ? "calm and gentle storyteller" : GEMINI_VOICE_STYLES[i % GEMINI_VOICE_STYLES.length]
+    };
+  });
   return map;
 }
 
@@ -4274,18 +4293,30 @@ function pcm16ToWavBlob(base64Pcm, sampleRate, channels){
 async function callGeminiTTS(apiKey, part, voiceMap){
   const speakers = Array.from(part.speakerSet);
   const isMulti = speakers.length > 1;
+  // IMPORTANT: single-speaker parts used to get a differently-worded
+  // prompt with the speaker label stripped out entirely (just the raw
+  // line text). Since each "part" is its own separate, stateless Gemini
+  // TTS call, that meant the SAME character could be fed two genuinely
+  // different prompt shapes depending on which other lines happened to
+  // land in the same chunk — and Gemini would render the same voiceName
+  // with a noticeably different performance as a result. Always using
+  // the exact same "Label: text" line format, and always repeating that
+  // character's fixed style phrase (from assignGeminiVoices), gives the
+  // model identical steering input for that character every single time,
+  // regardless of chunk boundaries.
   const linesText = part.lines.map(l => `${l.label}: ${l.text}`).join("\n");
-  const promptText = isMulti
-    ? `TTS the following story for young children, in a warm, natural, gentle storytelling voice:\n${linesText}`
-    : `Say in a warm, natural, gentle storytelling voice for young children:\n${part.lines.map(l=>l.text).join(" ")}`;
+  const styleNotes = speakers
+    .map(s => `${s} speaks in a ${(voiceMap[s] && voiceMap[s].style) || "warm and gentle"} voice.`)
+    .join(" ");
+  const promptText = `TTS the following story for young children, in a warm, natural, gentle storytelling voice. ${styleNotes}\n${linesText}`;
   // Multi-speaker mode needs each speaker's name in speechConfig to
   // exactly match the name used in the prompt text above.
   const speechConfig = isMulti
     ? { multiSpeakerVoiceConfig: { speakerVoiceConfigs: speakers.map(s => ({
         speaker: s,
-        voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceMap[s] } }
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: (voiceMap[s] && voiceMap[s].voice) || voiceMap[s] } }
       })) } }
-    : { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceMap[speakers[0]] } } };
+    : { voiceConfig: { prebuiltVoiceConfig: { voiceName: (voiceMap[speakers[0]] && voiceMap[speakers[0]].voice) || voiceMap[speakers[0]] } } };
 
   const res = await fetch(`${GEMINI_TTS_URL}?key=${encodeURIComponent(apiKey)}`, {
     method: "POST",
