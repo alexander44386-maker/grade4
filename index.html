@@ -4530,6 +4530,12 @@ function playStoryWithGemini(text, {onSegment, onEnd, onPartError, onPartRecover
     if(stopped) return;
     const url = URL.createObjectURL(blob);
     audioEl = new Audio(url);
+    // Fixed 95% speed — only applies to already-downloaded/cached audio
+    // (this is the sole call site for playWholeBlob). Live part-by-part
+    // generation below is untouched, so speed here never affects a story
+    // that's still being generated. playbackRate is applied at playback
+    // time only, so it doesn't touch what's stored in IndexedDB.
+    audioEl.playbackRate = 0.95;
     audioEl.addEventListener("loadedmetadata", () => {
       const realStarts = estimateSegmentStarts(segments, audioEl.duration || 0);
       timeupdateHandler = () => {
@@ -4684,14 +4690,25 @@ function playStoryWithGemini(text, {onSegment, onEnd, onPartError, onPartRecover
     playPart(0);
   })();
 
-  return { stop(){
-    stopped = true;
-    if(audioEl){
-      if(timeupdateHandler) audioEl.removeEventListener("timeupdate", timeupdateHandler);
-      audioEl.pause();
-      audioEl = null;
-    }
-  } };
+  return {
+    stop(){
+      stopped = true;
+      if(audioEl){
+        if(timeupdateHandler) audioEl.removeEventListener("timeupdate", timeupdateHandler);
+        audioEl.pause();
+        audioEl = null;
+      }
+    },
+    // Pause/resume are meant for the already-downloaded/cached playback
+    // path (playWholeBlob) — pausing there just pauses the one <audio>
+    // element already holding the full story. Calling these while a part
+    // is still being generated (audioEl not yet created for that part,
+    // or between parts) is a harmless no-op rather than an error, but the
+    // UI only shows the Pause button when phase === "cached" so this
+    // realistically only fires against the cached-audio element.
+    pause(){ if(audioEl) audioEl.pause(); },
+    resume(){ if(audioEl) audioEl.play().catch(()=>{}); }
+  };
 }
 
 // Small hook so any StoryCard reflects the current Gemini key without a
@@ -6083,6 +6100,19 @@ function StoryCard({note, index}){
   const [statusMsg, setStatusMsg] = useState("");
   const [progressText, setProgressText] = useState("");
   const [hasCachedAudio, setHasCachedAudio] = useState(false);
+  // True from the moment playback ends with at least one failed part,
+  // until the background retry loop (retryFailedPartsInBackground)
+  // finishes — success or give-up. Used to block re-clicking Play
+  // during that window so we don't fire a second, duplicate Gemini
+  // request for the same still-downloading part.
+  const [bgSyncing, setBgSyncing] = useState(false);
+  // True only while the CURRENT playback session is the already-downloaded
+  // (cached) audio — i.e. onProgress reported phase "cached". Fresh
+  // Gemini generation (phase "loading"/"playing"/"saving") leaves this
+  // false, since pause/speed only apply to cached playback.
+  const [isCachedPlayback, setIsCachedPlayback] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const hadFailedPartRef = useRef(false);
   const geminiKey = useGeminiApiKey();
   const controllerRef = useRef(null);
   const segments = useMemo(()=>parseStorySegments(note.text || ""), [note.text]);
@@ -6121,9 +6151,24 @@ function StoryCard({note, index}){
     setPlaying(false);
     setActiveIdx(-1);
     setProgressText("");
+    setIsCachedPlayback(false);
+    setPaused(false);
+  }
+  function handlePauseResume(){
+    if(!controllerRef.current) return;
+    if(paused){ controllerRef.current.resume(); setPaused(false); }
+    else{ controllerRef.current.pause(); setPaused(true); }
   }
   function handlePlay(forceRegenerate){
     if(playing){ stopPlayback(); return; }
+    if(bgSyncing){
+      // A background retry for a previously-skipped part is still in
+      // flight for THIS story — starting a new session now would fire
+      // a second, duplicate Gemini request for that same part. Block
+      // and let the existing retry finish instead.
+      setStatusMsg("⏳ Still recovering a missing part in the background — please wait a moment before playing again.");
+      return;
+    }
     if(narrationMode === "gemini" && !geminiKey){
       setShowKeyInput(true);
       return;
@@ -6131,6 +6176,7 @@ function StoryCard({note, index}){
     setStatusMsg("");
     setPlaying(true);
     if(narrationMode === "gemini"){
+      hadFailedPartRef.current = false;
       setProgressText(forceRegenerate ? "✨ Gemini — regenerating…" : "✨ Gemini — checking saved audio…");
       controllerRef.current = playStoryWithGemini(note.text || "", {
         noteId: note.id,
@@ -6138,13 +6184,29 @@ function StoryCard({note, index}){
         forceRegenerate: !!forceRegenerate,
         onSegment: idx => setActiveIdx(idx),
         onProgress: ({part, total, phase}) => {
-          if(phase === "cached") setProgressText("💾 Playing saved audio (no internet needed)");
-          else if(phase === "loading") setProgressText(`✨ Gemini — generating part ${part} of ${total}…`);
-          else if(phase === "saving") setProgressText("💾 Saving full narration to this device…");
-          else setProgressText(`✨ Gemini — playing part ${part} of ${total}`);
+          if(phase === "cached"){ setProgressText("💾 Playing saved audio (no internet needed)"); setIsCachedPlayback(true); }
+          else if(phase === "loading"){ setProgressText(`✨ Gemini — generating part ${part} of ${total}…`); setIsCachedPlayback(false); }
+          else if(phase === "saving"){ setProgressText("💾 Saving full narration to this device…"); setIsCachedPlayback(false); }
+          else { setProgressText(`✨ Gemini — playing part ${part} of ${total}`); setIsCachedPlayback(false); }
         },
-        onEnd: () => { controllerRef.current = null; setPlaying(false); setActiveIdx(-1); setProgressText(""); getCachedStoryAudio(cacheKey).then(b=>setHasCachedAudio(!!b)); },
-        onPartError: () => setStatusMsg("⚠️ A part had trouble — skipped ahead so the story keeps going. Retrying quietly in the background…"),
+        onEnd: () => {
+          controllerRef.current = null;
+          setPlaying(false);
+          setActiveIdx(-1);
+          setProgressText("");
+          setIsCachedPlayback(false);
+          setPaused(false);
+          // If any part failed during this session, playStoryWithGemini
+          // kicks off retryFailedPartsInBackground() right after this
+          // onEnd fires — so flip bgSyncing on now to block Play until
+          // onDownloadComplete reports that loop is done.
+          if(hadFailedPartRef.current) setBgSyncing(true);
+          getCachedStoryAudio(cacheKey).then(b=>setHasCachedAudio(!!b));
+        },
+        onPartError: () => {
+          hadFailedPartRef.current = true;
+          setStatusMsg("⚠️ A part had trouble — skipped ahead so the story keeps going. Retrying quietly in the background…");
+        },
         onPartRecovered: () => {
           // A previously-skipped part was filled in by a background
           // retry after the story ended; refresh the "saved offline"
@@ -6154,7 +6216,9 @@ function StoryCard({note, index}){
         },
         onDownloadComplete: ({success, missingParts}) => {
           // Fires once (success or not) when the background retry loop
-          // finishes — this is the actual "are we done yet" answer.
+          // finishes — this is the actual "are we done yet" answer, and
+          // the point where it's safe to allow Play again.
+          setBgSyncing(false);
           if(success){
             setStatusMsg("✅ Full story saved offline — no internet needed next time.");
           }else{
@@ -6241,8 +6305,24 @@ function StoryCard({note, index}){
               🗑️ Clear this story's audio
             </button>
           )}
-          <button type="button" className="story-play-btn" onClick={()=>handlePlay(false)}>
-            {playing ? "⏹ Stop" : "▶️ Play"}
+          {playing && isCachedPlayback && (
+            <button
+              type="button"
+              className="note-remove-btn"
+              onClick={handlePauseResume}
+              title="Pause/resume the saved audio"
+            >
+              {paused ? "▶️ Resume" : "⏸ Pause"}
+            </button>
+          )}
+          <button
+            type="button"
+            className="story-play-btn"
+            onClick={()=>handlePlay(false)}
+            disabled={bgSyncing && !playing}
+            title={bgSyncing && !playing ? "Recovering a missing part in the background — please wait" : undefined}
+          >
+            {playing ? "⏹ Stop" : (bgSyncing ? "⏳ Syncing…" : "▶️ Play")}
           </button>
         </div>
       </div>
