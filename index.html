@@ -6729,8 +6729,13 @@ function CopyableJson({label, json, note}){
 // the app's internal question shape for every supported type. Shared by the
 // manual "Add via JSON" bulk import AND the AI "Generate" feature below, so
 // both paths accept exactly the same formats (see the Sample Formats panel).
-function normalizeQuestionsJSON(parsed, fallbackTopicRaw){
+function normalizeQuestionsJSON(parsed, fallbackTopicRaw, forcedTopicRaw){
   const fallbackTopic = normTopic(fallbackTopicRaw);
+  // When the person typed a specific topic/subtopic before generating, that
+  // exact string is forced onto every generated question's "topic" field
+  // (instead of trusting whatever string the model happened to write back),
+  // so filtering by topic on the Quiz screen reliably picks these up.
+  const forcedTopic = normTopic(forcedTopicRaw);
   return parsed.filter(p=>{
     if(!p || !p.q) return false;
     const t = String(p.type||"mcq").toLowerCase();
@@ -6755,7 +6760,7 @@ function normalizeQuestionsJSON(parsed, fallbackTopicRaw){
     return Array.isArray(p.options) && p.options.length >= 2;
   }).map(p=>{
     const t = String(p.type||"mcq").toLowerCase();
-    const topic = normTopic(p.topic) || fallbackTopic;
+    const topic = forcedTopic || normTopic(p.topic) || fallbackTopic;
     if(t === "fill" || t === "fillblank" || t === "fill_in_the_blank"){
       return {type:"fill", q:String(p.q), answer:String(p.answer), explain: p.explain ? String(p.explain) : "", topic};
     }
@@ -6844,13 +6849,37 @@ function stripHtml(html){
     .replace(/\s+/g, " ").trim();
 }
 
+// Builds the notes/story context handed to Gemini, and reports back whether
+// this lesson has any Story-type note so the prompt can switch into
+// story-comprehension mode. Regular notes carry HTML in n.html; Story notes
+// carry plain "Speaker: line" text in n.text (see parseStorySegments) — the
+// old version of this function only ever read n.html, so a lesson made up
+// entirely of a Story note silently sent NO content to Gemini at all.
 function buildLessonContext(lesson){
   const notes = getLessonNotes(lesson);
-  const text = notes.map(n => stripHtml(n.html || "")).join("\n").slice(0, 6000);
+  const noteChunks = [];
+  const storyChunks = [];
+  notes.forEach(n=>{
+    if(n && n.type === "story"){
+      const t = String(n.text || "").trim();
+      if(t) storyChunks.push(t);
+    } else {
+      const t = stripHtml(n && n.html || "");
+      if(t) noteChunks.push(t);
+    }
+  });
   let ctx = "Topic title: " + (lesson.title || "");
   if(lesson.sub) ctx += "\nTopic subtitle: " + lesson.sub;
-  ctx += "\n\nLesson notes the student is studying:\n" + (text || "(no notes written yet — write reasonable questions based on the title/subtitle alone)");
-  return ctx;
+  if(noteChunks.length){
+    ctx += "\n\nLesson notes the student is studying:\n" + noteChunks.join("\n").slice(0, 6000);
+  }
+  if(storyChunks.length){
+    ctx += "\n\nStory the student is reading for this lesson (lines written as \"Character: line\" are that character speaking; other lines are narration):\n" + storyChunks.join("\n\n---\n\n").slice(0, 6000);
+  }
+  if(!noteChunks.length && !storyChunks.length){
+    ctx += "\n\n(no notes written yet — write reasonable questions based on the title/subtitle alone)";
+  }
+  return { text: ctx, hasStory: storyChunks.length > 0, hasNotes: noteChunks.length > 0 };
 }
 
 const GENERATE_TYPE_LIBRARY = {
@@ -6880,15 +6909,32 @@ function getGenerateCountRange(typesSet){
   }
   return GENERATE_COUNT_RANGE_MIXED;
 }
+// Builds the full list of selectable counts for the "How many questions?"
+// dropdown: the recommended min..max range, PLUS a couple of smaller,
+// quicker-to-generate options — half of the range's min and half of its
+// max (rounded, at least 1) — so e.g. a 6-8 range also offers 3 and 4.
+function getGenerateCountOptions(typesSet){
+  const range = getGenerateCountRange(typesSet);
+  const full = [];
+  for(let v=range.min; v<=range.max; v++) full.push(v);
+  const halfMin = Math.max(1, Math.round(range.min/2));
+  const halfMax = Math.max(1, Math.round(range.max/2));
+  const extras = [halfMin, halfMax].filter(v=>v < range.min);
+  return Array.from(new Set([...extras, ...full])).sort((a,b)=>a-b);
+}
 
+// Difficulty is single-select on purpose: generating covers one difficulty
+// per API call, so letting the person pick more than one would mean firing
+// an extra Gemini request per extra difficulty for the same "Generate" tap.
 async function generateQuestionsForLesson(apiKey, lesson, options){
   const opts = options || {};
   const n = Math.max(1, Math.min(20, opts.count || 6));
   const chosenTypes = (opts.types && opts.types.length) ? opts.types : GENERATE_TYPE_ORDER;
   const typeSpec = chosenTypes.map(t=>GENERATE_TYPE_LIBRARY[t]).filter(Boolean).join("\n");
   const difficulty = GEMINI_DIFFICULTY_PHRASING[opts.difficulty] || GEMINI_DIFFICULTY_PHRASING.medium;
-  const topicLine = opts.topic && opts.topic.trim()
-    ? `Focus every question specifically on this topic/subtopic within the lesson: "${opts.topic.trim()}". Skip parts of the notes unrelated to it.`
+  const trimmedTopic = opts.topic && opts.topic.trim() ? opts.topic.trim() : "";
+  const topicLine = trimmedTopic
+    ? `Focus every question specifically on this topic/subtopic: "${trimmedTopic}". This topic MUST be something that actually appears in the lesson content below — if it doesn't clearly appear there, pick the closest matching part of the lesson content instead of inventing new material for it.`
     : "";
   const mixLine = chosenTypes.length > 1
     ? `Use a MIX of the ${chosenTypes.length} allowed question type(s) below, spread as evenly as reasonable — don't make them all the same type.`
@@ -6898,10 +6944,30 @@ async function generateQuestionsForLesson(apiKey, lesson, options){
     ? `\nIMPORTANT — check this topic's existing question bank below (this includes questions from your own last generation for this lesson, if any) before writing new ones. Do NOT repeat these questions, and do NOT write near-duplicates that just reword the same fact — cover different facts, details, or angles from the notes instead:\n${existingQs.slice(-20).map((q,i)=>`${i+1}. ${q}`).join("\n")}\n`
     : "";
 
-  const prompt = `You are writing a quiz question bank for a Grade 4 elementary student.
-${buildLessonContext(lesson)}
+  const context = buildLessonContext(lesson);
 
-Write exactly ${n} quiz questions that check understanding of the notes above, in simple Grade-4-appropriate English (or Filipino only if the notes themselves are in Filipino). ${mixLine} Wrong-answer options must be genuinely plausible, not throwaway jokes.
+  // Grounding rule: whatever the lesson actually contains (in the Learn
+  // tab — regular notes and/or a Story note) is the only source of TOPICS
+  // for these questions. General/world knowledge may be used to phrase a
+  // question clearly, write a kid-friendly explanation, or build plausible
+  // wrong-answer options, but it must never introduce a fact, subtopic, or
+  // detail that isn't actually present in the lesson content below.
+  const groundingLine = `Every question must be about something that literally appears in the lesson content below — do not add outside facts, subtopics, or trivia that aren't in it. You may use your general knowledge only to phrase questions clearly, write kid-friendly explanations, and build plausible wrong-answer options — never to introduce new topics.`;
+
+  // Story-specific mode: when the lesson content is (or includes) a Story
+  // note, question-writing switches to plain reading-comprehension —
+  // characters, what happens, and the story's lesson/moral — instead of
+  // interpretive or "what do you think" style questions.
+  const storyLine = context.hasStory
+    ? `\nThis lesson includes a STORY. For any question based on the story, stick to concrete reading-comprehension: who the characters are, what happens in the story (events in the order they happen), and the lesson/moral of the story. Do NOT write interpretive, opinion-based, "what do you think" or "how do you feel" questions, and do not ask about writing style, literary devices, or the author's intent.${context.hasNotes ? " (If this lesson also has regular notes alongside the story, questions about those notes can be normal fact-recall as usual.)" : ""}`
+    : "";
+
+  const prompt = `You are writing a quiz question bank for a Grade 4 elementary student.
+${context.text}
+
+Write exactly ${n} quiz questions that check understanding of the lesson content above, in simple Grade-4-appropriate English (or Filipino only if the lesson content itself is in Filipino). ${mixLine} Wrong-answer options must be genuinely plausible, not throwaway jokes.
+${groundingLine}
+${storyLine}
 ${topicLine}
 ${difficulty}
 ${noDupeBlock}
@@ -6935,7 +7001,7 @@ Return ONLY a raw JSON array of question objects — no markdown code fences, no
   }catch(e){
     throw new Error("Gemini's response wasn't valid JSON.");
   }
-  return normalizeQuestionsJSON(parsed, lesson.title || "");
+  return normalizeQuestionsJSON(parsed, lesson.title || "", trimmedTopic);
 }
 
 function QuestionBankManager({lessonId, questions, accent, onChange}){
@@ -9152,9 +9218,7 @@ function App(){
                 onChange={e=>setGenCount(parseInt(e.target.value,10))}>
                 {(()=>{
                   const range = getGenerateCountRange(genTypes);
-                  const opts = [];
-                  for(let v=range.min; v<=range.max; v++) opts.push(v);
-                  return opts.map(v=>(
+                  return getGenerateCountOptions(genTypes).map(v=>(
                     <option key={v} value={v}>{v}{v===range.min ? " (recommended)" : ""}</option>
                   ));
                 })()}
@@ -9174,6 +9238,9 @@ function App(){
               <label className="field-label">Topic / subtopic (optional)</label>
               <input type="text" className="text-input" placeholder={"Defaults to the whole lesson: \"" + mergeLesson(genLesson, edits).title + "\""}
                 value={genTopic} onChange={e=>setGenTopic(e.target.value)} />
+              {genTopic.trim() && (
+                <p className="sub" style={{margin:"4px 0 0"}}>Generated questions will be tagged with the topic "{genTopic.trim()}" so you can pick this exact topic later when starting a quiz.</p>
+              )}
 
               <label className="field-label">Difficulty</label>
               <div style={{display:"flex", gap:8, marginBottom:6}}>
@@ -9224,61 +9291,6 @@ function App(){
 
     const activeLessonQuiz = tab==="quiz" && quizSession && quizSession.kind==="lesson" && quizSession.key===lesson.id && !quizSession.finalAnswers;
 
-    const [lsGenerating, setLsGenerating] = useState(false);
-    const [lsGenOpen, setLsGenOpen] = useState(false);
-    const [lsGenTypes, setLsGenTypes] = useState(new Set(GENERATE_TYPE_ORDER));
-    const [lsGenCount, setLsGenCount] = useState(getGenerateCountRange(new Set(GENERATE_TYPE_ORDER)).min);
-    const [lsGenTopic, setLsGenTopic] = useState("");
-    const [lsGenDifficulty, setLsGenDifficulty] = useState("medium");
-
-    function lsToggleGenType(t){
-      setLsGenTypes(prev=>{
-        const next = new Set(prev);
-        if(next.has(t) && next.size>1) next.delete(t); else next.add(t);
-        return next;
-      });
-    }
-
-    function openLsGenerateSetup(){
-      if(lsGenerating) return;
-      const defaultTypes = new Set(GENERATE_TYPE_ORDER);
-      setLsGenTypes(defaultTypes);
-      setLsGenCount(getGenerateCountRange(defaultTypes).min);
-      setLsGenTopic("");
-      setLsGenDifficulty("medium");
-      setLsGenOpen(true);
-    }
-
-    async function runLsGenerateQuestions(){
-      let apiKey = loadGeminiApiKey();
-      if(!apiKey){
-        apiKey = window.prompt("Paste a free Gemini API key to generate quiz questions (get one at aistudio.google.com/apikey). It's saved on this device only, and also reused for story narration.");
-        if(!apiKey || !apiKey.trim()) return;
-        apiKey = apiKey.trim();
-        saveGeminiApiKey(apiKey);
-      }
-      setLsGenOpen(false);
-      setLsGenerating(true);
-      try{
-        const generated = await generateQuestionsForLesson(apiKey, lesson, {
-          count: lsGenCount,
-          types: lsGenTypes,
-          topic: lsGenTopic,
-          difficulty: lsGenDifficulty,
-          existingQuestions: getQuestions(lesson.id).map(q=>q.q)
-        });
-        if(!generated.length){
-          alert("Gemini didn't return any usable questions for \"" + lesson.title + "\". Try again in a moment.");
-        } else {
-          setLessonQuestions(lesson.id, [...getQuestions(lesson.id), ...generated]);
-          alert("✨ Added " + generated.length + " new question" + (generated.length===1?"":"s") + " to \"" + lesson.title + "\"'s question bank.");
-        }
-      }catch(err){
-        alert("Couldn't generate questions: " + (err && err.message ? err.message : "unknown error"));
-      }finally{
-        setLsGenerating(false);
-      }
-    }
 
     return (
       <React.Fragment>
@@ -9402,69 +9414,10 @@ function App(){
                 ) : notesBlock;
               })()}
               <div className="learn-footer" style={{gap:8, flexWrap:"wrap"}}>
-                <span
-                  role="button"
-                  title="Generate quiz questions with AI (Gemini) from this topic's notes"
-                  className="pill todo"
-                  style={{cursor: lsGenerating ? "default" : "pointer", opacity: lsGenerating ? 0.6 : 1}}
-                  onClick={openLsGenerateSetup}
-                >{lsGenerating ? "⏳ Generating…" : "✨ Generate"}</span>
                 <button className="btn btn-primary" style={{background:quarter.color}} onClick={()=>{markLearned(lesson.id); setTab("quiz");}}>
                   {rec && rec.learned ? "Reviewed — Take Quiz →" : "Mark as Learned & Take Quiz →"}
                 </button>
               </div>
-              {lsGenOpen && (
-                <div className="gen-setup-overlay" onClick={()=>setLsGenOpen(false)}>
-                  <div className="gen-setup-card" onClick={e=>e.stopPropagation()}>
-                    <h3 style={{margin:"0 0 4px"}}>✨ Generate Questions</h3>
-                    <p className="sub" style={{margin:"0 0 14px"}}>For "{lesson.title}"</p>
-
-                    <label className="field-label">How many questions?</label>
-                    <select className="text-input" value={lsGenCount}
-                      onChange={e=>setLsGenCount(parseInt(e.target.value,10))}>
-                      {(()=>{
-                        const range = getGenerateCountRange(lsGenTypes);
-                        const opts = [];
-                        for(let v=range.min; v<=range.max; v++) opts.push(v);
-                        return opts.map(v=>(
-                          <option key={v} value={v}>{v}{v===range.min ? " (recommended)" : ""}</option>
-                        ));
-                      })()}
-                    </select>
-
-                    <label className="field-label">Question type(s)</label>
-                    <div style={{display:"flex", flexWrap:"wrap", gap:8, marginBottom:6}}>
-                      {GENERATE_TYPE_ORDER.map(t=>(
-                        <span key={t}
-                          className={"pill " + (lsGenTypes.has(t) ? "done" : "todo")}
-                          style={{cursor:"pointer"}}
-                          onClick={()=>lsToggleGenType(t)}
-                        >{lsGenTypes.has(t) ? "✓ " : ""}{GENERATE_TYPE_LABELS[t]}</span>
-                      ))}
-                    </div>
-
-                    <label className="field-label">Topic / subtopic (optional)</label>
-                    <input type="text" className="text-input" placeholder={"Defaults to the whole lesson: \"" + lesson.title + "\""}
-                      value={lsGenTopic} onChange={e=>setLsGenTopic(e.target.value)} />
-
-                    <label className="field-label">Difficulty</label>
-                    <div style={{display:"flex", gap:8, marginBottom:6}}>
-                      {[["easy","🌱 Easy"],["medium","⭐ Medium"],["hard","🔥 Hard"]].map(([key,label])=>(
-                        <span key={key}
-                          className={"pill " + (lsGenDifficulty===key ? "done" : "todo")}
-                          style={{cursor:"pointer"}}
-                          onClick={()=>setLsGenDifficulty(key)}
-                        >{label}</span>
-                      ))}
-                    </div>
-
-                    <div className="learn-footer" style={{gap:10}}>
-                      <button className="btn btn-ghost" onClick={()=>setLsGenOpen(false)}>Cancel</button>
-                      <button className="btn btn-primary" style={{background:quarter.color}} onClick={runLsGenerateQuestions}>✨ Generate →</button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )
         )}
