@@ -1351,6 +1351,38 @@ async function loadFromCloud(){
 }
 
 /* =========================================================
+   TEMP — Galaxy Blaster manual ship-unlock admin. Lets a parent force
+   ships locked/unlocked outside the normal coin economy, then push that
+   straight to Firebase. Reads/writes the exact same "ta-unlocked-ships"
+   key the game itself uses, so no separate sync plumbing is needed.
+   Self-contained: delete this block plus the "Character Unlock Admin"
+   panel/button in TypingGalaxyScreen whenever this is no longer needed.
+   ========================================================= */
+const GALAXY_SHIP_LIST = [
+  {key:"rocket", name:"Rocket", alwaysUnlocked:true},
+  {key:"ufo", name:"Saucer"},
+  {key:"robot", name:"Titan Mech"},
+  {key:"comet", name:"Comet"},
+  {key:"blaze", name:"Blaze Fighter"},
+  {key:"ice", name:"Glacier Reaper"},
+  {key:"star", name:"Meteor Striker"},
+  {key:"volt", name:"Thunder Talon"},
+  {key:"terra", name:"Quake Crusher"},
+  {key:"alien", name:"Nebula Phantom"},
+  {key:"dragon", name:"Dragon Ace"},
+  {key:"shadow", name:"Void Stalker"},
+  {key:"storm", name:"Tempest Raider"},
+  {key:"cosmic", name:"Galaxy Sovereign"}
+];
+function loadUnlockedShips(){
+  try{ return JSON.parse(localStorage.getItem("ta-unlocked-ships") || "[]"); }catch(e){ return []; }
+}
+function saveUnlockedShips(list){
+  try{ localStorage.setItem("ta-unlocked-ships", JSON.stringify(list)); }catch(e){}
+  queueCloudSync();
+}
+
+/* =========================================================
    CONTENT DATA — Science 4, SY 2026-2027 (Sacred Heart Academy of Pasig)
    ========================================================= */
 const SCIENCE_QUARTERS = [
@@ -3626,19 +3658,38 @@ function honorLabel(avg, thresholds){
 //    {score,total} items (Written Work #1, #2, ... etc). Each component's
 //    percentage is the sum of scores over the sum of totals across its items,
 //    then weighted the same way as Final mode.
+// Sums the {score,total} items for one component (WW/PT/QA) into a single
+// percentage. Pulled out of componentPct so Final mode can also use it as
+// an auto-computed fallback (see componentPct below).
+function detailedComponentPct(entry, key){
+  const items = (entry[key]||[]).filter(it=>it && it.total!=="" && it.total!=null && Number(it.total)>0 && it.score!==""&&it.score!=null);
+  if(!items.length) return null;
+  const sumScore = items.reduce((a,it)=>a+Number(it.score),0);
+  const sumTotal = items.reduce((a,it)=>a+Number(it.total),0);
+  if(sumTotal<=0) return null;
+  return Math.max(0, Math.min(100, (sumScore/sumTotal)*100));
+}
 function componentPct(entry, key){
   if(entry.mode==="detailed"){
-    const items = (entry[key]||[]).filter(it=>it && it.total!=="" && it.total!=null && Number(it.total)>0 && it.score!==""&&it.score!=null);
-    if(!items.length) return null;
-    const sumScore = items.reduce((a,it)=>a+Number(it.score),0);
-    const sumTotal = items.reduce((a,it)=>a+Number(it.total),0);
-    if(sumTotal<=0) return null;
-    return Math.max(0, Math.min(100, (sumScore/sumTotal)*100));
+    return detailedComponentPct(entry, key);
   }
-  // final mode: a directly-entered percentage per component
-  const v = entry[key];
-  if(v==="" || v==null || isNaN(v)) return null;
-  return Math.max(0, Math.min(100, Number(v)));
+  // Final mode: prefer a manually-typed override (stored under key+"Final"
+  // so it never collides with any Detailed items kept under the plain
+  // key). If there's no override yet, auto-fill from the Detailed items'
+  // computed average instead of showing blank/zero — so switching to
+  // Final mode never hides work already entered in Detailed mode.
+  const manualKey = key + "Final";
+  let manual = entry[manualKey];
+  // Backward-compat: older saves stored the Final-mode value directly
+  // under entry[key] as a plain number (before this override/auto-fill
+  // split existed). Treat that as the manual override too.
+  if((manual==="" || manual==null) && entry[key]!=null && entry[key]!=="" && !Array.isArray(entry[key])){
+    manual = entry[key];
+  }
+  if(manual !== "" && manual != null && !isNaN(manual)){
+    return Math.max(0, Math.min(100, Number(manual)));
+  }
+  return detailedComponentPct(entry, key);
 }
 function computeQuarterGrade(subjectId, entry, weightsOverride){
   if(!entry) return null;
@@ -7908,540 +7959,23 @@ function QuestionBankManager({lessonId, questions, accent, onChange}){
    MAIN APP
    ========================================================= */
 
-function App(){
-  const [progress, setProgress] = useState(loadProgress());
-  const [edits, setEdits] = useState(loadEdits());
-  const [bank, setBank] = useState(loadBank());
-  const [moves, setMoves] = useState(loadMoves());
-  const [customLessons, setCustomLessons] = useState(loadCustomLessons());
-  const [settings, setSettings] = useState(loadSettings());
-  const [notes, setNotes] = useState(loadNotes());
-  const [activity, setActivity] = useState(loadActivity());
-  const [generalKnown, setGeneralKnown] = useState(loadGeneralKnown());
-  const [grades, setGrades] = useState(loadGrades());
-  const [gradeConfig, setGradeConfig] = useState(loadGradeConfig());
-  // Lifted up from GradesScreen (rather than a local useState there) because
-  // GradesScreen is redefined on every App re-render — editing a Final/Detailed
-  // score triggers setGrades, which re-renders App, which would otherwise reset
-  // any state local to GradesScreen and collapse the open subject back to just
-  // the Report Card summary. Keeping it here lets it survive those edits.
-  const [gradesOpenSubject, setGradesOpenSubject] = useState(null);
-  const [gradesSelectedQuarter, setGradesSelectedQuarter] = useState(GRADE_QUARTERS[0].id);
-  const [nav, setNav] = useState({screen:"dashboard"});
-  const [quizSession, setQuizSession] = useState(null); // {kind:'lesson'|'long', questions, accent, title, key}
-  const lastQuizQuestionsRef = useRef({}); // key -> question texts used last time, so "play again" avoids repeats
-  const [saveFlash, setSaveFlash] = useState(false);
-  const importInputRef = useRef(null);
-
-  useEffect(()=>{ saveProgress(progress); }, [progress]);
-  useEffect(()=>{ saveEdits(edits); }, [edits]);
-  useEffect(()=>{ saveBank(bank); }, [bank]);
-  useEffect(()=>{ saveMoves(moves); }, [moves]);
-  useEffect(()=>{ saveCustomLessons(customLessons); }, [customLessons]);
-  useEffect(()=>{ saveSettings(settings); }, [settings]);
-  useEffect(()=>{ saveNotes(notes); }, [notes]);
-  useEffect(()=>{ saveActivity(activity); }, [activity]);
-  useEffect(()=>{ saveGeneralKnown(generalKnown); }, [generalKnown]);
-  useEffect(()=>{ saveGrades(grades); }, [grades]);
-  useEffect(()=>{ saveGradeConfig(gradeConfig); }, [gradeConfig]);
-  useEffect(()=>{ setSoundEnabled(settings.soundEnabled !== false); }, [settings.soundEnabled]);
-  useEffect(()=>{
-    document.body.classList.toggle("dark-mode", !!settings.darkMode);
-  }, [settings.darkMode]);
-
-  useEffect(()=>{
-    // If the background Firebase pull finds newer data than what we
-    // rendered with, refresh state from localStorage without a reload.
-    function onCloudSynced(){
-      setProgress(loadProgress());
-      setEdits(loadEdits());
-      setBank(loadBank());
-      setMoves(loadMoves());
-      setCustomLessons(loadCustomLessons());
-      setSettings(loadSettings());
-      setNotes(loadNotes());
-      setActivity(loadActivity());
-      setGeneralKnown(loadGeneralKnown());
-      setGrades(loadGrades());
-      setGradeConfig(loadGradeConfig());
-    }
-    window.addEventListener("gs4-cloud-synced", onCloudSynced);
-    return () => window.removeEventListener("gs4-cloud-synced", onCloudSynced);
-  }, []);
-
-  async function saveEverythingNow(){
-    Sound.save();
-    saveProgress(progress); saveEdits(edits); saveBank(bank); saveMoves(moves);
-    saveCustomLessons(customLessons);
-    saveSettings(settings); saveNotes(notes); saveActivity(activity); saveGrades(grades);
-    // Skip the debounce and push the full snapshot to Firebase right away.
-    clearTimeout(cloudSyncTimer);
-    const cloudOk = await pushToCloud();
-    setSaveFlash(cloudOk ? "✅ Saved to Firebase!" : "⚠️ Saved on this device only (offline)");
-    setTimeout(()=>setSaveFlash(false), 1800);
-  }
-
-  async function exportAllData(){
-    setSaveFlash("⏳ Gathering backup (incl. offline audio)…");
-    // storyAudioCache lives in IndexedDB (not localStorage) and normally
-    // never touches Firebase/cloud sync, so it has to be pulled in
-    // separately here to make it into the JSON backup file.
-    const storyAudioCache = await exportStoryAudioCache();
-    const payload = {
-      app: "gs4-learning-passport",
-      exportedAt: new Date().toISOString(),
-      data: {
-        progress, edits, bank, moves, customLessons, gradeConfig,
-        settings, notes, activity, generalKnown, grades
-      },
-      // Kept as a separate top-level section (not inside `data`) since it's
-      // IndexedDB content, not a localStorage key like everything above.
-      storyAudioCache
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    const stamp = new Date().toISOString().slice(0,10);
-    a.href = url;
-    a.download = `learning-passport-backup-${stamp}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    setSaveFlash("⬇️ Exported backup file!");
-    setTimeout(()=>setSaveFlash(false), 1800);
-  }
-
-  function importAllData(file){
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try{
-        const parsed = JSON.parse(reader.result);
-        const d = parsed && parsed.data ? parsed.data : parsed; // allow raw or wrapped JSON
-        if(!d || typeof d !== "object") throw new Error("bad format");
-        const audioEntries = parsed && Array.isArray(parsed.storyAudioCache) ? parsed.storyAudioCache : null;
-        const audioNote = audioEntries && audioEntries.length ? ` and ${audioEntries.length} cached story audio file(s)` : "";
-        if(!window.confirm(`Import this backup? This will replace all current progress, topics, notes, and quiz bank data${audioNote} on this device.`)) return;
-        if(d.progress) setProgress(d.progress);
-        if(d.edits) setEdits(d.edits);
-        if(d.bank) setBank(d.bank);
-        if(d.moves) setMoves(d.moves);
-        if(d.customLessons) setCustomLessons(d.customLessons);
-        if(d.gradeConfig) setGradeConfig(d.gradeConfig);
-        if(d.settings) setSettings(d.settings);
-        if(d.notes) setNotes(d.notes);
-        if(d.activity) setActivity(d.activity);
-        if(d.generalKnown) setGeneralKnown(d.generalKnown);
-        if(d.grades) setGrades(d.grades);
-        // Persist immediately so a refresh doesn't race the effects.
-        if(d.progress) saveProgress(d.progress);
-        if(d.edits) saveEdits(d.edits);
-        if(d.bank) saveBank(d.bank);
-        if(d.moves) saveMoves(d.moves);
-        if(d.customLessons) saveCustomLessons(d.customLessons);
-        if(d.gradeConfig) saveGradeConfig(d.gradeConfig);
-        if(d.settings) saveSettings(d.settings);
-        if(d.notes) saveNotes(d.notes);
-        if(d.activity) saveActivity(d.activity);
-        if(d.generalKnown) saveGeneralKnown(d.generalKnown);
-        if(d.grades) saveGrades(d.grades);
-        // Restore the IndexedDB offline audio cache, if the backup has one.
-        if(audioEntries && audioEntries.length){
-          setSaveFlash("⏳ Restoring offline audio…");
-          await importStoryAudioCache(audioEntries);
-        }
-        clearTimeout(cloudSyncTimer);
-        const cloudOk = await pushToCloud();
-        setSaveFlash(cloudOk ? "✅ Imported & synced!" : "✅ Imported (saved on this device only)");
-        setTimeout(()=>setSaveFlash(false), 1800);
-      }catch(err){
-        setSaveFlash("⚠️ Import failed: invalid file");
-        setTimeout(()=>setSaveFlash(false), 2200);
-      }
-    };
-    reader.readAsText(file);
-  }
-
-  function logLessonLearned(lessonId){
-    setActivity(prev => {
-      const today = todayStr();
-      if(prev.some(a=>a.type==="lesson" && a.date===today && a.lessonId===lessonId)) return prev;
-      return [...prev, {type:"lesson", date:today, lessonId, ts:Date.now()}];
-    });
-  }
-  function logQuestionsAnswered(count){
-    setActivity(prev => [...prev, {type:"questions", date:todayStr(), count, ts:Date.now()}]);
-  }
-  function updateSettings(patch){
-    setSettings(prev => ({...prev, ...patch}));
-  }
-  function addNote(text){
-    const t = text.trim();
-    if(!t) return;
-    setNotes(prev => [{id:"n"+Date.now(), text:t, createdAt:Date.now()}, ...prev]);
-  }
-  function deleteNote(id){
-    setNotes(prev => prev.filter(n=>n.id!==id));
-  }
-
-  function saveLessonEdit(lessonId, data){
-    setEdits(prev => ({...prev, [lessonId]: data}));
-  }
-  function setLessonQuestions(lessonId, questions){
-    setBank(prev => ({...prev, [lessonId]: questions}));
-  }
-  function getQuestions(lessonId){
-    return bank[lessonId] || [];
-  }
-  function moveLesson(lessonId, quarterId){
-    setMoves(prev => ({...prev, [lessonId]: {quarterId}}));
-  }
-  function addCustomTopic(subjectId, quarterId, title, sub, chapterId){
-    const id = newLessonId();
-    setCustomLessons(prev => [...prev, {id, subjectId, quarterId, chapterId: chapterId || null, title: title.trim() || "New Topic", sub: (sub||"").trim(), createdAt: Date.now()}]);
-    return id;
-  }
-  function removeCustomTopic(lessonId){
-    setCustomLessons(prev => prev.filter(c => c.id !== lessonId));
-    setEdits(prev => { const n = {...prev}; delete n[lessonId]; return n; });
-    setBank(prev => { const n = {...prev}; delete n[lessonId]; return n; });
-    setProgress(prev => { const n = {...prev, lessons:{...prev.lessons}}; delete n.lessons[lessonId]; return n; });
-  }
-
-  function currentSubject(){ return SUBJECTS.find(s=>s.id===nav.subjectId); }
-
-  function goDashboard(){ Sound.back(); setNav({screen:"dashboard"}); setQuizSession(null); }
-  function goNotes(){ Sound.nav(); setNav({screen:"notes"}); setQuizSession(null); }
-  function goGrades(){ Sound.nav(); setNav({screen:"grades"}); setQuizSession(null); }
-  function setGradeEntry(subjectId, quarterId, patch){
-    setGrades(prev=>{
-      const subj = {...(prev[subjectId]||{})};
-      const q = {...(subj[quarterId]||{mode:"final"})};
-      subj[quarterId] = {...q, ...patch};
-      return {...prev, [subjectId]: subj};
-    });
-  }
-  function defaultTotalFor(key){
-    // WW starts out of 10, PT out of 20 (both still user-editable); QA has no
-    // preset total since it's a single graded item that varies by quarter.
-    if(key==="ww") return 10;
-    if(key==="pt") return 20;
-    return "";
-  }
-  function addGradeItem(subjectId, quarterId, key){
-    setGrades(prev=>{
-      const subj = {...(prev[subjectId]||{})};
-      const q = {...(subj[quarterId]||{mode:"final"})};
-      const items = [...(q[key]||[]), {score:"", total:defaultTotalFor(key)}];
-      subj[quarterId] = {...q, [key]: items};
-      return {...prev, [subjectId]: subj};
-    });
-  }
-  function removeGradeItem(subjectId, quarterId, key, idx){
-    setGrades(prev=>{
-      const subj = {...(prev[subjectId]||{})};
-      const q = {...(subj[quarterId]||{mode:"final"})};
-      const items = (q[key]||[]).filter((_,i)=>i!==idx);
-      subj[quarterId] = {...q, [key]: items};
-      return {...prev, [subjectId]: subj};
-    });
-  }
-  function updateGradeItem(subjectId, quarterId, key, idx, field, value){
-    setGrades(prev=>{
-      const subj = {...(prev[subjectId]||{})};
-      const q = {...(subj[quarterId]||{mode:"final"})};
-      const items = [...(q[key]||[])];
-      items[idx] = {...(items[idx]||{score:"",total:""}), [field]: value};
-      subj[quarterId] = {...q, [key]: items};
-      return {...prev, [subjectId]: subj};
-    });
-  }
-  function setSubjectWeight(subjectId, key, value){
-    setGradeConfig(prev=>({
-      ...prev,
-      weights: {...prev.weights, [subjectId]: {...prev.weights[subjectId], [key]: value}}
-    }));
-  }
-  function setHonorThreshold(key, value){
-    setGradeConfig(prev=>({...prev, honors: {...prev.honors, [key]: value}}));
-  }
-  function resetGradeConfig(){
-    setGradeConfig(defaultGradeConfig());
-  }
-  function adjustSubjectFinal(subjectId, delta){
-    setGrades(prev=>{
-      const subj = {...(prev[subjectId]||{})};
-      subj.adjust = (Number(subj.adjust)||0) + delta;
-      return {...prev, [subjectId]: subj};
-    });
-  }
-  function goSubjects(){ Sound.back(); setNav({screen:"subjects"}); setQuizSession(null); }
-  function goSubjectHome(sid){ Sound.nav(); setNav({screen:"home", subjectId:sid}); setQuizSession(null); }
-  function goGeneral(sid){ Sound.nav(); setNav({screen:"general", subjectId:sid}); setQuizSession(null); }
-  function goTyping(){ Sound.nav(); setNav({screen:"typing"}); setQuizSession(null); }
-  function toggleGeneralWord(catId, word){
-    Sound.nav();
-    setGeneralKnown(prev=>{
-      const key = catId+"::"+word;
-      const next = {...prev};
-      if(next[key]) delete next[key]; else next[key] = true;
-      return next;
-    });
-  }
-  function goQuarter(sid, qid){ Sound.nav(); setNav({screen:"quarter", subjectId:sid, quarterId:qid}); setQuizSession(null); }
-  function goLesson(sid, qid, lid, startEdit){ Sound.nav(); setNav({screen:"lesson", subjectId:sid, quarterId:qid, lessonId:lid, tab:"learn", startEdit:!!startEdit}); setQuizSession(null); }
-
-  function markLearned(lessonId){
-    Sound.unlock();
-    const wasLearned = !!(progress.lessons[lessonId] && progress.lessons[lessonId].learned);
-    setProgress(prev => {
-      const next = {...prev, lessons:{...prev.lessons}};
-      const rec = next.lessons[lessonId] || {};
-      next.lessons[lessonId] = {...rec, learned:true};
-      return next;
-    });
-    logLessonLearned(lessonId);
-  }
-
-  function startLessonQuiz(quarter, lesson, count, topics, qType){
-    Sound.nav();
-    let pool = filterByTopics(getQuestions(lesson.id), topics);
-    pool = filterByType(pool, qType);
-    const n = Math.max(1, Math.min(count || pool.length, pool.length));
-    const avoid = new Set(lastQuizQuestionsRef.current[lesson.id] || []);
-    const chosen = pickAvoidingRepeats(pool, n, avoid);
-    lastQuizQuestionsRef.current[lesson.id] = chosen.map(q=>q.q);
-    setQuizSession({
-      kind:"lesson", key:lesson.id, accent:quarter.color, title: lesson.title,
-      questions: chosen
-    });
-  }
-  function startLongQuiz(quarter, count, topics, qType){
-    Sound.nav();
-    const subject = currentSubject();
-    const lessons = quarterLessons(subject, quarter, moves, customLessons);
-    let pool = lessons.flatMap(l => getQuestions(l.id).map(q => ({...q, tag: mergeLesson(l, edits).title})));
-    pool = filterByTopics(pool, topics);
-    pool = filterByType(pool, qType);
-    const n = Math.max(1, Math.min(count || pool.length, pool.length));
-    const avoid = new Set(lastQuizQuestionsRef.current[quarter.id] || []);
-    const chosen = pickAvoidingRepeats(pool, n, avoid);
-    lastQuizQuestionsRef.current[quarter.id] = chosen.map(q=>q.q);
-    setQuizSession({
-      kind:"long", key:quarter.id, accent:quarter.color, title: quarter.title + " Long Quiz",
-      questions: chosen
-    });
-  }
-
-  function handleQuizFinish(answers){
-    const correct = answers.filter(a=>a.isCorrect).length;
-    const total = answers.length;
-    const ratio = total ? correct/total : 0;
-    const passed = ratio >= 0.7;
-    const bucket = quizSession.kind === "lesson" ? progress.lessons : progress.longQuiz;
-    const prevRec = bucket[quizSession.key];
-    const prevRatio = prevRec && prevRec.best ? prevRec.best.correct/prevRec.best.total : -1;
-    const prevPassed = prevRatio >= 0.7;
-    const isNewBest = ratio > prevRatio;
-
-    setProgress(prev=>{
-      const next = {...prev};
-      if(quizSession.kind === "lesson"){
-        next.lessons = {...prev.lessons};
-        const rec = next.lessons[quizSession.key] || {};
-        const best = rec.best && rec.best.correct/rec.best.total >= correct/total ? rec.best : {correct,total};
-        next.lessons[quizSession.key] = {...rec, best, last:{correct,total}};
-      } else {
-        next.longQuiz = {...prev.longQuiz};
-        const rec = next.longQuiz[quizSession.key] || {};
-        const best = rec.best && rec.best.correct/rec.best.total >= correct/total ? rec.best : {correct,total};
-        next.longQuiz[quizSession.key] = {...rec, best, last:{correct,total}};
-      }
-      return next;
-    });
-    logQuestionsAnswered(total);
-
-    setQuizSession(sess => ({...sess, finalAnswers: answers}));
-  }
-
-  /* ---------------- helpers across a whole subject ---------------- */
-  function subjectLessonCount(subject){
-    return allSubjectLessons(subject, customLessons).length;
-  }
-  function subjectLearnedCount(subject, progress){
-    return allSubjectLessons(subject, customLessons).filter(l => progress.lessons[l.id] && progress.lessons[l.id].learned).length;
-  }
-
-  /* ---------------- DASHBOARD SCREEN (app home) ---------------- */
-  function DashboardScreen(){
-    const totals = SUBJECTS.reduce((acc,s)=>{
-      acc.learned += subjectLearnedCount(s, progress);
-      acc.total += subjectLessonCount(s);
-      return acc;
-    }, {learned:0, total:0});
-    const overallPct = totals.total ? Math.round((totals.learned/totals.total)*100) : 0;
-
-    return (
-      <React.Fragment>
-        <div className="passport">
-          <div className="passport-title">Welcome back</div>
-          <div className="passport-name">👋 Hi, George!</div>
-          <div className="field-label" style={{color:"#C9C2FF", margin:"0 0 6px"}}>Overall Progress — {overallPct}%</div>
-          <div className="progress-track" style={{background:"rgba(237,231,214,0.14)", boxShadow:"inset 0 1px 3px rgba(0,0,0,0.3), 0 0 10px rgba(53,242,224,0.25)"}}>
-            <div className="progress-fill" style={{width:overallPct+"%", background:"linear-gradient(90deg, var(--aw-cyan), var(--aw-magenta))", boxShadow:"0 0 10px rgba(53,242,224,0.6)"}}></div>
-          </div>
-          <div className="smeta" style={{color:"#C9C2FF", marginTop:8}}>{totals.learned}/{totals.total} topics learned across all subjects</div>
-        </div>
-
-        <div className="section-title">Subjects</div>
-        <div className="subject-square-grid">
-          {SUBJECTS.filter(s=>s.special!=="game" || settings.darkMode).map((s,si)=>{
-            if(s.special==="reference"){
-              const total = GENERAL_CATEGORIES.reduce((n,c)=>n+c.words.length,0);
-              const known = Object.keys(generalKnown).filter(k=>generalKnown[k]).length;
-              return (
-                <button key={s.id} className={"subject-square" + (known>=total && total>0 ? " complete":"")} onClick={()=>goGeneral(s.id)} style={{animationDelay:(si*0.05)+"s"}}>
-                  <div className="sq-icon"><SubjectIcon icon={s.icon}/></div>
-                  <div className="sq-label">{s.shortName}</div>
-                  <div className="sq-frac" style={{color:s.color}}>{known}/{total}</div>
-                </button>
-              );
-            }
-            if(s.special==="game"){
-              return (
-                <button key={s.id} className="subject-square" onClick={goTyping} style={{animationDelay:(si*0.05)+"s", background:"linear-gradient(135deg, #171233, #0A0A1C)", boxShadow:"0 0 0 1px rgba(53,242,224,0.3)"}}>
-                  <div className="sq-icon"><SubjectIcon icon={s.icon}/></div>
-                  <div className="sq-label" style={{color:"#EAF1FF"}}>{s.shortName}</div>
-                  <div className="sq-frac" style={{color:"#35F2E0"}}>PLAY</div>
-                </button>
-              );
-            }
-            const learned = subjectLearnedCount(s, progress);
-            const total = subjectLessonCount(s);
-            return (
-              <button key={s.id} className={"subject-square" + (learned===total && total>0 ? " complete":"")} onClick={()=>goSubjectHome(s.id)} style={{animationDelay:(si*0.05)+"s"}}>
-                <div className="sq-icon"><SubjectIcon icon={s.icon}/></div>
-                <div className="sq-label">{s.shortName}</div>
-                <div className="sq-frac" style={{color:s.color}}>{learned}/{total}</div>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="footer-note">
-          SACRED{" "}
-          <span
-            className="footer-heart-trigger"
-            title="Sacred Heart Academy of Pasig"
-            onClick={()=>{
-              const entered = window.prompt("💀😈 Enter the SECRET CODE, if you dare... 😈💀");
-              if(entered === null) return;
-              if(entered === "g456"){
-                updateSettings({darkMode: !settings.darkMode});
-              } else {
-                window.alert("👻 Nope! That's not the secret code, try again... 👻");
-              }
-            }}
-          >HEART</span>{" "}
-          ACADEMY OF PASIG · GRADE SCHOOL DEPARTMENT
-        </div>
-      </React.Fragment>
-    );
-  }
-
-  /* ---------------- NOTES SCREEN ---------------- */
-  function NotesScreen(){
-    const [draft, setDraft] = useState("");
-    return (
-      <React.Fragment>
-        <div className="backbar">
-          <button className="backbtn" onClick={goDashboard}>←</button>
-          <div>
-            <div className="qnum">Journal</div>
-            <h1 style={{margin:0, fontSize:"22px"}}>📝 My Notes</h1>
-          </div>
-        </div>
-        <div className="journal-page">
-          <label className="field-label">Add a note</label>
-          <textarea className="text-area" rows={4} value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Write something you want to remember..."></textarea>
-          <div className="learn-footer" style={{gap:10}}>
-            <button className="btn btn-primary" onClick={()=>{ addNote(draft); setDraft(""); }}>💾 Save Note</button>
-          </div>
-        </div>
-        <div className="section-title">Saved Notes</div>
-        {notes.length===0 && <div className="smeta">No notes yet — add one above.</div>}
-        {notes.map(n=>(
-          <div key={n.id} className="subject-card" style={{cursor:"default"}}>
-            <div>{n.text}</div>
-            <div className="smeta" style={{marginTop:8, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-              <span>{new Date(n.createdAt).toLocaleString()}</span>
-              <button className="btn btn-ghost" style={{padding:"6px 12px"}} onClick={()=>deleteNote(n.id)}>Delete</button>
-            </div>
-          </div>
-        ))}
-        <div className="footer-note">SACRED HEART ACADEMY OF PASIG · GRADE SCHOOL DEPARTMENT</div>
-      </React.Fragment>
-    );
-  }
-
-  /* ---------------- TYPING GALAXY SCREEN (dark-mode bonus game) ---------------- */
-  function TypingGalaxyScreen(){
-    // The Galaxy Blaster iframe (unsandboxed srcDoc, same origin) writes its
-    // coin balance straight to localStorage under "ta-coins". Read it here so
-    // the balance can be shown above the game, and keep it live via the same
-    // "storage" event trick used for cloud sync (see comment near the top).
-    const [typingCoins, setTypingCoins] = useState(()=>{
-      try{ return parseInt(localStorage.getItem("ta-coins")||"0", 10) || 0; }catch(e){ return 0; }
-    });
-    useEffect(()=>{
-      function refresh(){
-        try{ setTypingCoins(parseInt(localStorage.getItem("ta-coins")||"0", 10) || 0); }catch(e){}
-      }
-      function onStorage(e){ if(!e.key || e.key === "ta-coins") refresh(); }
-      window.addEventListener("storage", onStorage);
-      refresh();
-      return ()=>window.removeEventListener("storage", onStorage);
-    }, []);
-    return (
-      <React.Fragment>
-        <div className="backbar">
-          <button className="backbtn" onClick={goDashboard}>←</button>
-          <div>
-            <div className="qnum">Bonus · Dark Mode</div>
-            <h1 style={{margin:0, fontSize:"22px"}}>🚀 Typing Galaxy</h1>
-          </div>
-          <div
-            style={{
-              marginLeft:"auto", display:"flex", alignItems:"center", gap:6,
-              background:"linear-gradient(135deg, #FFE9B8, #FFD23F)", borderRadius:999,
-              padding:"6px 14px", fontWeight:800, fontSize:14, color:"#8A5A00",
-              boxShadow:"0 2px 0 rgba(232,169,62,0.35) inset"
-            }}
-            title="Coins earned in Typing Galaxy"
-          >
-            <span>🪙</span><span>{typingCoins}</span>
-          </div>
-        </div>
-        <p className="sub" style={{marginTop:-6}}>Blast alien invaders by typing the letter on their belly before they land. A little keyboard practice, arcade-style.</p>
-        <div style={{
-          borderRadius:"var(--radius-lg)",
-          overflow:"hidden",
-          boxShadow:"0 0 0 1.5px rgba(53,242,224,0.4), 0 12px 28px rgba(123,47,247,0.25), var(--shadow-lg)",
-          marginBottom:20
-        }}>
-          <iframe
-            title="Galaxy Blaster typing game"
-            srcDoc={GALAXY_GAME_HTML}
-            style={{width:"100%", height:"78vh", minHeight:520, border:"none", display:"block", background:"#0A0A1C"}}
-          />
-        </div>
-        <div className="footer-note">SACRED HEART ACADEMY OF PASIG · GRADE SCHOOL DEPARTMENT</div>
-      </React.Fragment>
-    );
-  }
-
-  /* ---------------- GRADES SCREEN ---------------- */
-  function GradesScreen(){
+/* ---------------- GRADES SCREEN ----------------
+   Defined at top level (NOT inside App) on purpose: App() previously
+   redefined GradesScreen as a brand-new function on every render, so
+   React saw a different component "type" each time and fully remounted
+   it — which is what was kicking a parent out of a Final/Detailed score
+   field (or the Share-card name field) after every single keystroke.
+   Keeping it top-level means its identity never changes, so React just
+   re-renders it in place like everything else. All the App-level state
+   and setters it needs now come in as props from the <GradesScreen/>
+   call site inside App(). */
+  function GradesScreen({
+    grades, gradeConfig, gradesOpenSubject, setGradesOpenSubject,
+    gradesSelectedQuarter, setGradesSelectedQuarter, goDashboard,
+    setGradeEntry, addGradeItem, removeGradeItem, updateGradeItem,
+    adjustSubjectFinal, setSubjectWeight, setHonorThreshold, resetGradeConfig,
+    clearGradeFinalOverride
+  }){
     const openSubject = gradesOpenSubject, setOpenSubject = setGradesOpenSubject;
     const selectedQuarter = gradesSelectedQuarter, setSelectedQuarter = setGradesSelectedQuarter;
     const [showSettings, setShowSettings] = useState(false);
@@ -8741,18 +8275,39 @@ function App(){
 
                         {mode==="final" ? (
                           <div style={{display:"grid", gap:10}}>
-                            {[["ww","Written Work", w.ww],["pt","Performance Task", w.pt],["qa","Quarterly Assessment", w.qa]].map(([key,label,weight])=>(
-                              <div key={key}>
-                                <label className="field-label">{label} — {Math.round(weight*100)}% of Final Grade</label>
-                                <input
-                                  className="text-input"
-                                  type="number" min="0" max="100" inputMode="decimal"
-                                  value={entry[key] ?? ""}
-                                  onChange={e=>setGradeEntry(s.id, q.id, {[key]: e.target.value})}
-                                  placeholder="e.g. 95"
-                                />
-                              </div>
-                            ))}
+                            {[["ww","Written Work", w.ww],["pt","Performance Task", w.pt],["qa","Quarterly Assessment", w.qa]].map(([key,label,weight])=>{
+                              // Auto-fills from the Detailed items' computed average when no
+                              // manual value has been typed here yet, so switching to Final
+                              // mode never hides work already entered in Detailed mode. Typing
+                              // in the box (or clicking "Reset to auto") overrides/clears it.
+                              const manualVal = entry[key+"Final"];
+                              const hasManual = manualVal !== "" && manualVal != null;
+                              const legacyVal = entry[key];
+                              const hasLegacy = !hasManual && legacyVal!=null && legacyVal!=="" && !Array.isArray(legacyVal);
+                              const autoPct = detailedComponentPct(entry, key);
+                              const displayVal = hasManual ? manualVal : (hasLegacy ? legacyVal : (autoPct!=null ? Math.round(autoPct*10)/10 : ""));
+                              const isAuto = !hasManual && !hasLegacy && autoPct!=null;
+                              return (
+                                <div key={key}>
+                                  <label className="field-label">{label} — {Math.round(weight*100)}% of Final Grade</label>
+                                  <input
+                                    className="text-input"
+                                    type="number" min="0" max="100" inputMode="decimal"
+                                    value={displayVal}
+                                    onChange={e=>setGradeEntry(s.id, q.id, {[key+"Final"]: e.target.value})}
+                                    placeholder="e.g. 95"
+                                  />
+                                  {isAuto ? (
+                                    <div className="smeta" style={{marginTop:4}}>Auto-computed from Detailed items — type to override.</div>
+                                  ) : (hasManual || hasLegacy) ? (
+                                    <div className="smeta" style={{marginTop:4, cursor:"pointer", textDecoration:"underline"}}
+                                      onClick={()=>clearGradeFinalOverride(s.id, q.id, key)}>
+                                      ↺ Reset to auto (from Detailed items)
+                                    </div>
+                                  ) : null}
+                                </div>
+                              );
+                            })}
                           </div>
                         ) : (
                           <div style={{display:"grid", gap:14}}>
@@ -8878,6 +8433,607 @@ function App(){
       </React.Fragment>
     );
   }
+
+function App(){
+  const [progress, setProgress] = useState(loadProgress());
+  const [edits, setEdits] = useState(loadEdits());
+  const [bank, setBank] = useState(loadBank());
+  const [moves, setMoves] = useState(loadMoves());
+  const [customLessons, setCustomLessons] = useState(loadCustomLessons());
+  const [settings, setSettings] = useState(loadSettings());
+  const [notes, setNotes] = useState(loadNotes());
+  const [activity, setActivity] = useState(loadActivity());
+  const [generalKnown, setGeneralKnown] = useState(loadGeneralKnown());
+  const [grades, setGrades] = useState(loadGrades());
+  const [gradeConfig, setGradeConfig] = useState(loadGradeConfig());
+  // Lifted up from GradesScreen (rather than a local useState there) because
+  // GradesScreen is redefined on every App re-render — editing a Final/Detailed
+  // score triggers setGrades, which re-renders App, which would otherwise reset
+  // any state local to GradesScreen and collapse the open subject back to just
+  // the Report Card summary. Keeping it here lets it survive those edits.
+  const [gradesOpenSubject, setGradesOpenSubject] = useState(null);
+  const [gradesSelectedQuarter, setGradesSelectedQuarter] = useState(GRADE_QUARTERS[0].id);
+  const [nav, setNav] = useState({screen:"dashboard"});
+  const [quizSession, setQuizSession] = useState(null); // {kind:'lesson'|'long', questions, accent, title, key}
+  const lastQuizQuestionsRef = useRef({}); // key -> question texts used last time, so "play again" avoids repeats
+  const [saveFlash, setSaveFlash] = useState(false);
+  const importInputRef = useRef(null);
+
+  useEffect(()=>{ saveProgress(progress); }, [progress]);
+  useEffect(()=>{ saveEdits(edits); }, [edits]);
+  useEffect(()=>{ saveBank(bank); }, [bank]);
+  useEffect(()=>{ saveMoves(moves); }, [moves]);
+  useEffect(()=>{ saveCustomLessons(customLessons); }, [customLessons]);
+  useEffect(()=>{ saveSettings(settings); }, [settings]);
+  useEffect(()=>{ saveNotes(notes); }, [notes]);
+  useEffect(()=>{ saveActivity(activity); }, [activity]);
+  useEffect(()=>{ saveGeneralKnown(generalKnown); }, [generalKnown]);
+  useEffect(()=>{ saveGrades(grades); }, [grades]);
+  useEffect(()=>{ saveGradeConfig(gradeConfig); }, [gradeConfig]);
+  useEffect(()=>{ setSoundEnabled(settings.soundEnabled !== false); }, [settings.soundEnabled]);
+  useEffect(()=>{
+    document.body.classList.toggle("dark-mode", !!settings.darkMode);
+  }, [settings.darkMode]);
+
+  useEffect(()=>{
+    // If the background Firebase pull finds newer data than what we
+    // rendered with, refresh state from localStorage without a reload.
+    function onCloudSynced(){
+      setProgress(loadProgress());
+      setEdits(loadEdits());
+      setBank(loadBank());
+      setMoves(loadMoves());
+      setCustomLessons(loadCustomLessons());
+      setSettings(loadSettings());
+      setNotes(loadNotes());
+      setActivity(loadActivity());
+      setGeneralKnown(loadGeneralKnown());
+      setGrades(loadGrades());
+      setGradeConfig(loadGradeConfig());
+    }
+    window.addEventListener("gs4-cloud-synced", onCloudSynced);
+    return () => window.removeEventListener("gs4-cloud-synced", onCloudSynced);
+  }, []);
+
+  async function saveEverythingNow(){
+    Sound.save();
+    saveProgress(progress); saveEdits(edits); saveBank(bank); saveMoves(moves);
+    saveCustomLessons(customLessons);
+    saveSettings(settings); saveNotes(notes); saveActivity(activity); saveGrades(grades);
+    // Skip the debounce and push the full snapshot to Firebase right away.
+    clearTimeout(cloudSyncTimer);
+    const cloudOk = await pushToCloud();
+    setSaveFlash(cloudOk ? "✅ Saved to Firebase!" : "⚠️ Saved on this device only (offline)");
+    setTimeout(()=>setSaveFlash(false), 1800);
+  }
+
+  async function exportAllData(){
+    setSaveFlash("⏳ Gathering backup (incl. offline audio)…");
+    // storyAudioCache lives in IndexedDB (not localStorage) and normally
+    // never touches Firebase/cloud sync, so it has to be pulled in
+    // separately here to make it into the JSON backup file.
+    const storyAudioCache = await exportStoryAudioCache();
+    const payload = {
+      app: "gs4-learning-passport",
+      exportedAt: new Date().toISOString(),
+      data: {
+        progress, edits, bank, moves, customLessons, gradeConfig,
+        settings, notes, activity, generalKnown, grades
+      },
+      // Kept as a separate top-level section (not inside `data`) since it's
+      // IndexedDB content, not a localStorage key like everything above.
+      storyAudioCache
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `learning-passport-backup-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setSaveFlash("⬇️ Exported backup file!");
+    setTimeout(()=>setSaveFlash(false), 1800);
+  }
+
+  function importAllData(file){
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try{
+        const parsed = JSON.parse(reader.result);
+        const d = parsed && parsed.data ? parsed.data : parsed; // allow raw or wrapped JSON
+        if(!d || typeof d !== "object") throw new Error("bad format");
+        const audioEntries = parsed && Array.isArray(parsed.storyAudioCache) ? parsed.storyAudioCache : null;
+        const audioNote = audioEntries && audioEntries.length ? ` and ${audioEntries.length} cached story audio file(s)` : "";
+        if(!window.confirm(`Import this backup? This will replace all current progress, topics, notes, and quiz bank data${audioNote} on this device.`)) return;
+        if(d.progress) setProgress(d.progress);
+        if(d.edits) setEdits(d.edits);
+        if(d.bank) setBank(d.bank);
+        if(d.moves) setMoves(d.moves);
+        if(d.customLessons) setCustomLessons(d.customLessons);
+        if(d.gradeConfig) setGradeConfig(d.gradeConfig);
+        if(d.settings) setSettings(d.settings);
+        if(d.notes) setNotes(d.notes);
+        if(d.activity) setActivity(d.activity);
+        if(d.generalKnown) setGeneralKnown(d.generalKnown);
+        if(d.grades) setGrades(d.grades);
+        // Persist immediately so a refresh doesn't race the effects.
+        if(d.progress) saveProgress(d.progress);
+        if(d.edits) saveEdits(d.edits);
+        if(d.bank) saveBank(d.bank);
+        if(d.moves) saveMoves(d.moves);
+        if(d.customLessons) saveCustomLessons(d.customLessons);
+        if(d.gradeConfig) saveGradeConfig(d.gradeConfig);
+        if(d.settings) saveSettings(d.settings);
+        if(d.notes) saveNotes(d.notes);
+        if(d.activity) saveActivity(d.activity);
+        if(d.generalKnown) saveGeneralKnown(d.generalKnown);
+        if(d.grades) saveGrades(d.grades);
+        // Restore the IndexedDB offline audio cache, if the backup has one.
+        if(audioEntries && audioEntries.length){
+          setSaveFlash("⏳ Restoring offline audio…");
+          await importStoryAudioCache(audioEntries);
+        }
+        clearTimeout(cloudSyncTimer);
+        const cloudOk = await pushToCloud();
+        setSaveFlash(cloudOk ? "✅ Imported & synced!" : "✅ Imported (saved on this device only)");
+        setTimeout(()=>setSaveFlash(false), 1800);
+      }catch(err){
+        setSaveFlash("⚠️ Import failed: invalid file");
+        setTimeout(()=>setSaveFlash(false), 2200);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function logLessonLearned(lessonId){
+    setActivity(prev => {
+      const today = todayStr();
+      if(prev.some(a=>a.type==="lesson" && a.date===today && a.lessonId===lessonId)) return prev;
+      return [...prev, {type:"lesson", date:today, lessonId, ts:Date.now()}];
+    });
+  }
+  function logQuestionsAnswered(count){
+    setActivity(prev => [...prev, {type:"questions", date:todayStr(), count, ts:Date.now()}]);
+  }
+  function updateSettings(patch){
+    setSettings(prev => ({...prev, ...patch}));
+  }
+  function addNote(text){
+    const t = text.trim();
+    if(!t) return;
+    setNotes(prev => [{id:"n"+Date.now(), text:t, createdAt:Date.now()}, ...prev]);
+  }
+  function deleteNote(id){
+    setNotes(prev => prev.filter(n=>n.id!==id));
+  }
+
+  function saveLessonEdit(lessonId, data){
+    setEdits(prev => ({...prev, [lessonId]: data}));
+  }
+  function setLessonQuestions(lessonId, questions){
+    setBank(prev => ({...prev, [lessonId]: questions}));
+  }
+  function getQuestions(lessonId){
+    return bank[lessonId] || [];
+  }
+  function moveLesson(lessonId, quarterId){
+    setMoves(prev => ({...prev, [lessonId]: {quarterId}}));
+  }
+  function addCustomTopic(subjectId, quarterId, title, sub, chapterId){
+    const id = newLessonId();
+    setCustomLessons(prev => [...prev, {id, subjectId, quarterId, chapterId: chapterId || null, title: title.trim() || "New Topic", sub: (sub||"").trim(), createdAt: Date.now()}]);
+    return id;
+  }
+  function removeCustomTopic(lessonId){
+    setCustomLessons(prev => prev.filter(c => c.id !== lessonId));
+    setEdits(prev => { const n = {...prev}; delete n[lessonId]; return n; });
+    setBank(prev => { const n = {...prev}; delete n[lessonId]; return n; });
+    setProgress(prev => { const n = {...prev, lessons:{...prev.lessons}}; delete n.lessons[lessonId]; return n; });
+  }
+
+  function currentSubject(){ return SUBJECTS.find(s=>s.id===nav.subjectId); }
+
+  function goDashboard(){ Sound.back(); setNav({screen:"dashboard"}); setQuizSession(null); }
+  function goNotes(){ Sound.nav(); setNav({screen:"notes"}); setQuizSession(null); }
+  function goGrades(){ Sound.nav(); setNav({screen:"grades"}); setQuizSession(null); }
+  function setGradeEntry(subjectId, quarterId, patch){
+    setGrades(prev=>{
+      const subj = {...(prev[subjectId]||{})};
+      const q = {...(subj[quarterId]||{mode:"final"})};
+      subj[quarterId] = {...q, ...patch};
+      return {...prev, [subjectId]: subj};
+    });
+  }
+  // Clears a manually-typed Final-mode override for one component, so it
+  // falls back to the auto-computed Detailed-items average again. Also
+  // clears the old-style value stored directly under the plain key, but
+  // only when that isn't actually holding Detailed items (an array).
+  function clearGradeFinalOverride(subjectId, quarterId, key){
+    setGrades(prev=>{
+      const subj = {...(prev[subjectId]||{})};
+      const q = {...(subj[quarterId]||{mode:"final"})};
+      const patch = {[key+"Final"]: ""};
+      if(q[key]!=null && !Array.isArray(q[key])) patch[key] = "";
+      subj[quarterId] = {...q, ...patch};
+      return {...prev, [subjectId]: subj};
+    });
+  }
+  function defaultTotalFor(key){
+    // WW starts out of 10, PT out of 20 (both still user-editable); QA has no
+    // preset total since it's a single graded item that varies by quarter.
+    if(key==="ww") return 10;
+    if(key==="pt") return 20;
+    return "";
+  }
+  function addGradeItem(subjectId, quarterId, key){
+    setGrades(prev=>{
+      const subj = {...(prev[subjectId]||{})};
+      const q = {...(subj[quarterId]||{mode:"final"})};
+      const items = [...(q[key]||[]), {score:"", total:defaultTotalFor(key)}];
+      subj[quarterId] = {...q, [key]: items};
+      return {...prev, [subjectId]: subj};
+    });
+  }
+  function removeGradeItem(subjectId, quarterId, key, idx){
+    setGrades(prev=>{
+      const subj = {...(prev[subjectId]||{})};
+      const q = {...(subj[quarterId]||{mode:"final"})};
+      const items = (q[key]||[]).filter((_,i)=>i!==idx);
+      subj[quarterId] = {...q, [key]: items};
+      return {...prev, [subjectId]: subj};
+    });
+  }
+  function updateGradeItem(subjectId, quarterId, key, idx, field, value){
+    setGrades(prev=>{
+      const subj = {...(prev[subjectId]||{})};
+      const q = {...(subj[quarterId]||{mode:"final"})};
+      const items = [...(q[key]||[])];
+      items[idx] = {...(items[idx]||{score:"",total:""}), [field]: value};
+      subj[quarterId] = {...q, [key]: items};
+      return {...prev, [subjectId]: subj};
+    });
+  }
+  function setSubjectWeight(subjectId, key, value){
+    setGradeConfig(prev=>({
+      ...prev,
+      weights: {...prev.weights, [subjectId]: {...prev.weights[subjectId], [key]: value}}
+    }));
+  }
+  function setHonorThreshold(key, value){
+    setGradeConfig(prev=>({...prev, honors: {...prev.honors, [key]: value}}));
+  }
+  function resetGradeConfig(){
+    setGradeConfig(defaultGradeConfig());
+  }
+  function adjustSubjectFinal(subjectId, delta){
+    setGrades(prev=>{
+      const subj = {...(prev[subjectId]||{})};
+      subj.adjust = (Number(subj.adjust)||0) + delta;
+      return {...prev, [subjectId]: subj};
+    });
+  }
+  function goSubjects(){ Sound.back(); setNav({screen:"subjects"}); setQuizSession(null); }
+  function goSubjectHome(sid){ Sound.nav(); setNav({screen:"home", subjectId:sid}); setQuizSession(null); }
+  function goGeneral(sid){ Sound.nav(); setNav({screen:"general", subjectId:sid}); setQuizSession(null); }
+  function goTyping(){ Sound.nav(); setNav({screen:"typing"}); setQuizSession(null); }
+  function toggleGeneralWord(catId, word){
+    Sound.nav();
+    setGeneralKnown(prev=>{
+      const key = catId+"::"+word;
+      const next = {...prev};
+      if(next[key]) delete next[key]; else next[key] = true;
+      return next;
+    });
+  }
+  function goQuarter(sid, qid){ Sound.nav(); setNav({screen:"quarter", subjectId:sid, quarterId:qid}); setQuizSession(null); }
+  function goLesson(sid, qid, lid, startEdit){ Sound.nav(); setNav({screen:"lesson", subjectId:sid, quarterId:qid, lessonId:lid, tab:"learn", startEdit:!!startEdit}); setQuizSession(null); }
+
+  function markLearned(lessonId){
+    Sound.unlock();
+    const wasLearned = !!(progress.lessons[lessonId] && progress.lessons[lessonId].learned);
+    setProgress(prev => {
+      const next = {...prev, lessons:{...prev.lessons}};
+      const rec = next.lessons[lessonId] || {};
+      next.lessons[lessonId] = {...rec, learned:true};
+      return next;
+    });
+    logLessonLearned(lessonId);
+  }
+
+  function startLessonQuiz(quarter, lesson, count, topics, qType){
+    Sound.nav();
+    let pool = filterByTopics(getQuestions(lesson.id), topics);
+    pool = filterByType(pool, qType);
+    const n = Math.max(1, Math.min(count || pool.length, pool.length));
+    const avoid = new Set(lastQuizQuestionsRef.current[lesson.id] || []);
+    const chosen = pickAvoidingRepeats(pool, n, avoid);
+    lastQuizQuestionsRef.current[lesson.id] = chosen.map(q=>q.q);
+    setQuizSession({
+      kind:"lesson", key:lesson.id, accent:quarter.color, title: lesson.title,
+      questions: chosen
+    });
+  }
+  function startLongQuiz(quarter, count, topics, qType){
+    Sound.nav();
+    const subject = currentSubject();
+    const lessons = quarterLessons(subject, quarter, moves, customLessons);
+    let pool = lessons.flatMap(l => getQuestions(l.id).map(q => ({...q, tag: mergeLesson(l, edits).title})));
+    pool = filterByTopics(pool, topics);
+    pool = filterByType(pool, qType);
+    const n = Math.max(1, Math.min(count || pool.length, pool.length));
+    const avoid = new Set(lastQuizQuestionsRef.current[quarter.id] || []);
+    const chosen = pickAvoidingRepeats(pool, n, avoid);
+    lastQuizQuestionsRef.current[quarter.id] = chosen.map(q=>q.q);
+    setQuizSession({
+      kind:"long", key:quarter.id, accent:quarter.color, title: quarter.title + " Long Quiz",
+      questions: chosen
+    });
+  }
+
+  function handleQuizFinish(answers){
+    const correct = answers.filter(a=>a.isCorrect).length;
+    const total = answers.length;
+    const ratio = total ? correct/total : 0;
+    const passed = ratio >= 0.7;
+    const bucket = quizSession.kind === "lesson" ? progress.lessons : progress.longQuiz;
+    const prevRec = bucket[quizSession.key];
+    const prevRatio = prevRec && prevRec.best ? prevRec.best.correct/prevRec.best.total : -1;
+    const prevPassed = prevRatio >= 0.7;
+    const isNewBest = ratio > prevRatio;
+
+    setProgress(prev=>{
+      const next = {...prev};
+      if(quizSession.kind === "lesson"){
+        next.lessons = {...prev.lessons};
+        const rec = next.lessons[quizSession.key] || {};
+        const best = rec.best && rec.best.correct/rec.best.total >= correct/total ? rec.best : {correct,total};
+        next.lessons[quizSession.key] = {...rec, best, last:{correct,total}};
+      } else {
+        next.longQuiz = {...prev.longQuiz};
+        const rec = next.longQuiz[quizSession.key] || {};
+        const best = rec.best && rec.best.correct/rec.best.total >= correct/total ? rec.best : {correct,total};
+        next.longQuiz[quizSession.key] = {...rec, best, last:{correct,total}};
+      }
+      return next;
+    });
+    logQuestionsAnswered(total);
+
+    setQuizSession(sess => ({...sess, finalAnswers: answers}));
+  }
+
+  /* ---------------- helpers across a whole subject ---------------- */
+  function subjectLessonCount(subject){
+    return allSubjectLessons(subject, customLessons).length;
+  }
+  function subjectLearnedCount(subject, progress){
+    return allSubjectLessons(subject, customLessons).filter(l => progress.lessons[l.id] && progress.lessons[l.id].learned).length;
+  }
+
+  /* ---------------- DASHBOARD SCREEN (app home) ---------------- */
+  function DashboardScreen(){
+    const totals = SUBJECTS.reduce((acc,s)=>{
+      acc.learned += subjectLearnedCount(s, progress);
+      acc.total += subjectLessonCount(s);
+      return acc;
+    }, {learned:0, total:0});
+    const overallPct = totals.total ? Math.round((totals.learned/totals.total)*100) : 0;
+
+    return (
+      <React.Fragment>
+        <div className="passport">
+          <div className="passport-title">Welcome back</div>
+          <div className="passport-name">👋 Hi, George!</div>
+          <div className="field-label" style={{color:"#C9C2FF", margin:"0 0 6px"}}>Overall Progress — {overallPct}%</div>
+          <div className="progress-track" style={{background:"rgba(237,231,214,0.14)", boxShadow:"inset 0 1px 3px rgba(0,0,0,0.3), 0 0 10px rgba(53,242,224,0.25)"}}>
+            <div className="progress-fill" style={{width:overallPct+"%", background:"linear-gradient(90deg, var(--aw-cyan), var(--aw-magenta))", boxShadow:"0 0 10px rgba(53,242,224,0.6)"}}></div>
+          </div>
+          <div className="smeta" style={{color:"#C9C2FF", marginTop:8}}>{totals.learned}/{totals.total} topics learned across all subjects</div>
+        </div>
+
+        <div className="section-title">Subjects</div>
+        <div className="subject-square-grid">
+          {SUBJECTS.filter(s=>s.special!=="game" || settings.darkMode).map((s,si)=>{
+            if(s.special==="reference"){
+              const total = GENERAL_CATEGORIES.reduce((n,c)=>n+c.words.length,0);
+              const known = Object.keys(generalKnown).filter(k=>generalKnown[k]).length;
+              return (
+                <button key={s.id} className={"subject-square" + (known>=total && total>0 ? " complete":"")} onClick={()=>goGeneral(s.id)} style={{animationDelay:(si*0.05)+"s"}}>
+                  <div className="sq-icon"><SubjectIcon icon={s.icon}/></div>
+                  <div className="sq-label">{s.shortName}</div>
+                  <div className="sq-frac" style={{color:s.color}}>{known}/{total}</div>
+                </button>
+              );
+            }
+            if(s.special==="game"){
+              return (
+                <button key={s.id} className="subject-square" onClick={goTyping} style={{animationDelay:(si*0.05)+"s", background:"linear-gradient(135deg, #171233, #0A0A1C)", boxShadow:"0 0 0 1px rgba(53,242,224,0.3)"}}>
+                  <div className="sq-icon"><SubjectIcon icon={s.icon}/></div>
+                  <div className="sq-label" style={{color:"#EAF1FF"}}>{s.shortName}</div>
+                  <div className="sq-frac" style={{color:"#35F2E0"}}>PLAY</div>
+                </button>
+              );
+            }
+            const learned = subjectLearnedCount(s, progress);
+            const total = subjectLessonCount(s);
+            return (
+              <button key={s.id} className={"subject-square" + (learned===total && total>0 ? " complete":"")} onClick={()=>goSubjectHome(s.id)} style={{animationDelay:(si*0.05)+"s"}}>
+                <div className="sq-icon"><SubjectIcon icon={s.icon}/></div>
+                <div className="sq-label">{s.shortName}</div>
+                <div className="sq-frac" style={{color:s.color}}>{learned}/{total}</div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="footer-note">
+          SACRED{" "}
+          <span
+            className="footer-heart-trigger"
+            title="Sacred Heart Academy of Pasig"
+            onClick={()=>{
+              const entered = window.prompt("💀😈 Enter the SECRET CODE, if you dare... 😈💀");
+              if(entered === null) return;
+              if(entered === "g456"){
+                updateSettings({darkMode: !settings.darkMode});
+              } else {
+                window.alert("👻 Nope! That's not the secret code, try again... 👻");
+              }
+            }}
+          >HEART</span>{" "}
+          ACADEMY OF PASIG · GRADE SCHOOL DEPARTMENT
+        </div>
+      </React.Fragment>
+    );
+  }
+
+  /* ---------------- NOTES SCREEN ---------------- */
+  function NotesScreen(){
+    const [draft, setDraft] = useState("");
+    return (
+      <React.Fragment>
+        <div className="backbar">
+          <button className="backbtn" onClick={goDashboard}>←</button>
+          <div>
+            <div className="qnum">Journal</div>
+            <h1 style={{margin:0, fontSize:"22px"}}>📝 My Notes</h1>
+          </div>
+        </div>
+        <div className="journal-page">
+          <label className="field-label">Add a note</label>
+          <textarea className="text-area" rows={4} value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Write something you want to remember..."></textarea>
+          <div className="learn-footer" style={{gap:10}}>
+            <button className="btn btn-primary" onClick={()=>{ addNote(draft); setDraft(""); }}>💾 Save Note</button>
+          </div>
+        </div>
+        <div className="section-title">Saved Notes</div>
+        {notes.length===0 && <div className="smeta">No notes yet — add one above.</div>}
+        {notes.map(n=>(
+          <div key={n.id} className="subject-card" style={{cursor:"default"}}>
+            <div>{n.text}</div>
+            <div className="smeta" style={{marginTop:8, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+              <span>{new Date(n.createdAt).toLocaleString()}</span>
+              <button className="btn btn-ghost" style={{padding:"6px 12px"}} onClick={()=>deleteNote(n.id)}>Delete</button>
+            </div>
+          </div>
+        ))}
+        <div className="footer-note">SACRED HEART ACADEMY OF PASIG · GRADE SCHOOL DEPARTMENT</div>
+      </React.Fragment>
+    );
+  }
+
+  /* ---------------- TYPING GALAXY SCREEN (dark-mode bonus game) ---------------- */
+  function TypingGalaxyScreen(){
+    // The Galaxy Blaster iframe (unsandboxed srcDoc, same origin) writes its
+    // coin balance straight to localStorage under "ta-coins". Read it here so
+    // the balance can be shown above the game, and keep it live via the same
+    // "storage" event trick used for cloud sync (see comment near the top).
+    const [typingCoins, setTypingCoins] = useState(()=>{
+      try{ return parseInt(localStorage.getItem("ta-coins")||"0", 10) || 0; }catch(e){ return 0; }
+    });
+    useEffect(()=>{
+      function refresh(){
+        try{ setTypingCoins(parseInt(localStorage.getItem("ta-coins")||"0", 10) || 0); }catch(e){}
+      }
+      function onStorage(e){ if(!e.key || e.key === "ta-coins") refresh(); }
+      window.addEventListener("storage", onStorage);
+      refresh();
+      return ()=>window.removeEventListener("storage", onStorage);
+    }, []);
+
+    // ---- TEMP: manual ship-unlock admin (see GALAXY_SHIP_LIST above) ----
+    const [showShipAdmin, setShowShipAdmin] = useState(false);
+    const [unlockedShips, setUnlockedShips] = useState(loadUnlockedShips);
+    const [shipAdminFlash, setShipAdminFlash] = useState("");
+    const [gameReloadKey, setGameReloadKey] = useState(0);
+    function toggleShipUnlock(key){
+      setUnlockedShips(prev=>{
+        const next = prev.includes(key) ? prev.filter(k=>k!==key) : [...prev, key];
+        saveUnlockedShips(next);
+        return next;
+      });
+    }
+    async function saveShipUnlocksToFirebase(){
+      setShipAdminFlash("Saving…");
+      clearTimeout(cloudSyncTimer);
+      const ok = await pushToCloud();
+      setShipAdminFlash(ok ? "✅ Saved to Firebase!" : "⚠️ Offline — saved on this device only.");
+      setTimeout(()=>setShipAdminFlash(""), 2500);
+    }
+    return (
+      <React.Fragment>
+        <div className="backbar">
+          <button className="backbtn" onClick={goDashboard}>←</button>
+          <div>
+            <div className="qnum">Bonus · Dark Mode</div>
+            <h1 style={{margin:0, fontSize:"22px"}}>🚀 Typing Galaxy</h1>
+          </div>
+          <div
+            style={{
+              marginLeft:"auto", display:"flex", alignItems:"center", gap:6,
+              background:"linear-gradient(135deg, #FFE9B8, #FFD23F)", borderRadius:999,
+              padding:"6px 14px", fontWeight:800, fontSize:14, color:"#8A5A00",
+              boxShadow:"0 2px 0 rgba(232,169,62,0.35) inset"
+            }}
+            title="Coins earned in Typing Galaxy"
+          >
+            <span>🪙</span><span>{typingCoins}</span>
+          </div>
+        </div>
+        <p className="sub" style={{marginTop:-6}}>Blast alien invaders by typing the letter on their belly before they land. A little keyboard practice, arcade-style.</p>
+
+        <div style={{marginBottom:14}}>
+          <button
+            className="backbtn"
+            style={{width:"auto", fontSize:12, padding:"6px 12px"}}
+            onClick={()=>setShowShipAdmin(v=>!v)}
+          >{showShipAdmin ? "▲ Hide" : "🔧"} Character Unlock Admin (temp)</button>
+          {showShipAdmin && (
+            <div className="passport" style={{marginTop:10}}>
+              <div className="passport-title" style={{display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8}}>
+                <span>Manually Lock / Unlock Ships</span>
+                <button className="btn btn-primary" style={{padding:"6px 12px", fontSize:12}} onClick={saveShipUnlocksToFirebase}>☁️ Save to Firebase</button>
+              </div>
+              <p className="sub" style={{margin:"4px 0 12px"}}>Overrides the coin-unlock system directly (writes the same "ta-unlocked-ships" data the game itself uses). Toggle below, then reload the game to see it take effect on the ship-select screen.</p>
+              <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(140px,1fr))", gap:8}}>
+                {GALAXY_SHIP_LIST.map(ship=>{
+                  const isUnlocked = ship.alwaysUnlocked || unlockedShips.includes(ship.key);
+                  return (
+                    <label key={ship.key} className="pill" style={{display:"flex", alignItems:"center", gap:6, cursor: ship.alwaysUnlocked ? "default" : "pointer", opacity: ship.alwaysUnlocked ? 0.6 : 1}}>
+                      <input type="checkbox" checked={isUnlocked} disabled={!!ship.alwaysUnlocked}
+                        onChange={()=>toggleShipUnlock(ship.key)} />
+                      {ship.name}{ship.alwaysUnlocked ? " (always)" : ""}
+                    </label>
+                  );
+                })}
+              </div>
+              {shipAdminFlash && <p className="sub" style={{marginTop:8}}>{shipAdminFlash}</p>}
+              <button className="btn btn-ghost" style={{marginTop:10, fontSize:12, padding:"6px 12px"}} onClick={()=>setGameReloadKey(k=>k+1)}>🔄 Reload Game (apply changes)</button>
+            </div>
+          )}
+        </div>
+
+        <div style={{
+          borderRadius:"var(--radius-lg)",
+          overflow:"hidden",
+          boxShadow:"0 0 0 1.5px rgba(53,242,224,0.4), 0 12px 28px rgba(123,47,247,0.25), var(--shadow-lg)",
+          marginBottom:20
+        }}>
+          <iframe
+            key={gameReloadKey}
+            title="Galaxy Blaster typing game"
+            srcDoc={GALAXY_GAME_HTML}
+            style={{width:"100%", height:"78vh", minHeight:520, border:"none", display:"block", background:"#0A0A1C"}}
+          />
+        </div>
+        <div className="footer-note">SACRED HEART ACADEMY OF PASIG · GRADE SCHOOL DEPARTMENT</div>
+      </React.Fragment>
+    );
+  }
+
+  /* ---------------- GRADES SCREEN ---------------- */
 
   /* ---------------- SUBJECTS SCREEN (top-level home) ---------------- */
   function SubjectsScreen(){
@@ -9431,11 +9587,13 @@ function App(){
                 ))}
               </div>
 
-              <label className="field-label">Topic / subtopic (optional)</label>
-              <input type="text" className="text-input" placeholder={"Defaults to the whole lesson: \"" + mergeLesson(genLesson, edits).title + "\""}
+              <label className="field-label">Focus area (optional)</label>
+              <input type="text" className="text-input" placeholder={"e.g. \"addition\" — leave blank for the whole lesson: \"" + mergeLesson(genLesson, edits).title + "\""}
                 value={genTopic} onChange={e=>setGenTopic(e.target.value)} />
-              {genTopic.trim() && (
-                <p className="sub" style={{margin:"4px 0 0"}}>Generated questions will be tagged with the topic "{genTopic.trim()}" so you can pick this exact topic later when starting a quiz.</p>
+              {genTopic.trim() ? (
+                <p className="sub" style={{margin:"4px 0 0"}}>Every question will be narrowed to "{genTopic.trim()}" — Gemini won't wander into other parts of this lesson. Questions are tagged with this exact focus area so you can pick it again later when starting a quiz.</p>
+              ) : (
+                <p className="sub" style={{margin:"4px 0 0"}}>Type a specific part of the lesson (e.g. "addition" instead of all of Math, or "the water cycle" instead of all of Science) to narrow every generated question to just that.</p>
               )}
 
               <label className="field-label">Difficulty</label>
@@ -9847,7 +10005,15 @@ function App(){
   } else if(nav.screen==="typing"){
     content = <TypingGalaxyScreen/>;
   } else if(nav.screen==="grades"){
-    content = <GradesScreen/>;
+    content = <GradesScreen
+      grades={grades} gradeConfig={gradeConfig}
+      gradesOpenSubject={gradesOpenSubject} setGradesOpenSubject={setGradesOpenSubject}
+      gradesSelectedQuarter={gradesSelectedQuarter} setGradesSelectedQuarter={setGradesSelectedQuarter}
+      goDashboard={goDashboard}
+      setGradeEntry={setGradeEntry} addGradeItem={addGradeItem} removeGradeItem={removeGradeItem} updateGradeItem={updateGradeItem}
+      adjustSubjectFinal={adjustSubjectFinal} setSubjectWeight={setSubjectWeight} setHonorThreshold={setHonorThreshold} resetGradeConfig={resetGradeConfig}
+      clearGradeFinalOverride={clearGradeFinalOverride}
+    />;
   } else if(nav.screen==="subjects"){
     content = <SubjectsScreen/>;
   } else {
