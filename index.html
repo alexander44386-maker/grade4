@@ -1353,38 +1353,6 @@ async function loadFromCloud(){
 }
 
 /* =========================================================
-   TEMP — Galaxy Blaster manual ship-unlock admin. Lets a parent force
-   ships locked/unlocked outside the normal coin economy, then push that
-   straight to Firebase. Reads/writes the exact same "ta-unlocked-ships"
-   key the game itself uses, so no separate sync plumbing is needed.
-   Self-contained: delete this block plus the "Character Unlock Admin"
-   panel/button in TypingGalaxyScreen whenever this is no longer needed.
-   ========================================================= */
-const GALAXY_SHIP_LIST = [
-  {key:"rocket", name:"Rocket", alwaysUnlocked:true},
-  {key:"ufo", name:"Saucer"},
-  {key:"robot", name:"Titan Mech"},
-  {key:"comet", name:"Comet"},
-  {key:"blaze", name:"Blaze Fighter"},
-  {key:"ice", name:"Glacier Reaper"},
-  {key:"star", name:"Meteor Striker"},
-  {key:"volt", name:"Thunder Talon"},
-  {key:"terra", name:"Quake Crusher"},
-  {key:"alien", name:"Nebula Phantom"},
-  {key:"dragon", name:"Dragon Ace"},
-  {key:"shadow", name:"Void Stalker"},
-  {key:"storm", name:"Tempest Raider"},
-  {key:"cosmic", name:"Galaxy Sovereign"}
-];
-function loadUnlockedShips(){
-  try{ return JSON.parse(localStorage.getItem("ta-unlocked-ships") || "[]"); }catch(e){ return []; }
-}
-function saveUnlockedShips(list){
-  try{ localStorage.setItem("ta-unlocked-ships", JSON.stringify(list)); }catch(e){}
-  queueCloudSync();
-}
-
-/* =========================================================
    CONTENT DATA — Science 4, SY 2026-2027 (Sacred Heart Academy of Pasig)
    ========================================================= */
 const SCIENCE_QUARTERS = [
@@ -8945,25 +8913,6 @@ function App(){
       return ()=>window.removeEventListener("storage", onStorage);
     }, []);
 
-    // ---- TEMP: manual ship-unlock admin (see GALAXY_SHIP_LIST above) ----
-    const [showShipAdmin, setShowShipAdmin] = useState(false);
-    const [unlockedShips, setUnlockedShips] = useState(loadUnlockedShips);
-    const [shipAdminFlash, setShipAdminFlash] = useState("");
-    const [gameReloadKey, setGameReloadKey] = useState(0);
-    function toggleShipUnlock(key){
-      setUnlockedShips(prev=>{
-        const next = prev.includes(key) ? prev.filter(k=>k!==key) : [...prev, key];
-        saveUnlockedShips(next);
-        return next;
-      });
-    }
-    async function saveShipUnlocksToFirebase(){
-      setShipAdminFlash("Saving…");
-      clearTimeout(cloudSyncTimer);
-      const ok = await pushToCloud();
-      setShipAdminFlash(ok ? "✅ Saved to Firebase!" : "⚠️ Offline — saved on this device only.");
-      setTimeout(()=>setShipAdminFlash(""), 2500);
-    }
     return (
       <React.Fragment>
         <div className="backbar">
@@ -8986,37 +8935,6 @@ function App(){
         </div>
         <p className="sub" style={{marginTop:-6}}>Blast alien invaders by typing the letter on their belly before they land. A little keyboard practice, arcade-style.</p>
 
-        <div style={{marginBottom:14}}>
-          <button
-            className="backbtn"
-            style={{width:"auto", fontSize:12, padding:"6px 12px"}}
-            onClick={()=>setShowShipAdmin(v=>!v)}
-          >{showShipAdmin ? "▲ Hide" : "🔧"} Character Unlock Admin (temp)</button>
-          {showShipAdmin && (
-            <div className="passport" style={{marginTop:10}}>
-              <div className="passport-title" style={{display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8}}>
-                <span>Manually Lock / Unlock Ships</span>
-                <button className="btn btn-primary" style={{padding:"6px 12px", fontSize:12}} onClick={saveShipUnlocksToFirebase}>☁️ Save to Firebase</button>
-              </div>
-              <p className="sub" style={{margin:"4px 0 12px"}}>Overrides the coin-unlock system directly (writes the same "ta-unlocked-ships" data the game itself uses). Toggle below, then reload the game to see it take effect on the ship-select screen.</p>
-              <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(140px,1fr))", gap:8}}>
-                {GALAXY_SHIP_LIST.map(ship=>{
-                  const isUnlocked = ship.alwaysUnlocked || unlockedShips.includes(ship.key);
-                  return (
-                    <label key={ship.key} className="pill" style={{display:"flex", alignItems:"center", gap:6, cursor: ship.alwaysUnlocked ? "default" : "pointer", opacity: ship.alwaysUnlocked ? 0.6 : 1}}>
-                      <input type="checkbox" checked={isUnlocked} disabled={!!ship.alwaysUnlocked}
-                        onChange={()=>toggleShipUnlock(ship.key)} />
-                      {ship.name}{ship.alwaysUnlocked ? " (always)" : ""}
-                    </label>
-                  );
-                })}
-              </div>
-              {shipAdminFlash && <p className="sub" style={{marginTop:8}}>{shipAdminFlash}</p>}
-              <button className="btn btn-ghost" style={{marginTop:10, fontSize:12, padding:"6px 12px"}} onClick={()=>setGameReloadKey(k=>k+1)}>🔄 Reload Game (apply changes)</button>
-            </div>
-          )}
-        </div>
-
         <div style={{
           borderRadius:"var(--radius-lg)",
           overflow:"hidden",
@@ -9024,7 +8942,6 @@ function App(){
           marginBottom:20
         }}>
           <iframe
-            key={gameReloadKey}
             title="Galaxy Blaster typing game"
             srcDoc={GALAXY_GAME_HTML}
             style={{width:"100%", height:"78vh", minHeight:520, border:"none", display:"block", background:"#0A0A1C"}}
