@@ -212,11 +212,13 @@
       linear-gradient(90deg, rgba(53,242,224,0.06) 1px, transparent 1px);
     background-size:26px 26px;
     mask-image: radial-gradient(circle at 85% 0%, black, transparent 70%);
+    pointer-events:none;
   }
   .passport::after{
     content:"⭐";position:absolute;right:18px;top:14px;font-size:26px;
     opacity:.7;transform:rotate(12deg);
     filter:drop-shadow(0 0 8px var(--aw-cyan));
+    pointer-events:none;
   }
   body.dark-mode .passport::after{
     content:"🌙";
