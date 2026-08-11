@@ -321,6 +321,7 @@
   #view-space .best-chip{ background:linear-gradient(135deg, #FFD23F, #FF9F1C); color:#402600; }
   #view-space .stat{ color:#EAF4FF; background:rgba(20,28,64,0.65); box-shadow:0 3px 0 #ffffff22 inset, 0 4px 10px rgba(0,0,0,0.3); }
   #view-space .stat span.label{ opacity:0.7; }
+  #view-space .stat.best-chip, #view-space .stat.best-chip span.label{ color:#fff; }
   #view-space .score-chip{ background:linear-gradient(135deg, #5CFF8F, #2FD673); color:#04422f;}
 
   #view-critters.playing .diff-chip,
@@ -1501,6 +1502,24 @@
     50%{ transform:scale(1.18); }
   }
   .legendary-ship{ animation: legendary-pulse 1.4s ease-in-out infinite; }
+  /* ---------- Ultra char button (400-coin tier; Time Warp ships) ---------- */
+  .char-btn.ultra-char{
+    position:relative;
+    border:2px solid transparent;
+    background-image: linear-gradient(#fff,#fff), linear-gradient(90deg,#38F9D7,#6C4DFF,#38F9D7);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    background-size: 100% 100%, 300% 100%;
+    animation: legendary-shimmer 3s linear infinite;
+  }
+  #view-space .char-btn.ultra-char{
+    background-image: linear-gradient(#141C40,#141C40), linear-gradient(90deg,#38F9D7,#6C4DFF,#38F9D7);
+  }
+  .char-btn.ultra-char:not(.locked-char) .char-emoji{
+    filter:drop-shadow(0 0 8px #38F9D7) drop-shadow(0 0 6px #6C4DFF);
+    animation: legendary-pulse 1.4s ease-in-out infinite;
+  }
+  .char-btn.ultra-char:not(.locked-char) .char-lock{ background:linear-gradient(90deg,#38F9D7,#6C4DFF); color:#0B1740; }
   /* ---------- Elemental laser ships (100-coin tier) ---------- */
   .laser-beam.laser-ice{
     width:8px !important;
@@ -1716,7 +1735,7 @@
     transition: transform 0.12s ease;
   }
   .cancel-btn:active{ transform:translateY(2px); }
-  #view-space .cancel-btn{ background:linear-gradient(135deg, #FF6B8B, #C4234E); color:#fff; }
+  #view-space .cancel-btn{ background:#fff; color:#E0203A; }
 
   /* ---------- Confirm modal (shared) ---------- */
   .confirm-overlay{
@@ -1827,6 +1846,37 @@
   }
   .planet.desertwastes-look::after{
     border-color: rgba(240,217,168,0.55);
+  }
+  /* Storm Nebula world: a crackling electric-storm moon lit from within. */
+  .planet.stormnebula-look{
+    background: radial-gradient(circle at 35% 35%, #FFF3B0, #B983FF 55%, #2E1A5C 100%);
+    box-shadow:0 0 34px 10px rgba(185,131,255,0.55), inset -10px -8px 18px rgba(0,0,0,0.4);
+    animation: stormnebula-flicker 2.6s ease-in-out infinite;
+  }
+  @keyframes stormnebula-flicker{
+    0%,88%,100%{ filter:brightness(1); }
+    90%{ filter:brightness(1.5); }
+    92%{ filter:brightness(1); }
+    94%{ filter:brightness(1.35); }
+  }
+  .planet.stormnebula-look::after{
+    border-color: rgba(244,224,77,0.55);
+  }
+  /* Fungal Moon world: a damp, bioluminescent overgrown moon. */
+  .planet.fungalmoon-look{
+    background: radial-gradient(circle at 35% 35%, #C5E1A5, #6FBF73 55%, #2E4A24 100%);
+    box-shadow:0 0 30px 10px rgba(139,195,74,0.5), inset -10px -8px 18px rgba(0,0,0,0.35);
+  }
+  .planet.fungalmoon-look::after{
+    border-color: rgba(197,225,165,0.55);
+  }
+  /* Toxic Swamp world: a murky, fog-shrouded bog moon. */
+  .planet.toxicswamp-look{
+    background: radial-gradient(circle at 35% 35%, #D4C97A, #6B7A2F 55%, #2A2F0E 100%);
+    box-shadow:0 0 30px 10px rgba(195,216,37,0.45), inset -10px -8px 18px rgba(0,0,0,0.4);
+  }
+  .planet.toxicswamp-look::after{
+    border-color: rgba(212,201,122,0.5);
   }
   .star-tw{
     position:absolute;
@@ -1946,6 +1996,16 @@
     box-shadow:0 0 18px rgba(184,77,255,0.6);
     animation: mythic-shimmer 2s linear infinite;
   }
+  .cannon .base.tier-ultra{
+    position:relative;
+    border:2px solid transparent;
+    background-image: linear-gradient(#1c2650,#1c2650), linear-gradient(90deg,#38F9D7,#6C4DFF,#38F9D7);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    background-size: 100% 100%, 300% 100%;
+    box-shadow:0 0 16px rgba(108,77,255,0.55);
+    animation: legendary-shimmer 3s linear infinite;
+  }
 
   /* ---------- World gimmicks: Black Hole / Frozen Comet Belt / Molten
      Core briefly lock the ship itself (can't type) with a status effect
@@ -1998,6 +2058,38 @@
     0%{ transform:scale(1) translateY(0); opacity:0.85; }
     100%{ transform:scale(1.1) translateY(-2px); opacity:1; }
   }
+  .cannon.status-shocked::before{
+    content:'⚡';
+    position:absolute;
+    inset:-14px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px;
+    line-height:1;
+    background:radial-gradient(circle, rgba(244,224,77,0.5), rgba(139,92,246,0.3) 70%, transparent);
+    border-radius:10px;
+    animation: shocked-flicker 0.18s steps(2) infinite;
+    z-index:3;
+  }
+  @keyframes shocked-flicker{
+    0%,100%{ opacity:0.7; transform:translate(0,0); }
+    50%{ opacity:1; transform:translate(1px,-1px); }
+  }
+  .cannon.status-poisoned::before{
+    content:'☠️';
+    position:absolute;
+    inset:-12px -8px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:24px;
+    line-height:1;
+    background:radial-gradient(circle, rgba(195,216,37,0.5), rgba(85,107,47,0.3) 70%, transparent);
+    border-radius:10px;
+    animation: poisoned-wobble 1.4s ease-in-out infinite;
+    z-index:3;
+  }
+  @keyframes poisoned-wobble{
+    0%,100%{ transform:rotate(-3deg) scale(1); opacity:0.85; }
+    50%{ transform:rotate(3deg) scale(1.05); opacity:1; }
+  }
 
   /* ---------- Cloak worlds (Deep Ocean / Desert Wastes): invaders keep
      falling but fade to near-invisible under a moving water/sand sweep,
@@ -2023,8 +2115,64 @@
     background: repeating-linear-gradient(100deg, rgba(217,164,65,0.4) 0 26px, rgba(140,90,46,0.45) 26px 52px);
     animation: sand-sweep 1.5s linear infinite;
   }
+  .world-cloak-sweep.spore{
+    background: radial-gradient(circle at 30% 30%, rgba(139,195,74,0.4) 0 40px, transparent 41px),
+                radial-gradient(circle at 70% 60%, rgba(181,126,220,0.35) 0 50px, transparent 51px),
+                radial-gradient(circle at 50% 20%, rgba(139,195,74,0.3) 0 35px, transparent 36px),
+                rgba(78,140,63,0.22);
+    animation: spore-pulse 1.8s ease-in-out infinite;
+  }
   @keyframes water-sweep{ 0%{ background-position:0 0; } 100%{ background-position:220px 110px; } }
   @keyframes sand-sweep{ 0%{ background-position:0 0; } 100%{ background-position:260px 40px; } }
+  @keyframes spore-pulse{ 0%,100%{ filter:blur(0px); opacity:0.9; } 50%{ filter:blur(2px); opacity:1; } }
+
+  /* ---------- Magnet Pull power: a big vacuum circle opens at the center
+     of the field while invaders get yanked toward it. ---------- */
+  .magnet-pull-circle{
+    position:absolute;
+    left:50%; top:50%;
+    width:40px; height:40px;
+    margin:-20px 0 0 -20px;
+    border-radius:50%;
+    background: radial-gradient(circle, rgba(255,77,224,0.65) 0%, rgba(124,58,237,0.5) 45%, rgba(10,0,24,0.85) 78%, transparent 100%);
+    box-shadow:0 0 30px 12px rgba(184,77,255,0.6);
+    pointer-events:none;
+    z-index:6;
+    opacity:0;
+    transform:scale(0.3);
+    transition:opacity 0.25s ease, transform 0.25s ease, width 0.9s ease, height 0.9s ease, margin 0.9s ease;
+  }
+  .magnet-pull-circle.show{
+    opacity:1;
+    transform:scale(1);
+    width:150px; height:150px;
+    margin:-75px 0 0 -75px;
+    animation: magnet-pull-spin 0.9s linear infinite;
+  }
+  @keyframes magnet-pull-spin{ 0%{ filter:hue-rotate(0deg); } 100%{ filter:hue-rotate(360deg); } }
+
+  /* ---------- Rainbow Beam power: a full-width beam sweeps top to bottom,
+     popping anything it passes through. ---------- */
+  .rainbow-beam-sweep{
+    position:absolute;
+    left:0; right:0;
+    height:40px;
+    margin-top:-20px;
+    pointer-events:none;
+    z-index:7;
+    background:linear-gradient(180deg, transparent, rgba(255,77,109,0.55) 20%, rgba(255,196,77,0.55) 40%, rgba(92,255,143,0.55) 60%, rgba(77,232,255,0.55) 80%, transparent);
+    box-shadow:0 0 24px 8px rgba(184,77,255,0.55);
+  }
+
+  /* ---------- Ghost Touch power: glow on the A key while active. ---------- */
+  .key.ghost-touch-glow{
+    animation: ghost-touch-pulse 0.7s ease-in-out infinite;
+    box-shadow:0 0 14px 4px rgba(167,139,250,0.8);
+  }
+  @keyframes ghost-touch-pulse{
+    0%,100%{ transform:scale(1); }
+    50%{ transform:scale(1.12); }
+  }
 
   /* ---------- Race track HUD (leaderboard-in-progress) ---------- */
   .race-track{
@@ -2426,7 +2574,7 @@
         <div class="intro" id="intro-sp">
           <div class="demo-row" id="demo-row-sp"></div>
           <h2>Blast the Alien Invaders!</h2>
-          <p>Alien invaders are dropping in from deep space, each one carrying a letter. Zap it with your laser cannon by pressing the matching key before it lands! Type 10 in a row to charge your ship's power, then press SPACE to unleash it whenever you want.</p>
+          <p>Alien invaders are dropping in from deep space, each one carrying a letter. Zap it with your laser cannon by pressing the matching key before it lands!</p>
           <div class="setup-menu" id="setup-menu-sp">
             <button class="setup-btn" id="setup-btn-captain" data-panel="captain">
               <span class="setup-btn-icon">🧑‍🚀</span>
@@ -2448,7 +2596,7 @@
               <span class="setup-btn-icon">⭐</span>
               <span class="setup-btn-text">
                 <span class="setup-btn-label">Difficulty</span>
-                <span class="setup-btn-value" id="setup-val-diff">Medium</span>
+                <span class="setup-btn-value" id="setup-val-diff">Easy</span>
               </span>
               <span class="setup-btn-chevron">›</span>
             </button>
@@ -2488,7 +2636,7 @@
             </div>
             <div class="setup-panel-section" id="panel-captain-sp">
               <div class="captain-name-intro">What's your captain's name? It'll show up when you level up and when bosses taunt you!</div>
-              <input type="text" id="captain-name-input-sp" class="captain-name-input" maxlength="18" placeholder="Captain" autocomplete="off">
+              <input type="text" id="captain-name-input-sp" class="captain-name-input" maxlength="18" placeholder="Name" autocomplete="off">
               <button class="captain-name-save" id="captain-name-save-sp">Save Name</button>
             </div>
             <div class="setup-panel-section" id="panel-char-sp">
@@ -2551,17 +2699,27 @@
                   <span class="char-power">💥 Meteor Bomb</span>
                   <span class="char-lock">🔒 300</span>
                 </button>
+                <button class="char-btn locked-char ultra-char" data-char="chrono" data-cost="400" data-name="Chrono Blazer">
+                  <span class="char-emoji">⏰</span>Chrono Blazer
+                  <span class="char-power">⏳ Time Warp</span>
+                  <span class="char-lock">🔒 400</span>
+                </button>
+                <button class="char-btn locked-char ultra-char" data-char="vortex" data-cost="400" data-name="Warp Specter">
+                  <span class="char-emoji">🌀</span>Warp Specter
+                  <span class="char-power">⏳ Time Warp</span>
+                  <span class="char-lock">🔒 400</span>
+                </button>
                 <button class="char-btn locked-char mythic-char" data-char="cosmic" data-cost="500" data-name="Galaxy Sovereign">
                   <span class="char-emoji">👾</span>Galaxy Sovereign
-                  <span class="char-power">🌟 Nova Blast</span>
+                  <span class="char-power">⏳ Time Warp</span>
                   <span class="char-lock">🔒 500</span>
                 </button>
               </div>
             </div>
             <div class="setup-panel-section" id="panel-diff-sp">
               <div class="diff-row" id="diff-row-sp">
-                <button class="diff-btn" data-diff="easy">🌱 Easy</button>
-                <button class="diff-btn selected" data-diff="medium">⭐ Medium</button>
+                <button class="diff-btn selected" data-diff="easy">🌱 Easy</button>
+                <button class="diff-btn" data-diff="medium">⭐ Medium</button>
                 <button class="diff-btn" data-diff="hard">🔥 Hard</button>
               </div>
             </div>
@@ -2577,6 +2735,9 @@
                 <button class="diff-btn world-btn world-locked" data-world="moltencore" data-cost="500" data-name="Molten Core">🌋 Molten Core <span class="world-lock-tag">🔒 500</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="deepocean" data-cost="300" data-name="Deep Ocean">🌊 Deep Ocean <span class="world-lock-tag">🔒 300</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="desertwastes" data-cost="300" data-name="Desert Wastes">🏜️ Desert Wastes <span class="world-lock-tag">🔒 300</span></button>
+                <button class="diff-btn world-btn world-locked" data-world="stormnebula" data-cost="400" data-name="Storm Nebula">⚡ Storm Nebula <span class="world-lock-tag">🔒 400</span></button>
+                <button class="diff-btn world-btn world-locked" data-world="fungalmoon" data-cost="400" data-name="Fungal Moon">🍄 Fungal Moon <span class="world-lock-tag">🔒 400</span></button>
+                <button class="diff-btn world-btn world-locked" data-world="toxicswamp" data-cost="400" data-name="Toxic Swamp">☠️ Toxic Swamp <span class="world-lock-tag">🔒 400</span></button>
               </div>
               <p class="world-hint">Same game, new enemies to blast!</p>
             </div>
@@ -2594,10 +2755,6 @@
                   <span class="power-item-emoji">💥</span>Meteor Bomb
                   <span class="power-item-lock">🔒 300</span>
                 </button>
-                <button class="power-item" data-power="nova" data-cost="400" data-name="Nova Blast">
-                  <span class="power-item-emoji">🌟</span>Nova Blast
-                  <span class="power-item-lock">🔒 400</span>
-                </button>
                 <button class="power-item" data-power="mirror" data-cost="500" data-name="Mirror Blaster">
                   <span class="power-item-emoji">🪞</span>Mirror Blaster
                   <span class="power-item-lock">🔒 500</span>
@@ -2608,6 +2765,22 @@
                 </button>
                 <button class="power-item" data-power="chainzap" data-cost="500" data-name="Chain Zap">
                   <span class="power-item-emoji">⚡</span>Chain Zap
+                  <span class="power-item-lock">🔒 500</span>
+                </button>
+                <button class="power-item" data-power="magnetpull" data-cost="300" data-name="Magnet Pull">
+                  <span class="power-item-emoji">🧲</span>Magnet Pull
+                  <span class="power-item-lock">🔒 300</span>
+                </button>
+                <button class="power-item" data-power="ghosttouch" data-cost="400" data-name="Ghost Touch">
+                  <span class="power-item-emoji">👻</span>Ghost Touch
+                  <span class="power-item-lock">🔒 400</span>
+                </button>
+                <button class="power-item" data-power="rainbowbeam" data-cost="500" data-name="Rainbow Beam">
+                  <span class="power-item-emoji">🌈</span>Rainbow Beam
+                  <span class="power-item-lock">🔒 500</span>
+                </button>
+                <button class="power-item" data-power="lifesupport" data-cost="500" data-name="Life Support">
+                  <span class="power-item-emoji">💚</span>Life Support
                   <span class="power-item-lock">🔒 500</span>
                 </button>
               </div>
@@ -2978,25 +3151,51 @@ function screenShake(el, intensity){
 // Shared voice encouragement (browser speech synthesis).
 // Every correct hit says a cheerful phrase; every 5-in-a-row says
 // "Super!". Used by all four games. Can be muted from the sidebar.
+// Each world speaks with its own pitch/rate/voice (see setVoiceWorld()
+// and WORLD_VOICE_STYLES below) so different worlds sound different.
 // ============================================================
 let voiceEnabled = true;
 try { voiceEnabled = localStorage.getItem(skey('ta-voice-enabled')) !== '0'; } catch(e){}
 
-let cachedVoice = null;
-function pickVoice(){
-  if(cachedVoice) return cachedVoice;
+// Each world gets its own voice "personality" — a distinct pitch/rate pair
+// (no two worlds share one) so the difference is audible even on devices
+// that only expose one or two system voices, plus a name preference so
+// browsers with a bigger voice list actually swap the underlying voice too.
+const WORLD_VOICE_STYLES = {
+  milkyway:     { pitch:1.30, rate:1.05, prefer:/female|samantha|victoria|karen|zira|fiona|moira|child|kid/i },
+  blackhole:    { pitch:0.65, rate:0.85, prefer:/male|daniel|fred|alex|david|george/i },
+  frozencomet:  { pitch:1.50, rate:0.95, prefer:/female|samantha|victoria|karen|zira|fiona|moira|tessa/i },
+  moltencore:   { pitch:1.05, rate:1.20, prefer:/male|daniel|fred|alex|david|george|diego/i },
+  deepocean:    { pitch:0.90, rate:0.85, prefer:/female|samantha|victoria|karen|zira|moira|tessa/i },
+  desertwastes: { pitch:1.00, rate:0.95, prefer:/male|daniel|fred|alex|david|george/i },
+  stormnebula:  { pitch:1.35, rate:1.20, prefer:/female|samantha|victoria|karen|zira|fiona/i },
+  fungalmoon:   { pitch:1.55, rate:1.10, prefer:/child|kid|female|samantha|karen|zira/i },
+  toxicswamp:   { pitch:0.75, rate:0.90, prefer:/male|daniel|fred|alex|david|george/i },
+};
+// Tracks which world's voice speak() should use — updated by setVoiceWorld()
+// whenever the player picks a world, since speak() lives outside the game
+// closure and can't see that closure's local `currentWorld` directly.
+let activeVoiceWorld = 'milkyway';
+function setVoiceWorld(world){
+  if(WORLD_VOICE_STYLES[world]) activeVoiceWorld = world;
+}
+
+let cachedVoicesByWorld = {};
+function pickVoice(world){
+  if(cachedVoicesByWorld[world]) return cachedVoicesByWorld[world];
   if(!('speechSynthesis' in window)) return null;
   const voices = speechSynthesis.getVoices();
   if(!voices || !voices.length) return null;
-  cachedVoice =
-    voices.find(v=>/child|kid/i.test(v.name)) ||
-    voices.find(v=>/en/i.test(v.lang) && /female|samantha|victoria|karen|zira|fiona|moira/i.test(v.name)) ||
+  const style = WORLD_VOICE_STYLES[world] || WORLD_VOICE_STYLES.milkyway;
+  const v =
+    voices.find(v=>/en/i.test(v.lang) && style.prefer.test(v.name)) ||
     voices.find(v=>/en/i.test(v.lang)) ||
     voices[0];
-  return cachedVoice;
+  cachedVoicesByWorld[world] = v;
+  return v;
 }
 if('speechSynthesis' in window){
-  speechSynthesis.onvoiceschanged = ()=>{ cachedVoice = null; };
+  speechSynthesis.onvoiceschanged = ()=>{ cachedVoicesByWorld = {}; };
 }
 
 function speak(text){
@@ -3006,10 +3205,11 @@ function speak(text){
   if(speechSynthesis.speaking) return;
   try{
     const u = new SpeechSynthesisUtterance(text);
-    u.rate = 1.05;
-    u.pitch = 1.3;
+    const style = WORLD_VOICE_STYLES[activeVoiceWorld] || WORLD_VOICE_STYLES.milkyway;
+    u.rate = style.rate;
+    u.pitch = style.pitch;
     u.volume = 0.9;
-    const v = pickVoice();
+    const v = pickVoice(activeVoiceWorld);
     if(v) u.voice = v;
     speechSynthesis.speak(u);
   }catch(e){}
@@ -3150,6 +3350,45 @@ const BOSS_THEMES = {
       { name:'Spikefist',    taunt:'Spikefist punches through weak spelling, {captain}!' },
     ],
     overlayBg:'radial-gradient(circle at 50% 40%, rgba(196,138,68,0.55), rgba(30,18,4,0.9))', hpGradient:'linear-gradient(90deg, #FFCB77, #C48A44)', glow:'rgba(255,203,119,0.8)'
+  },
+  stormnebula: {
+    emojis:['⚡','🌩️','👾','🌀','🦇','💫','🔮'],
+    bosses:[
+      { name:'Voltrex',     taunt:'Voltrex crackles louder than your keyboard, {captain}!' },
+      { name:'Thundermaw',  taunt:'Thundermaw strikes before you finish a word, {captain}!' },
+      { name:'Sparkfiend',  taunt:'Sparkfiend short-circuits slow spellers, {captain}!' },
+      { name:'Galevein',    taunt:"Galevein's winds scatter your letters, {captain}!" },
+      { name:'Ozonar',      taunt:'Ozonar smells fear (and typos), {captain}!' },
+      { name:'Fulmenor',    taunt:'Fulmenor outraces every keystroke, {captain}!' },
+      { name:'Chargewraith',taunt:'Chargewraith zaps hesitation on sight, {captain}!' },
+    ],
+    overlayBg:'radial-gradient(circle at 50% 40%, rgba(139,92,246,0.55), rgba(10,6,30,0.9))', hpGradient:'linear-gradient(90deg, #F4E04D, #8B5CF6)', glow:'rgba(244,224,77,0.8)'
+  },
+  fungalmoon: {
+    emojis:['🍄','🦠','👹','🕷️','🐸','🌿','☠️'],
+    bosses:[
+      { name:'Sporemaster', taunt:'Sporemaster grows a typo for every mistake, {captain}!' },
+      { name:'Mildew King', taunt:'The Mildew King spreads slow across your screen, {captain}!' },
+      { name:'Rotfang',     taunt:'Rotfang festers on hesitant spellers, {captain}!' },
+      { name:'Mosshide',    taunt:'Mosshide creeps up before you finish typing, {captain}!' },
+      { name:'Puffshroom',  taunt:'Puffshroom pops clouds of confusion, {captain}!' },
+      { name:'Blightclaw',  taunt:'Blightclaw wilts weak spelling on contact, {captain}!' },
+      { name:'Fungalisk',   taunt:'Fungalisk turns slow typers to stone moss, {captain}!' },
+    ],
+    overlayBg:'radial-gradient(circle at 50% 40%, rgba(139,195,74,0.55), rgba(10,20,4,0.9))', hpGradient:'linear-gradient(90deg, #C5E1A5, #6FBF73)', glow:'rgba(197,225,165,0.8)'
+  },
+  toxicswamp: {
+    emojis:['☠️','🐊','🦟','🧪','🐍','🦟','💀'],
+    bosses:[
+      { name:'Sludgemaw',   taunt:'Sludgemaw drags slow spellers into the muck, {captain}!' },
+      { name:'Vipertongue', taunt:'Vipertongue tastes fear in your typing, {captain}!' },
+      { name:'Bogrot',      taunt:'Bogrot festers where typos pile up, {captain}!' },
+      { name:'Toxindra',    taunt:'Toxindra poisons every wrong letter, {captain}!' },
+      { name:'Mucklord',    taunt:'Mucklord swallows slow keystrokes whole, {captain}!' },
+      { name:'Gaswhisper',  taunt:'Gaswhisper clouds your vision and your spelling, {captain}!' },
+      { name:'Croakshade',  taunt:'Croakshade lurks where hesitation festers, {captain}!' },
+    ],
+    overlayBg:'radial-gradient(circle at 50% 40%, rgba(107,122,47,0.6), rgba(20,24,4,0.9))', hpGradient:'linear-gradient(90deg, #C3D825, #6B7A2F)', glow:'rgba(195,216,37,0.8)'
   },
 };
 
@@ -3402,13 +3641,16 @@ const pauseSpace = (function(){
     cannonEl.style.left = '50%';
   }
 
-  // "power" marks which streak-of-10 ability a ship carries:
-  //  - 'freeze'  (100-coin ships): freezes every invader on screen so the
+  // "power" marks which streak-of-10 ability a ship carries FOR FREE —
+  // but only while that ship is the one selected (see getShipGrantedPowers).
+  // Buying the same power in the Power Shop instead makes it work on
+  // every ship, regardless of which one is selected.
+  //  - 'freeze'    (100-coin ships): freezes every invader on screen so the
   //    player can safely type all of them without losing hearts.
-  //  - 'explode' (200-coin ships): instantly clears every invader on screen.
-  //  - 'nova'    (500-coin ship): freezes AND explodes everything for bonus
-  //    score, then grants a few seconds of shield — strictly stronger than
-  //    either 100- or 200-coin power alone.
+  //  - 'slow'      (200-coin ships): slows every invader for a few seconds.
+  //  - 'explode'   (300-coin ships): instantly clears every invader on screen.
+  //  - 'timewarp'  (400-coin ships, and the 500-coin mythic ship): sends
+  //    every invader back up toward where it spawned for a few seconds.
   const CHAR_DEFS = {
     rocket: { emoji:'🚀', color:'#4DE8FF', rotate:-45, tier:'common' },
     ufo:    { emoji:'🛸', color:'#5CFF8F', rotate:0, tier:'uncommon' },
@@ -3423,7 +3665,9 @@ const pauseSpace = (function(){
     dragon: { emoji:'🐉', color:'#FF4DE0', rotate:0, legendary:true, power:'explode', tier:'legendary' },
     shadow: { emoji:'🦍', color:'#7A3FD1', rotate:0, legendary:true, power:'explode', tier:'legendary' },
     storm:  { emoji:'🐞', color:'#5C7CFA', rotate:0, legendary:true, power:'explode', tier:'legendary' },
-    cosmic: { emoji:'👾', color:'#B84DFF', rotate:0, legendary:false, mythic:true, power:'nova', tier:'mythic' },
+    chrono: { emoji:'⏰', color:'#38F9D7', rotate:0, legendary:false, power:'timewarp', tier:'ultra' },
+    vortex: { emoji:'🌀', color:'#6C4DFF', rotate:0, legendary:false, power:'timewarp', tier:'ultra' },
+    cosmic: { emoji:'👾', color:'#B84DFF', rotate:0, legendary:false, mythic:true, power:'timewarp', tier:'mythic' },
   };
   let selectedChar = 'rocket';
   function applyShipVisual(){
@@ -3435,11 +3679,11 @@ const pauseSpace = (function(){
     cannonBarrel.style.boxShadow = 'none';
     cannonBarrel.style.filter = `drop-shadow(0 0 8px ${def.color})`;
     cannonBarrel.style.transform = `translateX(-50%) rotate(${def.rotate}deg)`;
-    // 100/200/500-coin ships get a distinct glowing launch pad (see
-    // .tier-rare/.tier-legendary/.tier-mythic CSS); everything else
-    // just gets the plain color-tinted glow it always had.
-    cannonBase.classList.remove('tier-rare','tier-epic','tier-legendary','tier-mythic');
-    if(def.tier === 'rare' || def.tier === 'epic' || def.tier === 'legendary' || def.tier === 'mythic'){
+    // 100/200/300/400/500-coin ships get a distinct glowing launch pad (see
+    // .tier-rare/.tier-epic/.tier-legendary/.tier-ultra/.tier-mythic CSS);
+    // everything else just gets the plain color-tinted glow it always had.
+    cannonBase.classList.remove('tier-rare','tier-epic','tier-legendary','tier-ultra','tier-mythic');
+    if(def.tier === 'rare' || def.tier === 'epic' || def.tier === 'legendary' || def.tier === 'ultra' || def.tier === 'mythic'){
       cannonBase.classList.add('tier-' + def.tier);
       cannonBase.style.boxShadow = '';
     } else {
@@ -3455,6 +3699,9 @@ const pauseSpace = (function(){
     applyShipVisual();
     updateStreakBadge();
     updateShipGlow();
+    // Switching ships changes which free ship-power (if any) is usable —
+    // reflect that immediately in the Power Shop panel.
+    if(typeof refreshPowerRow === 'function') refreshPowerRow();
     const shipName = btn.dataset.name || btn.textContent.trim();
     const shipEmoji = btn.querySelector('.char-emoji');
     const setupValChar = document.getElementById('setup-val-char');
@@ -3627,6 +3874,60 @@ const pauseSpace = (function(){
     { key:'scorc', name:'Scorchtail', color:'#E85D2E' },
     { key:'nyx',   name:'Mirageorb',  color:'#F0C674' },
   ];
+  // Storm Nebula: electric purple/yellow palette.
+  const STORMNEBULA_ITYPES = [
+    { key:'zorp',  name:'Sparkling',  color:'#F4E04D' },
+    { key:'blip',  name:'Voltwing',   color:'#B983FF' },
+    { key:'volt',  name:'Fulmion',    color:'#FFE066' },
+    { key:'magno', name:'Chargeoid',  color:'#8B5CF6' },
+    { key:'crag',  name:'Thunderfang',color:'#6D5DD3' },
+    { key:'nebu',  name:'Staticwisp', color:'#E0D6FF' },
+  ];
+  const STORMNEBULA_ELITE_ITYPES = [
+    { key:'grym',  name:'Stormlord',  color:'#5B3FD9' },
+    { key:'obsi',  name:'Boltstone',  color:'#FFE066' },
+    { key:'ferro', name:'Shockalloy', color:'#C4B5FD' },
+    { key:'venx',  name:'Amperfang',  color:'#F4E04D' },
+    { key:'scorc', name:'Galecharge', color:'#8B5CF6' },
+    { key:'nyx',   name:'Cyclonestar',color:'#B983FF' },
+  ];
+
+  // Fungal Moon: sickly green/purple palette.
+  const FUNGALMOON_ITYPES = [
+    { key:'zorp',  name:'Sporeling',  color:'#8BC34A' },
+    { key:'blip',  name:'Mycomite',   color:'#B57EDC' },
+    { key:'volt',  name:'Fungrot',    color:'#6FBF73' },
+    { key:'magno', name:'Toxidrone',  color:'#9575CD' },
+    { key:'crag',  name:'Rotcap',     color:'#4E8C3F' },
+    { key:'nebu',  name:'Spraywisp',  color:'#C5E1A5' },
+  ];
+  const FUNGALMOON_ELITE_ITYPES = [
+    { key:'grym',  name:'Mold Lord',  color:'#4A6741' },
+    { key:'obsi',  name:'Sporestone', color:'#C5E1A5' },
+    { key:'ferro', name:'Rotbark',    color:'#7CB342' },
+    { key:'venx',  name:'Mildewfang', color:'#9575CD' },
+    { key:'scorc', name:'Blightroot', color:'#66BB6A' },
+    { key:'nyx',   name:'Puffcloud',  color:'#B57EDC' },
+  ];
+
+  // Toxic Swamp: mustard yellow/brown palette.
+  const TOXICSWAMP_ITYPES = [
+    { key:'zorp',  name:'Bogling',    color:'#B5A642' },
+    { key:'blip',  name:'Mudspike',   color:'#8D6E3A' },
+    { key:'volt',  name:'Gasbloat',   color:'#C3D825' },
+    { key:'magno', name:'Sludgoid',   color:'#6B7A2F' },
+    { key:'crag',  name:'Croakfang',  color:'#556B2F' },
+    { key:'nebu',  name:'Vaporwisp',  color:'#D4C97A' },
+  ];
+  const TOXICSWAMP_ELITE_ITYPES = [
+    { key:'grym',  name:'Bog Lord',   color:'#4A5A1A' },
+    { key:'obsi',  name:'Muckstone',  color:'#D4C97A' },
+    { key:'ferro', name:'Rustfang',   color:'#8D6E3A' },
+    { key:'venx',  name:'Venomtail',  color:'#9CB520' },
+    { key:'scorc', name:'Scumlord',   color:'#6B7A2F' },
+    { key:'nyx',   name:'Miasmastar', color:'#C3D825' },
+  ];
+
   const WORLD_DEFS = {
     milkyway:     { label:'Milky Way',         types: ITYPES,              eliteTypes: ELITE_ITYPES },
     blackhole:    { label:'Black Hole',        types: BLACKHOLE_ITYPES,    eliteTypes: BLACKHOLE_ELITE_ITYPES },
@@ -3634,6 +3935,9 @@ const pauseSpace = (function(){
     moltencore:   { label:'Molten Core',       types: MOLTENCORE_ITYPES,   eliteTypes: MOLTENCORE_ELITE_ITYPES },
     deepocean:    { label:'Deep Ocean',        types: DEEPOCEAN_ITYPES,    eliteTypes: DEEPOCEAN_ELITE_ITYPES },
     desertwastes: { label:'Desert Wastes',     types: DESERTWASTES_ITYPES, eliteTypes: DESERTWASTES_ELITE_ITYPES },
+    stormnebula:  { label:'Storm Nebula',      types: STORMNEBULA_ITYPES,  eliteTypes: STORMNEBULA_ELITE_ITYPES },
+    fungalmoon:   { label:'Fungal Moon',       types: FUNGALMOON_ITYPES,   eliteTypes: FUNGALMOON_ELITE_ITYPES },
+    toxicswamp:   { label:'Toxic Swamp',       types: TOXICSWAMP_ITYPES,   eliteTypes: TOXICSWAMP_ELITE_ITYPES },
   };
   let currentWorld = 'milkyway';
 
@@ -3650,7 +3954,7 @@ const pauseSpace = (function(){
   // How often this fires scales with difficulty (see WORLD_EFFECT_INTERVAL);
   // how long it lasts is fixed at WORLD_EFFECT_MS for every world.
   // ============================================================
-  const WORLD_EFFECT_MS = 2000;
+  const WORLD_EFFECT_MS = 1000;
   const WORLD_EFFECT_INTERVAL = {
     easy:   [11000, 16000],
     medium: [8000, 12000],
@@ -3662,6 +3966,9 @@ const pauseSpace = (function(){
     moltencore:   { kind:'player', statusClass:'status-burning',   toast:'🔥 Caught fire!',               tint:'radial-gradient(circle, rgba(255,159,69,0.25), rgba(217,41,28,0.3))' },
     deepocean:    { kind:'cloak',  sweepClass:'water',              toast:'🌊 A wave hides the invaders!' },
     desertwastes: { kind:'cloak',  sweepClass:'sand',                toast:'🏜️ A sandstorm blinds you!' },
+    stormnebula:  { kind:'player', statusClass:'status-shocked',   toast:'⚡ Zapped! Controls scrambled!', tint:'radial-gradient(circle, rgba(244,224,77,0.22), rgba(20,10,50,0.4))' },
+    fungalmoon:   { kind:'cloak',  sweepClass:'spore',              toast:'🍄 A spore cloud blinds you!' },
+    toxicswamp:   { kind:'player', statusClass:'status-poisoned',  toast:'☠️ Poisoned! Vision blurring!', tint:'radial-gradient(circle, rgba(195,216,37,0.22), rgba(50,60,10,0.35))' },
   };
   let worldEffectActive = false;
   let typingBlocked = false;
@@ -3740,7 +4047,7 @@ const pauseSpace = (function(){
     worldEffectActive = false;
     typingBlocked = false;
     nextWorldEffectAt = Infinity;
-    if(cannonEl) cannonEl.classList.remove('status-blackhole','status-frozen','status-burning');
+    if(cannonEl) cannonEl.classList.remove('status-blackhole','status-frozen','status-burning','status-shocked','status-poisoned');
     hideWorldEffectTint();
     if(game) game.classList.remove('world-cloak-active');
     const sweep = document.getElementById('world-cloak-sweep-sp');
@@ -3806,7 +4113,7 @@ const pauseSpace = (function(){
   }
   buildDemoRow(ITYPES, false);
 
-  let difficulty = 'medium';
+  let difficulty = 'easy';
   diffRow.querySelectorAll('.diff-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       diffRow.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('selected'));
@@ -3904,9 +4211,10 @@ const pauseSpace = (function(){
   // decorative planet) between the different unlocked worlds.
   const worldRowEl = document.getElementById('world-row-sp');
   const planetEl = document.querySelector('#view-space .planet');
-  const WORLD_PLANET_LOOKS = ['blackhole-look', 'frozencomet-look', 'moltencore-look', 'deepocean-look', 'desertwastes-look'];
+  const WORLD_PLANET_LOOKS = ['blackhole-look', 'frozencomet-look', 'moltencore-look', 'deepocean-look', 'desertwastes-look', 'stormnebula-look', 'fungalmoon-look', 'toxicswamp-look'];
   function selectWorld(world){
     currentWorld = world;
+    if(typeof setVoiceWorld === 'function') setVoiceWorld(world);
     worldRowEl.querySelectorAll('.world-btn').forEach(b=>b.classList.toggle('selected', b.dataset.world === world));
     updateSetupSummary('world', WORLD_DEFS[world].label);
     if(planetEl){
@@ -3916,6 +4224,9 @@ const pauseSpace = (function(){
       else if(world === 'moltencore') planetEl.classList.add('moltencore-look');
       else if(world === 'deepocean') planetEl.classList.add('deepocean-look');
       else if(world === 'desertwastes') planetEl.classList.add('desertwastes-look');
+      else if(world === 'stormnebula') planetEl.classList.add('stormnebula-look');
+      else if(world === 'fungalmoon') planetEl.classList.add('fungalmoon-look');
+      else if(world === 'toxicswamp') planetEl.classList.add('toxicswamp-look');
     }
     buildDemoRow(WORLD_DEFS[world].types, world === 'blackhole');
   }
@@ -3984,17 +4295,16 @@ const pauseSpace = (function(){
       try { localStorage.setItem(skey('ta-unlocked-powers'), JSON.stringify(owned)); } catch(e){}
     }
   }
-  // Powers granted for free by any ship the player already owns.
+  // The power granted for free by the ship that is CURRENTLY SELECTED
+  // (not every ship the player happens to own — a power that came free
+  // with one ship only works while that ship is selected).
   function getShipGrantedPowers(){
-    const ownedShips = getUnlockedShips();
-    const set = [];
-    ownedShips.forEach(shipKey=>{
-      const def = CHAR_DEFS[shipKey];
-      if(def && def.power && !set.includes(def.power)) set.push(def.power);
-    });
-    return set;
+    const def = CHAR_DEFS[selectedChar];
+    if(def && def.power) return [def.power];
+    return [];
   }
-  // Full owned-power pool: bought-in-shop ∪ granted-by-owned-ship.
+  // Full owned-power pool: bought-in-shop (works on every ship) ∪
+  // granted-for-free-by-the-selected-ship (works only while it's selected).
   function getOwnedPowers(){
     const bought = getUnlockedPowers();
     const granted = getShipGrantedPowers();
@@ -4002,8 +4312,16 @@ const pauseSpace = (function(){
     granted.forEach(p=>{ if(!all.includes(p)) all.push(p); });
     return all;
   }
+  // Returns the equipped power only if it's actually usable right now —
+  // i.e. it was bought in the shop (global), or it's the power carried
+  // by the ship currently selected. Otherwise there is no power, even
+  // if something was equipped earlier with a different ship selected.
   function getEquippedPower(){
-    try { return localStorage.getItem(skey('ta-equipped-power')) || null; } catch(e){ return null; }
+    let stored;
+    try { stored = localStorage.getItem(skey('ta-equipped-power')) || null; } catch(e){ return null; }
+    if(!stored) return null;
+    if(galaxyDevMode) return stored;
+    return getOwnedPowers().includes(stored) ? stored : null;
   }
   function setEquippedPower(power){
     try { localStorage.setItem(skey('ta-equipped-power'), power); } catch(e){}
@@ -4080,10 +4398,8 @@ const pauseSpace = (function(){
   let rafId = null;
   let idCounter = 0;
   // Ship-power state: freezeActive pauses invader movement (and skips the
-  // usual heart-loss-on-landing check) while a Freeze/Nova power is active;
-  // shieldActive (Nova only) skips heart loss for a few extra seconds after.
+  // usual heart-loss-on-landing check) while a Freeze power is active.
   let freezeActive = false;
-  let shieldActive = false;
   // slowActive (200-coin Slow Field ships) slows every invader on screen by
   // 70% for a few seconds instead of fully freezing them.
   let slowActive = false;
@@ -4095,6 +4411,9 @@ const pauseSpace = (function(){
   // of 1, popping up to 3 extra on-screen invaders per keystroke.
   let mirrorBlasterUntil = 0;
   let mirrorShipEls = [];
+  // ghostTouchActive (Power Shop) — while true, pressing the 'a' key always
+  // pops the invader closest to the player, regardless of its real letter.
+  let ghostTouchActive = false;
   // Ship power is now BANKED instead of firing instantly: every streak of 10
   // adds a charge, and the player presses SPACE whenever they want to use one
   // (so it can be saved for a tricky moment instead of always going off right
@@ -4271,6 +4590,9 @@ const pauseSpace = (function(){
     moltencore:   { wave:'square',   startMul:1.3, endMul:0.5,  dur:0.15, detune:-18 },        // gritty growl (detuned 2nd layer)
     deepocean:    { wave:'sine',     startMul:1.2, endMul:0.9,  dur:0.24, wobble:true },       // watery warble/bubble
     desertwastes: { wave:'square',   startMul:2.0, endMul:1.8,  dur:0.08 },                    // short dry percussive click
+    stormnebula:  { wave:'sawtooth', startMul:2.4, endMul:0.9,  dur:0.10, detune:22 },          // sharp electric crackle
+    fungalmoon:   { wave:'sine',     startMul:0.8, endMul:0.5,  dur:0.22, wobble:true, detune:-8 }, // low squishy warble
+    toxicswamp:   { wave:'square',   startMul:1.1, endMul:0.4,  dur:0.18, wobble:true },        // sputtering, uneven drop
   };
   function playZap(freq){
     if(!audioCtx) return;
@@ -4610,10 +4932,13 @@ const pauseSpace = (function(){
     if(power === 'freeze') triggerFreezePower();
     else if(power === 'slow') triggerSlowPower();
     else if(power === 'explode') triggerExplodePower();
-    else if(power === 'nova') triggerNovaPower();
     else if(power === 'timewarp') triggerTimeWarpPower();
     else if(power === 'chainzap') triggerChainZapPower();
     else if(power === 'mirror') triggerMirrorBlasterPower();
+    else if(power === 'magnetpull') triggerMagnetPullPower();
+    else if(power === 'ghosttouch') triggerGhostTouchPower();
+    else if(power === 'rainbowbeam') triggerRainbowBeamPower();
+    else if(power === 'lifesupport') triggerLifeSupportPower();
   }
 
   // Small floating badge over the cannon showing banked charges, so the
@@ -4676,7 +5001,7 @@ const pauseSpace = (function(){
     });
   }
 
-  const FREEZE_MS = 3200;
+  const FREEZE_MS = 5000;
   function triggerFreezePower(){
     if(freezeActive) return;
     freezeActive = true;
@@ -4697,7 +5022,7 @@ const pauseSpace = (function(){
   // for ~8s, instead of fully freezing them. Spawning keeps going as normal,
   // but any invader that spawns while Slow Field is active also comes in at
   // the reduced speed (see spawnInvader's slowActive check below).
-  const SLOW_MS = 8000;
+  const SLOW_MS = 5000;
   const SLOW_FACTOR = 0.3; // 70% slower
   function triggerSlowPower(){
     if(slowActive) return;
@@ -4723,9 +5048,9 @@ const pauseSpace = (function(){
 
   // Pops a given list of invaders with a bonus-scored explosion each,
   // exactly like a normal hit but applied to an arbitrary subset instead
-  // of just whatever the player typed. Shared by Meteor Bomb/Nova (whole
-  // field), Chain Zap (whichever invaders sit on a thunder line), and
-  // Mirror Blaster (the extra invaders its mirror ships pick off).
+  // of just whatever the player typed. Shared by Meteor Bomb (whole field),
+  // Chain Zap (whichever invaders sit on a thunder line), and Mirror
+  // Blaster (the extra invaders its mirror ships pick off).
   function popInvaderGroup(list, bonusPerInvader){
     if(!list.length) return;
     const gameRect = game.getBoundingClientRect();
@@ -4759,49 +5084,44 @@ const pauseSpace = (function(){
     explodeAllInvaders(8);
   }
 
-  const NOVA_FREEZE_MS = 1300;
-  const NOVA_SHIELD_MS = 6000;
-  function triggerNovaPower(){
-    if(freezeActive) return;
-    freezeActive = true;
-    clearTimeout(spawnTimer);
-    freezeInvadersVisual(true, '#B84DFF');
-    showPowerOverlay('radial-gradient(circle, rgba(184,77,255,0.25), rgba(77,232,255,0.28))');
-    showToast('🌟 NOVA BLAST!');
-    speak('Nova blast!');
-    setTimeout(()=>{
-      freezeActive = false;
-      freezeInvadersVisual(false);
-      hidePowerOverlay();
-      explodeAllInvaders(16); // double the plain explode bonus
-      shieldActive = true;
-      showToast('🛡️ Shield up!');
-      setTimeout(()=>{ shieldActive = false; }, NOVA_SHIELD_MS);
-      if(running && !paused) scheduleSpawn();
-    }, NOVA_FREEZE_MS);
-  }
-
   const TIME_WARP_MS = 7000;
+  // When Time Warp ends, invaders that were already on screen when it was
+  // triggered (the ones that actually got sent back up) resume falling
+  // immediately. Invaders that spawned WHILE it was active never really
+  // "went up" (they spawn right at the top already), so they're held in
+  // place for this short stagger after warp ends, letting the original
+  // group fall first instead of every invader dropping in one synced wall.
+  const TIME_WARP_RESUME_STAGGER_MS = 500;
   function triggerTimeWarpPower(){
     if(timeWarpActive) return;
     timeWarpActive = true;
+    // Mark everyone currently on screen as part of the "sent back" group —
+    // anything that spawns after this point while warp is active is not.
+    invaders.forEach(c=>{ c.warpedBack = true; });
     showPowerOverlay('radial-gradient(circle, rgba(167,139,250,0.20), rgba(76,110,245,0.28))');
     showToast('⏳ Time Warp!');
     speak('Time warp!');
     setTimeout(()=>{
       timeWarpActive = false;
       hidePowerOverlay();
+      const resumeAt = performance.now() + TIME_WARP_RESUME_STAGGER_MS;
+      invaders.forEach(c=>{
+        if(!c.warpedBack) c.warpResumeAt = resumeAt;
+        c.warpedBack = false;
+      });
     }, TIME_WARP_MS);
   }
 
   // ---- Chain Zap: strikes 2 lightning lines across the field (each can be
-  // horizontal, or diagonal in either direction) picked to hit as many
-  // invaders as possible, and clears everything they pass through. ----
+  // ---- Chain Zap: strikes ONE lightning line (the biggest lineup of
+  // invaders currently on screen — horizontal or diagonal), popping
+  // everything on it, then repeats every beat for 5 seconds, picking a
+  // fresh line each time as new invaders line up. ----
   const CHAIN_ZAP_BUCKET = 46; // px tolerance for "roughly on the same line"
-  function triggerChainZapPower(){
+  const CHAIN_ZAP_MS = 5000;
+  const CHAIN_ZAP_INTERVAL = 900;
+  function strikeBestLine(){
     const onScreen = invaders.filter(c=> !c.popping && !c.missed && c.y > -70);
-    showToast('⚡ Chain Zap!');
-    speak('Chain zap!');
     if(!onScreen.length) return;
 
     const gameRect = game.getBoundingClientRect();
@@ -4836,55 +5156,46 @@ const pauseSpace = (function(){
         if(members.length >= 2) candidates.push(members);
       });
     });
-    if(!candidates.length){
+
+    let line;
+    if(candidates.length){
+      candidates.sort((a,b)=> b.length - a.length);
+      line = candidates[0];
+    } else {
       // Nothing lines up — just strike whatever's closest to landing.
-      const lone = onScreen.slice().sort((a,b)=>b.y-a.y)[0];
-      candidates.push([lone]);
-    }
-    candidates.sort((a,b)=> b.length - a.length);
-
-    // Line 1 = biggest group. Line 2 = whichever remaining group (after
-    // removing line-1's invaders) still hits the most.
-    const line1 = candidates[0];
-    const hitIds = new Set(line1.map(c=>c.id));
-    let line2 = [];
-    candidates.forEach(cand=>{
-      const remaining = cand.filter(c=>!hitIds.has(c.id));
-      if(remaining.length > line2.length) line2 = remaining;
-    });
-
-    function strikeLine(members){
-      if(!members.length) return;
-      const sorted = members.slice().sort((a,b)=> centers.get(a.id).cx - centers.get(b.id).cx);
-      const p1 = centers.get(sorted[0].id);
-      const p2 = centers.get(sorted[sorted.length-1].id);
-      let x1 = p1.cx, y1 = p1.cy, x2 = p2.cx, y2 = p2.cy;
-      if(sorted.length === 1){ x1 -= 60; x2 += 60; }
-      const dx = x2-x1, dy = y2-y1;
-      const len0 = Math.max(Math.hypot(dx,dy), 1);
-      const ext = 50, ux = dx/len0, uy = dy/len0;
-      x1 -= ux*ext; y1 -= uy*ext;
-      x2 += ux*ext; y2 += uy*ext;
-      const length = Math.hypot(x2-x1, y2-y1);
-      const angleDeg = Math.atan2(y2-y1, x2-x1) * (180/Math.PI);
-      const beam = document.createElement('div');
-      beam.className = 'thunder-line';
-      beam.style.left = x1+'px';
-      beam.style.top = (y1-3)+'px';
-      beam.style.width = length+'px';
-      beam.style.transformOrigin = '0 50%';
-      beam.style.transform = `rotate(${angleDeg}deg)`;
-      game.appendChild(beam);
-      setTimeout(()=>beam.remove(), 380);
+      line = [onScreen.slice().sort((a,b)=>b.y-a.y)[0]];
     }
 
-    strikeLine(line1);
-    if(line2.length) strikeLine(line2);
+    const sorted = line.slice().sort((a,b)=> centers.get(a.id).cx - centers.get(b.id).cx);
+    const p1 = centers.get(sorted[0].id);
+    const p2 = centers.get(sorted[sorted.length-1].id);
+    let x1 = p1.cx, y1 = p1.cy, x2 = p2.cx, y2 = p2.cy;
+    if(sorted.length === 1){ x1 -= 60; x2 += 60; }
+    const dx = x2-x1, dy = y2-y1;
+    const len0 = Math.max(Math.hypot(dx,dy), 1);
+    const ext = 50, ux = dx/len0, uy = dy/len0;
+    x1 -= ux*ext; y1 -= uy*ext;
+    x2 += ux*ext; y2 += uy*ext;
+    const length = Math.hypot(x2-x1, y2-y1);
+    const angleDeg = Math.atan2(y2-y1, x2-x1) * (180/Math.PI);
+    const beam = document.createElement('div');
+    beam.className = 'thunder-line';
+    beam.style.left = x1+'px';
+    beam.style.top = (y1-3)+'px';
+    beam.style.width = length+'px';
+    beam.style.transformOrigin = '0 50%';
+    beam.style.transform = `rotate(${angleDeg}deg)`;
+    game.appendChild(beam);
+    setTimeout(()=>beam.remove(), 380);
 
-    const seen = new Set();
-    const toPop = [];
-    line1.concat(line2).forEach(c=>{ if(!seen.has(c.id)){ seen.add(c.id); toPop.push(c); } });
-    popInvaderGroup(toPop, 9);
+    popInvaderGroup(line, 9);
+  }
+  function triggerChainZapPower(){
+    showToast('⚡ Chain Zap!');
+    speak('Chain zap!');
+    strikeBestLine();
+    const iv = setInterval(strikeBestLine, CHAIN_ZAP_INTERVAL);
+    setTimeout(()=>clearInterval(iv), CHAIN_ZAP_MS);
   }
 
   // ---- Mirror Blaster: duplicates the ship into 4, stacked vertically
@@ -4973,6 +5284,103 @@ const pauseSpace = (function(){
       hidePowerOverlay();
       removeMirrorShips();
     }, MIRROR_MS);
+  }
+
+  // ---- Magnet Pull: a big vacuum circle opens at the center of the field,
+  // every on-screen invader gets yanked toward it (movement paused via
+  // freezeActive so the pull can't be interrupted by landings), then the
+  // whole pulled-in group pops together. ----
+  const MAGNET_PULL_MS = 5000;
+  function triggerMagnetPullPower(){
+    if(freezeActive) return;
+    const onScreen = invaders.filter(c=>!c.popping && !c.missed);
+    showToast('🧲 Magnet Pull!');
+    speak('Magnet pull!');
+    if(!onScreen.length) return;
+    freezeActive = true;
+    clearTimeout(spawnTimer);
+    const circle = document.createElement('div');
+    circle.className = 'magnet-pull-circle';
+    game.appendChild(circle);
+    requestAnimationFrame(()=>circle.classList.add('show'));
+    const centerX = game.clientWidth/2;
+    const centerY = game.clientHeight/2;
+    onScreen.forEach(c=>{
+      c.el.style.transition = `left ${MAGNET_PULL_MS}ms cubic-bezier(.55,0,.85,.35), top ${MAGNET_PULL_MS}ms cubic-bezier(.55,0,.85,.35), transform ${MAGNET_PULL_MS}ms cubic-bezier(.55,0,.85,.35)`;
+      c.el.style.left = (centerX-24)+'px';
+      c.el.style.top = (centerY-24)+'px';
+      c.el.style.transform = 'scale(0.35)';
+      c.el.style.zIndex = 7;
+    });
+    setTimeout(()=>{
+      circle.classList.remove('show');
+      setTimeout(()=>circle.remove(), 300);
+      freezeActive = false;
+      popInvaderGroup(onScreen, 10);
+      if(running && !paused) scheduleSpawn();
+    }, MAGNET_PULL_MS);
+  }
+
+  // ---- Ghost Touch: for a few seconds, tapping the A key always counts as
+  // a hit — no letter matching needed — and pops whichever invader is
+  // closest to the player first, working its way up the field. ----
+  const GHOST_TOUCH_MS = 4000;
+  function triggerGhostTouchPower(){
+    if(ghostTouchActive) return;
+    ghostTouchActive = true;
+    if(keyEls['a']) keyEls['a'].classList.add('ghost-touch-glow');
+    showPowerOverlay('radial-gradient(circle, rgba(234,244,255,0.14), rgba(167,139,250,0.18))');
+    showToast('👻 Ghost Touch! Tap A!');
+    speak('Ghost touch!');
+    setTimeout(()=>{
+      ghostTouchActive = false;
+      if(keyEls['a']) keyEls['a'].classList.remove('ghost-touch-glow');
+      hidePowerOverlay();
+    }, GHOST_TOUCH_MS);
+  }
+
+  // ---- Rainbow Beam: a single beam sweeps top-to-bottom over ~2s, popping
+  // any invader it passes through along the way. ----
+  const RAINBOW_BEAM_MS = 5000;
+  function triggerRainbowBeamPower(){
+    showToast('🌈 Rainbow Beam!');
+    speak('Rainbow beam!');
+    const beam = document.createElement('div');
+    beam.className = 'rainbow-beam-sweep';
+    game.appendChild(beam);
+    const groundY = game.clientHeight - 70;
+    const startTime = performance.now();
+    const popped = new Set();
+    function step(now){
+      const t = Math.min(1, (now-startTime)/RAINBOW_BEAM_MS);
+      const beamY = t * (groundY+40) - 20;
+      beam.style.top = beamY+'px';
+      invaders.forEach(c=>{
+        if(c.popping || c.missed || popped.has(c.id)) return;
+        if(Math.abs(c.y - beamY) < 34){
+          popped.add(c.id);
+          popInvaderGroup([c], 8);
+        }
+      });
+      if(t < 1){
+        requestAnimationFrame(step);
+      } else {
+        beam.remove();
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ---- Life Support: activating it instantly grants 1 heart and closes —
+  // no waiting window, just a quick top-up. ----
+  function gainHeart(){
+    hearts += 1;
+    renderHearts();
+    showToast('💚 +1 Heart!');
+    speak('Extra heart!');
+  }
+  function triggerLifeSupportPower(){
+    gainHeart();
   }
 
   function spawnInvader(){
@@ -5113,6 +5521,10 @@ const pauseSpace = (function(){
           }
           return;
         }
+        if(c.warpResumeAt){
+          if(performance.now() < c.warpResumeAt) return; // held briefly so warped-back invaders fall first
+          c.warpResumeAt = null;
+        }
         c.y += c.speed;
         c.el.style.top = c.y+'px';
         if(!c.revealed && c.y >= 0){
@@ -5138,7 +5550,7 @@ const pauseSpace = (function(){
           updateShipGlow();
           const missLetter = c.shielded ? c.letters[c.shieldIndex] : c.letter;
           recordLetterOutcome(missLetter, false);
-          if(!shieldActive) loseHeart();
+          loseHeart();
           setTimeout(()=>{ c.el.remove(); }, 500);
         }
       });
@@ -5155,6 +5567,21 @@ const pauseSpace = (function(){
     // the player can't type while it's active.
     if(typingBlocked) return;
     ensureAudio();
+
+    // Ghost Touch: while active, the 'a' key always hits — no letter
+    // matching — and always picks whichever invader is closest to the
+    // player (largest y) first.
+    if(ghostTouchActive && ch === 'a'){
+      const onScreen = invaders.filter(c=>!c.popping && !c.missed);
+      flashKeyPress(ch);
+      if(onScreen.length){
+        let closest = onScreen[0];
+        onScreen.forEach(c=>{ if(c.y > closest.y) closest = c; });
+        popInvaderGroup([closest], 10 + level*2);
+      }
+      return;
+    }
+
     let target = null;
     invaders.forEach(c=>{
       const want = c.shielded ? c.letters[c.shieldIndex] : c.letter;
@@ -5304,7 +5731,8 @@ const pauseSpace = (function(){
 
   function renderHearts(justLostIdx){
     heartsVal.innerHTML = '';
-    for(let i=0;i<MAX_HEARTS;i++){
+    const totalToShow = Math.max(hearts, MAX_HEARTS);
+    for(let i=0;i<totalToShow;i++){
       const span = document.createElement('span');
       const lost = i >= hearts;
       span.className = 'heart-icon' + (lost ? ' lost' : '') + (i===justLostIdx ? ' just-lost' : '');
@@ -5325,8 +5753,8 @@ const pauseSpace = (function(){
     running = false;
     paused = true;
     freezeActive = false;
-    shieldActive = false;
     slowActive = false;
+    ghostTouchActive = false;
     resetWorldEffect();
     hidePowerOverlay();
     powerCharges = 0;
@@ -5374,8 +5802,8 @@ const pauseSpace = (function(){
     running = false;
     paused = false;
     freezeActive = false;
-    shieldActive = false;
     slowActive = false;
+    ghostTouchActive = false;
     resetWorldEffect();
     hidePowerOverlay();
     powerCharges = 0;
@@ -5401,8 +5829,8 @@ const pauseSpace = (function(){
     running = true;
     paused = false;
     freezeActive = false;
-    shieldActive = false;
     slowActive = false;
+    ghostTouchActive = false;
     resetWorldEffect();
     scheduleNextWorldEffect();
     hidePowerOverlay();
