@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Galaxy Blaster</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Baloo+2:wght@500;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 <style>
   :root{
@@ -317,7 +317,8 @@
   .load-chip span.label{ color:#fff; opacity:0.85; }
 
   #view-space .diff-chip{ background:linear-gradient(135deg, #FF4DE0, #B83AE0); }
-  #view-space .level-chip{ background:linear-gradient(135deg, #4DE8FF, #3A6DFF); }
+  #view-space .level-chip{ background:linear-gradient(135deg, var(--world-accent-1,#4DE8FF), var(--world-accent-2,#3A6DFF)); }
+  #view-space .streak-chip{ background:linear-gradient(135deg, var(--world-accent-2,#FFB86B), var(--world-accent-1,#FFD166)); }
   #view-space .best-chip{ background:linear-gradient(135deg, #FFD23F, #FF9F1C); color:#402600; }
   #view-space .stat{ color:#EAF4FF; background:rgba(20,28,64,0.65); box-shadow:0 3px 0 #ffffff22 inset, 0 4px 10px rgba(0,0,0,0.3); }
   #view-space .stat span.label{ opacity:0.7; }
@@ -349,10 +350,11 @@
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    font-family:'Baloo 2', sans-serif;
+    font-family:'Atkinson Hyperlegible', 'Baloo 2', sans-serif;
     font-weight:800;
     font-size:26px;
     color:#fff;
+    font-variant-numeric: slashed-zero;
     text-shadow:0 2px 3px rgba(0,0,0,0.15);
     box-shadow:0 6px 14px rgba(27,58,75,0.18), inset 0 -6px 10px rgba(0,0,0,0.08);
     will-change:transform;
@@ -492,13 +494,204 @@
   .invader .letter-txt{
     margin-top:15px; z-index:1;
     color:#fff;
+    font-family:'Atkinson Hyperlegible', 'Quicksand', sans-serif;
+    font-weight:700;
     -webkit-text-stroke: 2px rgba(0,0,0,0.55);
     paint-order: stroke fill;
     text-shadow:0 1px 3px rgba(0,0,0,0.6), 0 0 6px rgba(0,0,0,0.5);
+    font-variant-numeric: slashed-zero;
   }
   .invader .feature{ position:absolute; pointer-events:none; }
 
-  /* ---------- Black Hole world: Void invaders get a warped, jagged\n     silhouette and a crescent \"eclipse\" eye instead of the round\n     Milky Way look, so the world change is more than a recolor. ---------- */\n  .invader.void-invader{\n    border-radius: 50% 15% 50% 15% / 15% 50% 15% 50%;\n    clip-path: polygon(50% 0%, 88% 18%, 100% 55%, 78% 92%, 50% 100%, 22% 92%, 0% 55%, 12% 18%);\n    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, void-wobble 2.2s ease-in-out 0.3s infinite;\n  }\n  @keyframes void-wobble{\n    0%,100%{ transform: rotate(-4deg) scale(1); }\n    50%{ transform: rotate(4deg) scale(1.05); }\n  }\n  .invader.void-invader.elite{\n    clip-path: polygon(50% 0%, 80% 10%, 100% 40%, 92% 82%, 62% 100%, 38% 100%, 8% 82%, 0% 40%, 20% 10%);\n  }\n  .invader.void-invader .eye-single{\n    width:30px; height:12px;\n    border-radius:50%;\n    background: radial-gradient(circle at 32% 50%, transparent 44%, #0B1740 46%);\n    box-shadow:0 0 10px rgba(167,139,250,0.85), 0 0 0 2px rgba(167,139,250,0.55) inset;\n  }\n  .invader.void-invader .pupil-single{ display:none; }\n  .demo-invader.void-invader{\n    border-radius: 50% 15% 50% 15% / 15% 50% 15% 50%;\n    clip-path: polygon(50% 0%, 88% 18%, 100% 55%, 78% 92%, 50% 100%, 22% 92%, 0% 55%, 12% 18%);\n  }\n  .demo-invader.void-invader .feature{ display:none; }\n\n  @keyframes pop-in{
+  /* ---------- Per-world invader silhouettes: each world gets its own
+     body shape + idle-motion animation (not just a recolor), so the
+     game reads differently world to world at a glance. ---------- */
+
+  /* Black Hole: warped, jagged silhouette + crescent "eclipse" eye */
+  .invader.void-invader{
+    border-radius: 50% 15% 50% 15% / 15% 50% 15% 50%;
+    clip-path: polygon(50% 0%, 88% 18%, 100% 55%, 78% 92%, 50% 100%, 22% 92%, 0% 55%, 12% 18%);
+    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, void-wobble 2.2s ease-in-out 0.3s infinite;
+  }
+  @keyframes spin{
+    0%{ transform:rotate(0deg); }
+    100%{ transform:rotate(360deg); }
+  }
+  @keyframes void-wobble{
+    0%,100%{ transform: rotate(-4deg) scale(1); }
+    50%{ transform: rotate(4deg) scale(1.05); }
+  }
+  .invader.void-invader.elite{
+    clip-path: polygon(50% 0%, 80% 10%, 100% 40%, 92% 82%, 62% 100%, 38% 100%, 8% 82%, 0% 40%, 20% 10%);
+  }
+  .invader.void-invader .eye-single, .demo-invader.void-invader .eye-single{
+    width:30px; height:12px;
+    border-radius:50%;
+    background: radial-gradient(circle at 32% 50%, transparent 44%, #0B1740 46%);
+    box-shadow:0 0 10px rgba(167,139,250,0.85), 0 0 0 2px rgba(167,139,250,0.55) inset;
+  }
+  .invader.void-invader .pupil-single, .demo-invader.void-invader .pupil-single{ display:none; }
+  .demo-invader.void-invader{
+    border-radius: 50% 15% 50% 15% / 15% 50% 15% 50%;
+    clip-path: polygon(50% 0%, 88% 18%, 100% 55%, 78% 92%, 50% 100%, 22% 92%, 0% 55%, 12% 18%);
+  }
+  .demo-invader.void-invader .feature{ display:none; }
+
+  /* Frozen Comet Belt: faceted ice-crystal gem, slow icy drift */
+  .invader.frost-invader, .demo-invader.frost-invader{
+    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, frost-drift 2.6s ease-in-out 0.3s infinite;
+  }
+  .demo-invader.frost-invader{ animation:none; }
+  @keyframes frost-drift{
+    0%,100%{ transform: translateX(0) rotate(-2deg); filter:brightness(1); }
+    50%{ transform: translateX(4px) rotate(2deg); filter:brightness(1.18); }
+  }
+  .invader.frost-invader.elite, .demo-invader.frost-invader.elite{
+    clip-path: polygon(50% 0%, 85% 15%, 100% 50%, 85% 85%, 50% 100%, 15% 85%, 0% 50%, 15% 15%);
+  }
+  .invader.frost-invader .eye-single, .demo-invader.frost-invader .eye-single{
+    width:34px; height:9px; top:18px;
+    border-radius:5px;
+    background: linear-gradient(90deg, transparent, #0B1740 20%, #0B1740 80%, transparent);
+    box-shadow:0 0 8px rgba(186,230,253,0.9);
+  }
+  .invader.frost-invader .pupil-single, .demo-invader.frost-invader .pupil-single{ display:none; }
+
+  /* Molten Core: cracked-rock chunk with a pulsing lava glow */
+  .invader.magma-invader, .demo-invader.magma-invader{
+    clip-path: polygon(67% 3%, 76% 25%, 97% 34%, 86% 55%, 92% 77%, 69% 81%, 55% 100%, 38% 84%, 14% 85%, 16% 62%, 0% 44%, 20% 31%, 24% 7%, 46% 14%);
+    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, magma-pulse 1.4s ease-in-out 0.3s infinite;
+  }
+  .demo-invader.magma-invader{ animation:none; }
+  @keyframes magma-pulse{
+    0%,100%{ filter:brightness(1) saturate(1); box-shadow:0 0 0 rgba(255,120,40,0); }
+    50%{ filter:brightness(1.35) saturate(1.3); box-shadow:0 0 16px rgba(255,120,40,0.75); }
+  }
+  .invader.magma-invader.elite, .demo-invader.magma-invader.elite{
+    clip-path: polygon(59% -3%, 66% 25%, 94% 19%, 79% 44%, 100% 59%, 75% 66%, 81% 94%, 57% 79%, 41% 100%, 34% 75%, 6% 81%, 21% 57%, 0% 41%, 25% 34%, 19% 6%, 44% 21%);
+  }
+  .invader.magma-invader .eye-single, .demo-invader.magma-invader .eye-single{
+    background:#2A0F02;
+    box-shadow:0 0 0 3px rgba(255,180,90,0.6) inset, 0 0 10px rgba(255,120,40,0.9);
+  }
+
+  /* Deep Ocean: soft undulating jelly-blob, gentle swimming sway */
+  .invader.tide-invader, .demo-invader.tide-invader{
+    clip-path: polygon(50% 2%, 67% 18%, 85% 29%, 100% 50%, 88% 74%, 67% 82%, 50% 93%, 25% 97%, 12% 74%, 16% 50%, 16% 29%, 25% 4%);
+    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, tide-sway 2.8s ease-in-out 0.3s infinite;
+  }
+  .demo-invader.tide-invader{ animation:none; }
+  @keyframes tide-sway{
+    0%,100%{ transform: translateY(0) rotate(-3deg) scaleX(1); }
+    50%{ transform: translateY(4px) rotate(3deg) scaleX(1.04); }
+  }
+  .invader.tide-invader.elite, .demo-invader.tide-invader.elite{
+    clip-path: polygon(50% -10%, 69% 6%, 76% 27%, 97% 38%, 102% 63%, 78% 75%, 67% 88%, 50% 100%, 31% 94%, 24% 73%, 3% 62%, 0% 37%, 22% 26%, 33% 12%);
+  }
+  .invader.tide-invader .eye-single, .demo-invader.tide-invader .eye-single{
+    top:18px; width:24px; height:18px;
+    box-shadow:0 0 8px rgba(125,211,252,0.8), 0 0 0 3px rgba(255,255,255,0.4) inset;
+  }
+
+  /* Crystal Caverns: faceted gem shard, glinting facets */
+  .invader.gem-invader, .demo-invader.gem-invader{
+    clip-path: polygon(50% 0%, 74% 14%, 100% 42%, 80% 70%, 60% 100%, 40% 100%, 20% 70%, 0% 42%, 26% 14%);
+    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, gem-glint 2.1s ease-in-out 0.3s infinite;
+  }
+  .demo-invader.gem-invader{ animation:none; }
+  @keyframes gem-glint{
+    0%,100%{ filter:brightness(1) saturate(1); transform:rotate(-2deg); }
+    50%{ filter:brightness(1.4) saturate(1.2); transform:rotate(2deg); }
+  }
+  .invader.gem-invader.elite, .demo-invader.gem-invader.elite{
+    clip-path: polygon(50% -8%, 78% 8%, 96% 32%, 100% 58%, 78% 78%, 62% 100%, 38% 100%, 22% 78%, 0% 58%, 4% 32%, 22% 8%);
+  }
+  .invader.gem-invader .eye-single, .demo-invader.gem-invader .eye-single{
+    width:22px; height:16px; top:16px;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    background: radial-gradient(circle, #fff, #E0AFFF 70%);
+    box-shadow:0 0 10px rgba(224,175,255,0.9);
+  }
+  .invader.gem-invader .pupil-single, .demo-invader.gem-invader .pupil-single{ display:none; }
+
+  /* Desert Wastes: angular dune/scarab shield, shimmering heat haze */
+  .invader.dune-invader, .demo-invader.dune-invader{
+    clip-path: polygon(50% 0%, 90% 30%, 75% 100%, 25% 100%, 10% 30%);
+    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, dune-shimmer 1.9s ease-in-out 0.3s infinite;
+  }
+  .demo-invader.dune-invader{ animation:none; }
+  @keyframes dune-shimmer{
+    0%,100%{ filter:brightness(1) blur(0px); transform:scaleY(1); }
+    50%{ filter:brightness(1.12) blur(0.3px); transform:scaleY(1.03); }
+  }
+  .invader.dune-invader.elite, .demo-invader.dune-invader.elite{
+    clip-path: polygon(50% 0%, 96% 24%, 80% 100%, 20% 100%, 4% 24%);
+  }
+  .invader.dune-invader .eye-single, .demo-invader.dune-invader .eye-single{
+    top:19px;
+    background:#3A1E06;
+    box-shadow:0 0 0 3px rgba(255,224,178,0.6) inset;
+  }
+
+  /* Storm Nebula: jagged electric-burst silhouette, fast flicker jitter */
+  .invader.volt-invader, .demo-invader.volt-invader{
+    clip-path: polygon(50% -2%, 60% 26%, 87% 13%, 74% 40%, 102% 50%, 74% 60%, 87% 87%, 60% 74%, 50% 102%, 40% 74%, 13% 87%, 26% 60%, -2% 50%, 26% 40%, 13% 13%, 40% 26%);
+    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, volt-flicker 0.55s steps(2,end) 0.3s infinite;
+  }
+  .demo-invader.volt-invader{ animation:none; }
+  @keyframes volt-flicker{
+    0%,100%{ transform: rotate(-2deg) scale(1); filter:brightness(1); }
+    50%{ transform: rotate(2deg) scale(1.03); filter:brightness(1.3); }
+  }
+  .invader.volt-invader.elite, .demo-invader.volt-invader.elite{
+    clip-path: polygon(50% -6%, 57% 31%, 86% 7%, 67% 40%, 105% 40%, 70% 54%, 99% 78%, 63% 65%, 69% 103%, 50% 70%, 31% 103%, 37% 65%, 2% 78%, 30% 54%, -5% 40%, 33% 40%, 14% 7%, 43% 31%);
+  }
+  .invader.volt-invader .eye-single, .demo-invader.volt-invader .eye-single{
+    width:16px; height:26px; border-radius:8px; top:12px;
+    background:#0B1740;
+    box-shadow:0 0 10px rgba(250,240,80,0.9), 0 0 0 2px rgba(250,240,80,0.5) inset;
+  }
+  .invader.volt-invader .pupil-single, .demo-invader.volt-invader .pupil-single{ display:none; }
+
+  /* Fungal Moon: flattened mushroom-cap dome, slow breathing pulse */
+  .invader.spore-invader, .demo-invader.spore-invader{
+    border-radius: 55% 55% 15% 15% / 78% 78% 18% 18%;
+    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, spore-breathe 2.3s ease-in-out 0.3s infinite;
+  }
+  .demo-invader.spore-invader{ animation:none; }
+  @keyframes spore-breathe{
+    0%,100%{ transform: scale(1); }
+    50%{ transform: scale(1.06); }
+  }
+  .invader.spore-invader.elite, .demo-invader.spore-invader.elite{
+    border-radius: 50% 50% 8% 8% / 88% 88% 12% 12%;
+  }
+  .invader.spore-invader .eye-single, .demo-invader.spore-invader .eye-single{
+    top:20px;
+    background:#0B1740;
+    box-shadow:0 0 8px rgba(180,255,150,0.7), 0 0 0 3px rgba(255,255,255,0.4) inset;
+  }
+
+  /* Toxic Swamp: dripping ooze blob with a drawn-out drip tail */
+  .invader.bog-invader, .demo-invader.bog-invader{
+    clip-path: polygon(50% 3%, 66% 17%, 74% 31%, 88% 41%, 97% 61%, 85% 78%, 73% 97%, 50% 100%, 21% 111%, 12% 81%, 10% 59%, 19% 43%, 22% 28%, 30% 8%);
+    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, bog-drip 1.7s ease-in-out 0.3s infinite;
+  }
+  .demo-invader.bog-invader{ animation:none; }
+  @keyframes bog-drip{
+    0%,100%{ transform: scaleY(1) translateY(0); }
+    50%{ transform: scaleY(1.06) translateY(2px); }
+  }
+  .invader.bog-invader.elite, .demo-invader.bog-invader.elite{
+    clip-path: polygon(50% -2%, 65% 14%, 71% 29%, 83% 36%, 99% 50%, 100% 71%, 81% 81%, 71% 100%, 50% 105%, 21% 120%, 12% 88%, 5% 69%, 15% 50%, 22% 38%, 22% 22%, 30% 2%);
+  }
+  .invader.bog-invader .eye-single, .demo-invader.bog-invader .eye-single{
+    background:#0B1740;
+    box-shadow:0 0 8px rgba(163,230,53,0.8), 0 0 0 3px rgba(255,255,255,0.4) inset;
+  }
+
+  @keyframes pop-in{
     0%{ transform: scale(0.25) rotate(-8deg); opacity:0; }
     65%{ transform: scale(1.18) rotate(4deg); opacity:1; }
     85%{ transform: scale(0.94) rotate(-2deg); }
@@ -999,6 +1192,7 @@
     transition: all 0.12s ease;
     flex:1;
     max-width:26px;
+    pointer-events:none;
   }
   #view-space .key{
     background:linear-gradient(180deg, #223066, #141C40);
@@ -1068,6 +1262,22 @@
     position:relative;
     box-shadow:0 0 16px currentColor;
   }
+  .demo-invader .eye-single{
+    position:absolute;
+    top:16px; left:50%;
+    transform:translateX(-50%);
+    width:20px;height:20px;
+    background:#0B1740;
+    border-radius:50%;
+    box-shadow:0 0 0 3px rgba(255,255,255,0.5) inset;
+  }
+  .demo-invader .pupil-single{
+    position:absolute;
+    top:6px; left:6px;
+    width:8px;height:8px;
+    background:#fff;
+    border-radius:50%;
+  }
 
   .diff-label{
     font-family:'Baloo 2', sans-serif;
@@ -1112,7 +1322,7 @@
     flex-wrap:wrap;
     gap:10px;
     width:100%;
-    max-width:480px;
+    max-width:640px;
     margin-top:4px;
     justify-content:center;
   }
@@ -1172,10 +1382,10 @@
   .setup-panel-card{
     background:#fff;
     border-radius:24px;
-    padding:20px;
-    max-width:480px;
+    padding:24px 32px;
+    max-width:920px;
     width:100%;
-    max-height:80vh;
+    max-height:85vh;
     overflow-y:auto;
     box-shadow:0 16px 40px rgba(0,0,0,0.35);
     animation: level-popup-pop 0.3s cubic-bezier(.34,1.56,.64,1);
@@ -1195,8 +1405,8 @@
        scrolling underneath/overlapping it. */
     position:sticky;
     top:0;
-    margin:-20px -20px 0;
-    padding:20px 20px 10px;
+    margin:-24px -32px 0;
+    padding:24px 32px 10px;
     background:#fff;
     border-radius:24px 24px 0 0;
     z-index:2;
@@ -1270,6 +1480,23 @@
   .captain-name-save:active{ transform:translateY(2px); box-shadow:0 2px 0 #2378A8; }
 
   .world-row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .world-btn{ position:relative; }
+  .world-btn::before{
+    content:''; display:inline-block; width:9px;height:9px;border-radius:50%;
+    margin-right:5px; vertical-align:middle;
+    background:linear-gradient(135deg, var(--sw1,#B8A6FF), var(--sw2,#9C86FF));
+    box-shadow:0 0 4px var(--sw2,#9C86FF);
+  }
+  .world-btn[data-world="blackhole"]{ --sw1:#C4B5FD; --sw2:#7C3AED; }
+  .world-btn[data-world="frozencomet"]{ --sw1:#BAE6FD; --sw2:#2E9FD6; }
+  .world-btn[data-world="moltencore"]{ --sw1:#FFB37A; --sw2:#D9291C; }
+  .world-btn[data-world="deepocean"]{ --sw1:#7DE8FF; --sw2:#0E7A8C; }
+  .world-btn[data-world="desertwastes"]{ --sw1:#FFE7A8; --sw2:#C98A2E; }
+  .world-btn[data-world="stormnebula"]{ --sw1:#E8D9FF; --sw2:#7C3AED; }
+  .world-btn[data-world="fungalmoon"]{ --sw1:#C8FFB0; --sw2:#4F9A3F; }
+  .world-btn[data-world="toxicswamp"]{ --sw1:#D4F27A; --sw2:#5B6E1A; }
+  .world-btn[data-world="crystalcaverns"]{ --sw1:#FFD6F5; --sw2:#9C4DCC; }
+  .world-btn[data-world="milkyway"]{ --sw1:#BFE8FF; --sw2:#4DE8FF; }
   .world-btn-disabled{ opacity:0.45; cursor:not-allowed; filter:grayscale(0.4); }
   .world-btn-disabled:hover{ transform:none; }
   .world-locked{ opacity:0.7; }
@@ -1298,6 +1525,7 @@
   /* ---------- Power shop (independent power purchase, separate from ships) ---------- */
   .power-row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
   .power-item{
+    position:relative;
     display:flex;
     flex-direction:column;
     align-items:center;
@@ -1339,6 +1567,32 @@
     letter-spacing:0.3px;
   }
   #view-space .power-item-lock{ background:rgba(0,0,0,0.35); }
+
+  /* Preview eye button on each power-shop item — lets players hear/see
+     a power's identity before spending coins on it. */
+  .power-preview-btn{
+    position:absolute; top:4px; right:4px; width:20px; height:20px; border-radius:50%;
+    border:none; background:rgba(0,0,0,0.18); color:#fff; font-size:11px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    padding:0; line-height:1; z-index:2;
+  }
+  .power-preview-btn:hover{ background:rgba(0,0,0,0.32); }
+  .power-preview-btn.pulse{ animation:power-preview-pulse 0.6s ease-out; }
+  @keyframes power-preview-pulse{
+    0%{ box-shadow:0 0 0 0 var(--pc2, #FFD23F); }
+    70%{ box-shadow:0 0 0 16px transparent; }
+    100%{ box-shadow:0 0 0 0 transparent; }
+  }
+  .power-item[data-power="freeze"] .power-preview-btn{ --pc2:#2E9FD6; }
+  .power-item[data-power="slow"] .power-preview-btn{ --pc2:#1CA88F; }
+  .power-item[data-power="explode"] .power-preview-btn{ --pc2:#D9291C; }
+  .power-item[data-power="mirror"] .power-preview-btn{ --pc2:#B84DFF; }
+  .power-item[data-power="timewarp"] .power-preview-btn{ --pc2:#6C4DFF; }
+  .power-item[data-power="chainzap"] .power-preview-btn{ --pc2:#FFD23F; }
+  .power-item[data-power="magnetpull"] .power-preview-btn{ --pc2:#FF4DA6; }
+  .power-item[data-power="ghosttouch"] .power-preview-btn{ --pc2:#A78BFA; }
+  .power-item[data-power="rainbowbeam"] .power-preview-btn{ --pc2:#4DE8FF; }
+  .power-item[data-power="lifesupport"] .power-preview-btn{ --pc2:#2ECC71; }
 
   .world-hint{
     font-family:'Quicksand', sans-serif;
@@ -1878,6 +2132,21 @@
   .planet.toxicswamp-look::after{
     border-color: rgba(212,201,122,0.5);
   }
+  /* Crystal Caverns world: a faceted geode-moon that catches the light. */
+  .planet.crystalcaverns-look{
+    background: radial-gradient(circle at 35% 35%, #FFFFFF, #E0AFFF 55%, #7C3AED 100%);
+    box-shadow:0 0 32px 10px rgba(224,175,255,0.55), inset -10px -8px 18px rgba(0,0,0,0.25);
+    animation: crystalcaverns-glint 3.2s ease-in-out infinite;
+  }
+  @keyframes crystalcaverns-glint{
+    0%,85%,100%{ filter:brightness(1); }
+    87%{ filter:brightness(1.6); }
+    89%{ filter:brightness(1); }
+    91%{ filter:brightness(1.4); }
+  }
+  .planet.crystalcaverns-look::after{
+    border-color: rgba(255,214,245,0.55);
+  }
   .star-tw{
     position:absolute;
     background:#fff;
@@ -1915,19 +2184,103 @@
     100%{ transform:translate(60vw,26vh); opacity:0; }
   }
   #game-space{
+    --star-color:#fff;
+    --space-bg: linear-gradient(180deg, #0B1740 0%, #060A20 55%, #03040F 100%);
     background-image:
-      radial-gradient(1.6px 1.6px at 10% 20%, #fff, transparent),
-      radial-gradient(1.6px 1.6px at 30% 70%, #fff, transparent),
-      radial-gradient(1.2px 1.2px at 50% 30%, #fff, transparent),
-      radial-gradient(1.6px 1.6px at 70% 80%, #fff, transparent),
-      radial-gradient(1.2px 1.2px at 85% 15%, #fff, transparent),
-      radial-gradient(1.6px 1.6px at 92% 55%, #fff, transparent),
-      radial-gradient(1.2px 1.2px at 15% 90%, #fff, transparent),
-      radial-gradient(1.6px 1.6px at 45% 10%, #fff, transparent);
+      radial-gradient(1.6px 1.6px at 10% 20%, var(--star-color), transparent),
+      radial-gradient(1.6px 1.6px at 30% 70%, var(--star-color), transparent),
+      radial-gradient(1.2px 1.2px at 50% 30%, var(--star-color), transparent),
+      radial-gradient(1.6px 1.6px at 70% 80%, var(--star-color), transparent),
+      radial-gradient(1.2px 1.2px at 85% 15%, var(--star-color), transparent),
+      radial-gradient(1.6px 1.6px at 92% 55%, var(--star-color), transparent),
+      radial-gradient(1.2px 1.2px at 15% 90%, var(--star-color), transparent),
+      radial-gradient(1.6px 1.6px at 45% 10%, var(--star-color), transparent),
+      var(--space-bg);
     background-color:transparent;
     background-repeat:no-repeat;
     opacity:1;
   }
+  /* Per-world star tint AND base sky colour: milkyway keeps a neutral deep
+     navy with white starlight; every other world gets both a recoloured
+     star field AND its own dark base gradient (previously this was
+     missing, so the ambience tint/particles sat on plain white and
+     everything looked washed-out grey instead of a distinct place). */
+  #game-space.world-blackhole{ --star-color:#C4B5FD; --space-bg: linear-gradient(180deg, #1A0A2E 0%, #0A0018 55%, #000000 100%); }
+  #game-space.world-frozencomet{ --star-color:#BAE6FD; --space-bg: linear-gradient(180deg, #0D2F42 0%, #061C29 55%, #020B10 100%); }
+  #game-space.world-moltencore{ --star-color:#FFB37A; --space-bg: linear-gradient(180deg, #2E0900 0%, #1A0500 55%, #0A0200 100%); }
+  #game-space.world-deepocean{ --star-color:#7DE8FF; --space-bg: linear-gradient(180deg, #063040 0%, #02141A 55%, #01090C 100%); }
+  #game-space.world-desertwastes{ --star-color:#FFE7A8; --space-bg: linear-gradient(180deg, #2E2008 0%, #1A1206 55%, #0D0A03 100%); }
+  #game-space.world-stormnebula{ --star-color:#E8D9FF; --space-bg: linear-gradient(180deg, #180A3A 0%, #0D0620 55%, #05030F 100%); }
+  #game-space.world-fungalmoon{ --star-color:#C8FFB0; --space-bg: linear-gradient(180deg, #0D2410 0%, #06140A 55%, #030A05 100%); }
+  #game-space.world-toxicswamp{ --star-color:#D4F27A; --space-bg: linear-gradient(180deg, #1E2210 0%, #12140A 55%, #090A05 100%); }
+  #game-space.world-crystalcaverns{ --star-color:#FFB8F0; --space-bg: linear-gradient(180deg, #2A0A38 0%, #180620 55%, #0A0210 100%); }
+  /* ---------- Per-world ambient atmosphere: a tinted colour wash plus
+     themed floating particles behind the invaders, so each world feels
+     different to just be in, not just look different up close. ---------- */
+  .world-ambience-tint{
+    position:absolute; inset:0;
+    pointer-events:none;
+    z-index:0;
+  }
+  .world-ambience-tint.env-blackhole{ background: radial-gradient(circle at 50% 30%, rgba(124,58,237,0.16), transparent 60%), linear-gradient(180deg, rgba(10,4,20,0.35), rgba(4,2,10,0.55)); }
+  .world-ambience-tint.env-frozencomet{ background: radial-gradient(circle at 50% 20%, rgba(186,230,253,0.18), transparent 60%), linear-gradient(180deg, rgba(46,159,214,0.14), rgba(6,20,32,0.3)); }
+  .world-ambience-tint.env-moltencore{ background: radial-gradient(circle at 50% 80%, rgba(255,120,40,0.2), transparent 60%), linear-gradient(180deg, rgba(60,10,0,0.15), rgba(30,4,0,0.35)); }
+  .world-ambience-tint.env-deepocean{ background: radial-gradient(circle at 50% 50%, rgba(77,232,255,0.12), transparent 65%), linear-gradient(180deg, rgba(4,30,40,0.2), rgba(4,20,26,0.4)); }
+  .world-ambience-tint.env-desertwastes{ background: radial-gradient(circle at 50% 30%, rgba(240,217,168,0.16), transparent 60%), linear-gradient(180deg, rgba(80,50,10,0.12), rgba(40,25,5,0.28)); }
+  .world-ambience-tint.env-stormnebula{ background: radial-gradient(circle at 50% 25%, rgba(185,131,255,0.18), transparent 55%), linear-gradient(180deg, rgba(20,10,50,0.2), rgba(10,5,25,0.4)); position:relative; }
+  .world-ambience-tint.env-fungalmoon{ background: radial-gradient(circle at 50% 40%, rgba(180,255,150,0.14), transparent 60%), linear-gradient(180deg, rgba(10,40,10,0.16), rgba(5,20,5,0.32)); }
+  .world-ambience-tint.env-toxicswamp{ background: radial-gradient(circle at 50% 60%, rgba(163,230,53,0.16), transparent 60%), linear-gradient(180deg, rgba(30,40,5,0.18), rgba(15,20,5,0.36)); }
+  .world-ambience-tint.env-crystalcaverns{ background: radial-gradient(circle at 50% 30%, rgba(255,184,240,0.18), transparent 60%), linear-gradient(180deg, rgba(40,10,50,0.16), rgba(20,4,25,0.34)); }
+  .world-ambience-tint.env-stormnebula::after{
+    content:''; position:absolute; inset:0;
+    background:#fff; opacity:0;
+    animation: amb-storm-flash 4.5s ease-in-out infinite;
+  }
+  @keyframes amb-storm-flash{
+    0%,93%,100%{ opacity:0; }
+    94%{ opacity:0.16; }
+    95%{ opacity:0; }
+    96%{ opacity:0.09; }
+    97%{ opacity:0; }
+  }
+  .world-ambience-particles{
+    position:absolute; inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:0;
+  }
+  .amb-particle{ position:absolute; top:0; left:0; pointer-events:none; }
+  @keyframes amb-fall{
+    0%{ transform:translate(0,-24px) rotate(0deg); opacity:0; }
+    12%{ opacity:1; }
+    90%{ opacity:0.7; }
+    100%{ transform:translate(var(--dx,15px), 440px) rotate(140deg); opacity:0; }
+  }
+  @keyframes amb-rise{
+    0%{ transform:translate(0,24px) rotate(0deg); opacity:0; }
+    12%{ opacity:1; }
+    90%{ opacity:0.6; }
+    100%{ transform:translate(var(--dx,15px), -440px) rotate(-100deg); opacity:0; }
+  }
+  @keyframes amb-blow{
+    0%{ transform:translate(-24px, 0) rotate(0deg); opacity:0; }
+    12%{ opacity:0.9; }
+    90%{ opacity:0.5; }
+    100%{ transform:translate(440px, var(--dy,20px)) rotate(60deg); opacity:0; }
+  }
+  .amb-particle.amb-fall{ animation-name:amb-fall; animation-timing-function:linear; animation-iteration-count:infinite; }
+  .amb-particle.amb-rise{ animation-name:amb-rise; animation-timing-function:linear; animation-iteration-count:infinite; }
+  .amb-particle.amb-blow{ animation-name:amb-blow; animation-timing-function:linear; animation-iteration-count:infinite; }
+  .amb-void{ width:4px;height:4px; background:radial-gradient(circle,#C4B5FD,#7C3AED); border-radius:50%; box-shadow:0 0 6px #A78BFA; }
+  .amb-snow{ width:5px;height:5px; background:#fff; border-radius:50%; box-shadow:0 0 4px #fff; }
+  .amb-ember{ width:4px;height:4px; background:radial-gradient(circle,#FFD166,#FF6F3C); border-radius:50%; box-shadow:0 0 6px #FF9F45; }
+  .amb-bubble{ width:8px;height:8px; border:1px solid rgba(255,255,255,0.55); border-radius:50%; background:rgba(255,255,255,0.06); }
+  .amb-sand{ width:3px;height:3px; background:#E8B75A; border-radius:50%; }
+  .amb-spark{ width:3px;height:13px; background:linear-gradient(180deg,#fff,#F4E04D); box-shadow:0 0 6px #F4E04D; border-radius:2px; }
+  .amb-spore{ width:6px;height:6px; background:radial-gradient(circle,#E8FFD8,#8FE07A); border-radius:50%; opacity:0.85; }
+  .amb-goo{ width:6px;height:6px; background:radial-gradient(circle,#D8FFA0,#7CFC6A); border-radius:50%; box-shadow:0 0 5px #A3E635; }
+  .amb-crystal{ width:5px;height:5px; background:radial-gradient(circle,#FFFFFF,#E0AFFF); transform:rotate(45deg); box-shadow:0 0 6px #FFB8F0; }
+
   .cannon{
     position:absolute;
     bottom:6px; left:50%;
@@ -2122,9 +2475,14 @@
                 rgba(78,140,63,0.22);
     animation: spore-pulse 1.8s ease-in-out infinite;
   }
+  .world-cloak-sweep.crystal{
+    background: repeating-linear-gradient(135deg, rgba(255,184,240,0.35) 0 20px, rgba(156,77,204,0.4) 20px 40px);
+    animation: crystal-sweep 1.8s linear infinite;
+  }
   @keyframes water-sweep{ 0%{ background-position:0 0; } 100%{ background-position:220px 110px; } }
   @keyframes sand-sweep{ 0%{ background-position:0 0; } 100%{ background-position:260px 40px; } }
   @keyframes spore-pulse{ 0%,100%{ filter:blur(0px); opacity:0.9; } 50%{ filter:blur(2px); opacity:1; } }
+  @keyframes crystal-sweep{ 0%{ background-position:0 0; } 100%{ background-position:-200px 120px; } }
 
   /* ---------- Magnet Pull power: a big vacuum circle opens at the center
      of the field while invaders get yanked toward it. ---------- */
@@ -2440,10 +2798,11 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    font-family:'Baloo 2', sans-serif;
+    font-family:'Atkinson Hyperlegible', 'Baloo 2', sans-serif;
     font-weight:800;
     font-size:22px;
     color:#fff;
+    font-variant-numeric: slashed-zero;
     text-shadow:0 1px 2px rgba(0,0,0,0.3);
     will-change:transform;
     transition:filter 0.15s ease;
@@ -2498,7 +2857,7 @@
   #view-race .intro h2{ color:#FFF6E8; }
   #view-race .intro p{ color:#E8D4C4; }
   #view-race .diff-label{ color:#E8D4C4; }
-  #view-race .cancel-btn{ background:linear-gradient(135deg, #FF7A5C, #C4232B); color:#FFF6E8; }
+  #view-race .cancel-btn{ background:#FFF6E8; color:#C4232B; }
   #view-race.playing #diff-chip-rc,
   #view-race.playing #streak-chip-rc,
   #view-race.playing #score-chip-rc{ display:none; }
@@ -2738,6 +3097,7 @@
                 <button class="diff-btn world-btn world-locked" data-world="stormnebula" data-cost="400" data-name="Storm Nebula">⚡ Storm Nebula <span class="world-lock-tag">🔒 400</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="fungalmoon" data-cost="400" data-name="Fungal Moon">🍄 Fungal Moon <span class="world-lock-tag">🔒 400</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="toxicswamp" data-cost="400" data-name="Toxic Swamp">☠️ Toxic Swamp <span class="world-lock-tag">🔒 400</span></button>
+                <button class="diff-btn world-btn world-locked" data-world="crystalcaverns" data-cost="450" data-name="Crystal Caverns">💎 Crystal Caverns <span class="world-lock-tag">🔒 450</span></button>
               </div>
               <p class="world-hint">Same game, new enemies to blast!</p>
             </div>
@@ -3171,6 +3531,7 @@ const WORLD_VOICE_STYLES = {
   stormnebula:  { pitch:1.35, rate:1.20, prefer:/female|samantha|victoria|karen|zira|fiona/i },
   fungalmoon:   { pitch:1.55, rate:1.10, prefer:/child|kid|female|samantha|karen|zira/i },
   toxicswamp:   { pitch:0.75, rate:0.90, prefer:/male|daniel|fred|alex|david|george/i },
+  crystalcaverns: { pitch:1.45, rate:1.00, prefer:/female|samantha|victoria|karen|zira|fiona|moira|child|kid/i },
 };
 // Tracks which world's voice speak() should use — updated by setVoiceWorld()
 // whenever the player picks a world, since speak() lives outside the game
@@ -3389,6 +3750,19 @@ const BOSS_THEMES = {
       { name:'Croakshade',  taunt:'Croakshade lurks where hesitation festers, {captain}!' },
     ],
     overlayBg:'radial-gradient(circle at 50% 40%, rgba(107,122,47,0.6), rgba(20,24,4,0.9))', hpGradient:'linear-gradient(90deg, #C3D825, #6B7A2F)', glow:'rgba(195,216,37,0.8)'
+  },
+  crystalcaverns: {
+    emojis:['💎','🔮','✨','👑','🦂','🌟','🕸️'],
+    bosses:[
+      { name:'Geodemourne',   taunt:'Geodemourne shatters spellers who hesitate, {captain}!' },
+      { name:'Prisma Queen',  taunt:'The Prisma Queen refracts your every typo, {captain}!' },
+      { name:'Shardclaw',     taunt:'Shardclaw cuts down slow keystrokes, {captain}!' },
+      { name:'Faceted Fiend', taunt:'The Faceted Fiend has a thousand eyes for your mistakes, {captain}!' },
+      { name:'Glimmerwraith', taunt:'Glimmerwraith glows brighter with every wrong letter, {captain}!' },
+      { name:'Crystallix',    taunt:'Crystallix turns hesitation to stone, {captain}!' },
+      { name:'Opalisk',       taunt:'Opalisk dazzles slow spellers into stillness, {captain}!' },
+    ],
+    overlayBg:'radial-gradient(circle at 50% 40%, rgba(199,125,255,0.55), rgba(20,4,30,0.9))', hpGradient:'linear-gradient(90deg, #FFB8F0, #9C4DCC)', glow:'rgba(255,184,240,0.8)'
   },
 };
 
@@ -3928,6 +4302,24 @@ const pauseSpace = (function(){
     { key:'nyx',   name:'Miasmastar', color:'#C3D825' },
   ];
 
+  // Crystal Caverns: pink/violet gemstone palette.
+  const CRYSTALCAVERNS_ITYPES = [
+    { key:'zorp',  name:'Shardling',  color:'#FF9FE0' },
+    { key:'blip',  name:'Glimmerbit', color:'#D9A8FF' },
+    { key:'volt',  name:'Prismite',   color:'#F3E8FF' },
+    { key:'magno', name:'Geodoid',    color:'#C77DFF' },
+    { key:'crag',  name:'Quartzling', color:'#FFB8F0' },
+    { key:'nebu',  name:'Lumenwisp',  color:'#E8D5FF' },
+  ];
+  const CRYSTALCAVERNS_ELITE_ITYPES = [
+    { key:'grym',  name:'Crystal Lord', color:'#8B2FC9' },
+    { key:'obsi',  name:'Diamondback',  color:'#F5EFFF' },
+    { key:'ferro', name:'Geoshard',     color:'#C9A0DC' },
+    { key:'venx',  name:'Amethystin',   color:'#A855F7' },
+    { key:'scorc', name:'Prismfang',    color:'#FF6FD8' },
+    { key:'nyx',   name:'Starquartz',   color:'#D9A8FF' },
+  ];
+
   const WORLD_DEFS = {
     milkyway:     { label:'Milky Way',         types: ITYPES,              eliteTypes: ELITE_ITYPES },
     blackhole:    { label:'Black Hole',        types: BLACKHOLE_ITYPES,    eliteTypes: BLACKHOLE_ELITE_ITYPES },
@@ -3938,6 +4330,7 @@ const pauseSpace = (function(){
     stormnebula:  { label:'Storm Nebula',      types: STORMNEBULA_ITYPES,  eliteTypes: STORMNEBULA_ELITE_ITYPES },
     fungalmoon:   { label:'Fungal Moon',       types: FUNGALMOON_ITYPES,   eliteTypes: FUNGALMOON_ELITE_ITYPES },
     toxicswamp:   { label:'Toxic Swamp',       types: TOXICSWAMP_ITYPES,   eliteTypes: TOXICSWAMP_ELITE_ITYPES },
+    crystalcaverns: { label:'Crystal Caverns', types: CRYSTALCAVERNS_ITYPES, eliteTypes: CRYSTALCAVERNS_ELITE_ITYPES },
   };
   let currentWorld = 'milkyway';
 
@@ -3956,9 +4349,9 @@ const pauseSpace = (function(){
   // ============================================================
   const WORLD_EFFECT_MS = 1000;
   const WORLD_EFFECT_INTERVAL = {
-    easy:   [11000, 16000],
-    medium: [8000, 12000],
-    hard:   [5500, 8500],
+    easy:   [61000, 61000],
+    medium: [51000, 55000],
+    hard:   [41000, 45000],
   };
   const WORLD_GIMMICKS = {
     blackhole:    { kind:'player', statusClass:'status-blackhole', toast:'🕳️ Pulled into a black hole!', tint:'radial-gradient(circle, rgba(124,58,237,0.22), rgba(10,0,24,0.4))' },
@@ -3969,17 +4362,22 @@ const pauseSpace = (function(){
     stormnebula:  { kind:'player', statusClass:'status-shocked',   toast:'⚡ Zapped! Controls scrambled!', tint:'radial-gradient(circle, rgba(244,224,77,0.22), rgba(20,10,50,0.4))' },
     fungalmoon:   { kind:'cloak',  sweepClass:'spore',              toast:'🍄 A spore cloud blinds you!' },
     toxicswamp:   { kind:'player', statusClass:'status-poisoned',  toast:'☠️ Poisoned! Vision blurring!', tint:'radial-gradient(circle, rgba(195,216,37,0.22), rgba(50,60,10,0.35))' },
+    crystalcaverns: { kind:'cloak', sweepClass:'crystal',          toast:'💎 A crystal glare blinds you!' },
   };
   let worldEffectActive = false;
   let typingBlocked = false;
   let nextWorldEffectAt = Infinity;
   let worldEffectEndsAt = 0;
 
-  function scheduleNextWorldEffect(){
+  function scheduleNextWorldEffect(isFirst){
     const gimmick = WORLD_GIMMICKS[currentWorld];
     if(!gimmick){ nextWorldEffectAt = Infinity; return; }
     const range = WORLD_EFFECT_INTERVAL[difficulty] || WORLD_EFFECT_INTERVAL.medium;
-    nextWorldEffectAt = performance.now() + range[0] + Math.random()*(range[1]-range[0]);
+    // Give kids a longer, effect-free runway at the very start of a game
+    // (roughly 1.5x the normal wait) before the first block ever fires,
+    // rather than possibly hitting them within the first few seconds.
+    const extra = isFirst ? range[0] * 0.5 : 0;
+    nextWorldEffectAt = performance.now() + extra + range[0] + Math.random()*(range[1]-range[0]);
   }
 
   function showWorldEffectTint(tint){
@@ -4054,9 +4452,122 @@ const pauseSpace = (function(){
     if(sweep) sweep.remove();
   }
 
-  function buildInvaderFeature(el, type){
-    const f = document.createElement('div');
-    f.className = 'feature';
+  // Per-world ambient particle recipe: which motion keyframe (amb-fall /
+  // amb-rise / amb-blow), which look class, and roughly how many on
+  // screen at once. milkyway has none — its neutral starfield already
+  // reads as "space", so it stays the plain baseline world.
+  const WORLD_AMBIENCE = {
+    blackhole:    { cls:'amb-rise', look:'amb-void',   count:10 },
+    frozencomet:  { cls:'amb-fall', look:'amb-snow',   count:14 },
+    moltencore:   { cls:'amb-rise', look:'amb-ember',  count:12 },
+    deepocean:    { cls:'amb-rise', look:'amb-bubble', count:10 },
+    desertwastes: { cls:'amb-blow', look:'amb-sand',   count:14 },
+    stormnebula:  { cls:'amb-fall', look:'amb-spark',  count:8  },
+    fungalmoon:   { cls:'amb-rise', look:'amb-spore',  count:10 },
+    toxicswamp:   { cls:'amb-rise', look:'amb-goo',    count:10 },
+    crystalcaverns: { cls:'amb-rise', look:'amb-crystal', count:12 },
+  };
+  function clearWorldAmbience(){
+    const oldTint = document.getElementById('world-ambience-tint-sp');
+    if(oldTint) oldTint.remove();
+    const oldParticles = document.getElementById('world-ambience-particles-sp');
+    if(oldParticles) oldParticles.remove();
+    stopWorldAmbientAudio();
+  }
+  function applyWorldAmbience(world){
+    clearWorldAmbience();
+    startWorldAmbientAudio(world);
+    if(!game) return;
+    const tint = document.createElement('div');
+    tint.id = 'world-ambience-tint-sp';
+    tint.className = 'world-ambience-tint env-' + world;
+    game.insertBefore(tint, game.firstChild);
+    const cfg = WORLD_AMBIENCE[world];
+    if(!cfg) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'world-ambience-particles-sp';
+    wrap.className = 'world-ambience-particles';
+    for(let i=0;i<cfg.count;i++){
+      const p = document.createElement('div');
+      p.className = 'amb-particle ' + cfg.cls + ' ' + cfg.look;
+      const dur = 4 + Math.random()*4;
+      const delay = -Math.random()*dur; // negative delay staggers particles instead of them all starting in sync
+      p.style.animationDuration = dur.toFixed(2)+'s';
+      p.style.animationDelay = delay.toFixed(2)+'s';
+      p.style.setProperty('--dx', (Math.random()*40-20).toFixed(0)+'px');
+      if(cfg.cls === 'amb-blow'){
+        p.style.top = (Math.random()*80+5)+'%';
+        p.style.left = '-5%';
+        p.style.setProperty('--dy', (Math.random()*30-15).toFixed(0)+'px');
+      } else {
+        p.style.left = (Math.random()*100).toFixed(1)+'%';
+      }
+      wrap.appendChild(p);
+    }
+    game.insertBefore(wrap, tint.nextSibling);
+  }
+
+  // Per-type size scale: even reused shapes read as different creatures
+  // within the same world when they're not all identically sized. Applied
+  // as a transform (visual only — collision uses the JS c.y position, not
+  // element bounds, so this never affects hit detection).
+  const TYPE_SIZE_SCALE = {
+    zorp:0.92, blip:1.08, volt:0.96, magno:1.14, crag:1.0, nebu:0.9,
+    grym:1.16, obsi:0.94, ferro:1.08, venx:0.96, scorc:1.02, nyx:0.9
+  };
+  // Per-type idle-motion timing: layered on top of the shared entity-wiggle
+  // keyframes via duration/delay only (no new keyframes needed), so each
+  // type bobs at its own speed/phase instead of every invader in a world
+  // moving in perfect lockstep.
+  const TYPE_MOTION_TIMING = {
+    zorp:{dur:1.5,delay:0}, blip:{dur:2.1,delay:0.15}, volt:{dur:1.2,delay:0.3},
+    magno:{dur:2.4,delay:0.05}, crag:{dur:1.8,delay:0.4}, nebu:{dur:2.7,delay:0.2},
+    grym:{dur:1.4,delay:0.1}, obsi:{dur:2.2,delay:0.35}, ferro:{dur:1.7,delay:0},
+    venx:{dur:1.3,delay:0.25}, scorc:{dur:1.9,delay:0.15}, nyx:{dur:2.5,delay:0.3}
+  };
+  function applyTypeMotion(el, type){
+    const scale = TYPE_SIZE_SCALE[type.key] || 1;
+    el.style.transform = `scale(${scale})`;
+    const timing = TYPE_MOTION_TIMING[type.key];
+    if(timing){
+      el.style.animationDuration = '0.3s, ' + timing.dur + 's';
+      el.style.animationDelay = '0s, ' + timing.delay + 's';
+    }
+  }
+
+  // World-specific appendage overrides: a few worlds get shapes that are
+  // structurally different (not just a recolor of the default antenna/
+  // fin/spike/ring/horn/cloud set), so their creatures read as genuinely
+  // different beasts, not the same 6 bodies repainted. Worlds not listed
+  // here fall through to the default DEFAULT_FEATURES below.
+  const WORLD_FEATURE_OVERRIDES = {
+    moltencore: {
+      zorp: (f,t)=>{ f.style.cssText = `width:20px;height:18px;top:-13px;left:20px;background:${t.color};clip-path:polygon(50% 0%, 80% 40%, 65% 40%, 90% 100%, 35% 55%, 50% 55%, 20% 100%);filter:drop-shadow(0 0 6px ${t.color});`; },
+      blip: (f,t)=>{ f.style.cssText = `width:30px;height:14px;top:-10px;left:15px;`; f.innerHTML = `<div style="position:absolute;left:0;width:8px;height:14px;background:${t.color};clip-path:polygon(50% 0%,100% 100%,0% 100%);border-radius:2px;"></div><div style="position:absolute;left:11px;top:-4px;width:8px;height:18px;background:${t.color};clip-path:polygon(50% 0%,100% 100%,0% 100%);border-radius:2px;"></div><div style="position:absolute;left:22px;width:8px;height:14px;background:${t.color};clip-path:polygon(50% 0%,100% 100%,0% 100%);border-radius:2px;"></div>`; },
+      volt: (f,t)=>{ f.style.cssText = `width:24px;height:24px;top:-15px;left:18px;background:radial-gradient(circle,${t.color},transparent 70%);border-radius:50%;filter:blur(2px);opacity:0.85;`; },
+      magno:(f,t)=>{ f.style.cssText = `width:38px;height:16px;top:-9px;left:11px;border-bottom:4px solid ${t.color};border-radius:50%;opacity:0.7;filter:drop-shadow(0 0 6px ${t.color});transform:rotate(6deg);`; },
+      crag: (f,t)=>{ f.style.cssText = `width:18px;height:20px;top:-11px;left:21px;background:${t.color};clip-path:polygon(50% 0%, 90% 30%, 70% 100%, 30% 100%, 10% 30%);box-shadow:0 0 6px ${t.color}aa;`; },
+      nebu: (f,t)=>{ f.style.cssText = `width:30px;height:14px;top:-8px;left:15px;background:${t.color};border-radius:40% 60% 50% 50%;opacity:0.65;filter:blur(1px);`; },
+    },
+    deepocean: {
+      zorp: (f,t)=>{ f.style.cssText = `width:30px;height:14px;top:-8px;left:15px;`; f.innerHTML = `<div style="position:absolute;left:0;top:0;width:12px;height:12px;background:${t.color};border-radius:50%;opacity:0.6;"></div><div style="position:absolute;left:9px;top:-6px;width:9px;height:9px;background:${t.color};border-radius:50%;opacity:0.7;"></div><div style="position:absolute;left:18px;top:1px;width:7px;height:7px;background:${t.color};border-radius:50%;opacity:0.8;"></div>`; },
+      blip: (f,t)=>{ f.style.cssText = `width:20px;height:18px;top:-11px;left:20px;background:${t.color};clip-path:polygon(50% 0%, 100% 70%, 50% 100%, 0% 70%);box-shadow:0 0 6px ${t.color};`; },
+      volt: (f,t)=>{ f.style.cssText = `width:34px;height:10px;top:-4px;left:13px;border-top:3px solid ${t.color};border-radius:50%;opacity:0.8;transform:rotate(-4deg);`; },
+      magno:(f,t)=>{ f.style.cssText = `width:16px;height:16px;top:-10px;left:22px;background:${t.color};clip-path:polygon(50% 0%, 90% 90%, 10% 90%);box-shadow:0 0 6px ${t.color};`; },
+      crag: (f,t)=>{ f.style.cssText = `width:22px;height:12px;top:-8px;left:19px;background:${t.color};border-radius:50% 50% 20% 20%;box-shadow:0 0 6px ${t.color}aa;`; },
+      nebu: (f,t)=>{ f.style.cssText = `width:16px;height:16px;top:-12px;left:22px;border:3px solid ${t.color};border-radius:50%;opacity:0.6;`; },
+    },
+    blackhole: {
+      zorp: (f,t)=>{ f.style.cssText = `width:32px;height:32px;top:-16px;left:14px;border:2px dashed ${t.color};border-radius:50%;opacity:0.7;animation:spin 3s linear infinite;`; },
+      blip: (f,t)=>{ f.style.cssText = `width:18px;height:18px;top:-10px;left:21px;background:${t.color};clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);opacity:0.8;box-shadow:0 0 6px ${t.color};`; },
+      volt: (f,t)=>{ f.style.cssText = `width:14px;height:22px;top:-13px;left:23px;background:${t.color};clip-path:polygon(50% 0%, 100% 100%, 50% 75%, 0% 100%);box-shadow:0 0 6px ${t.color};`; },
+      magno:(f,t)=>{ f.style.cssText = `width:0;height:0;top:-13px;left:22px;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid ${t.color};opacity:0.75;filter:drop-shadow(0 0 6px ${t.color});`; },
+      crag: (f,t)=>{ f.style.cssText = `width:20px;height:20px;top:-11px;left:20px;background:conic-gradient(${t.color},transparent,${t.color});border-radius:50%;opacity:0.6;`; },
+      nebu: (f,t)=>{ f.style.cssText = `width:26px;height:26px;top:-14px;left:17px;border:2px solid ${t.color};border-radius:50%;opacity:0.5;transform:scale(0.8);`; },
+    },
+  };
+
+  function defaultInvaderFeature(f, type){
     switch(type.key){
       case 'zorp': // twin antennae with ball tips
         f.style.cssText = `width:34px;height:16px;top:-14px;left:13px;`;
@@ -4086,32 +4597,57 @@ const pauseSpace = (function(){
         f.style.cssText = `width:0;height:0;top:-13px;left:22px;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid ${type.color};filter:drop-shadow(0 0 6px ${type.color});`;
         break;
     }
+  }
+
+  function buildInvaderFeature(el, type, world){
+    const f = document.createElement('div');
+    f.className = 'feature';
+    const override = WORLD_FEATURE_OVERRIDES[world] && WORLD_FEATURE_OVERRIDES[world][type.key];
+    if(override){
+      override(f, type);
+    } else {
+      defaultInvaderFeature(f, type);
+    }
     el.appendChild(f);
   }
 
   // Builds the little 4-invader preview row at the top of the intro
   // screen from whichever world's type pool is currently active.
-  function buildDemoRow(pool, isVoid){
+  // Maps each world to the invader silhouette class defined in the CSS
+  // above (frost-invader, magma-invader, etc). '' = default Milky Way
+  // round look. Worlds whose shape hides the pupil (crescent/slit/single
+  // eye looks) are listed in NO_PUPIL_WORLDS so the demo row matches the
+  // in-game invaders exactly.
+  const WORLD_SHAPE_CLASS = {
+    milkyway: '', blackhole: 'void-invader', frozencomet: 'frost-invader',
+    moltencore: 'magma-invader', deepocean: 'tide-invader', desertwastes: 'dune-invader',
+    stormnebula: 'volt-invader', fungalmoon: 'spore-invader', toxicswamp: 'bog-invader',
+    crystalcaverns: 'gem-invader'
+  };
+  const NO_PUPIL_WORLDS = ['blackhole', 'frozencomet', 'stormnebula', 'crystalcaverns'];
+
+  function buildDemoRow(pool, world){
     demoRow.innerHTML = '';
+    const shapeClass = WORLD_SHAPE_CLASS[world] || '';
+    const hidePupil = NO_PUPIL_WORLDS.includes(world);
     pool.slice(0,4).forEach(t=>{
       const d = document.createElement('div');
-      d.className = 'demo-invader' + (isVoid ? ' void-invader' : '');
+      d.className = 'demo-invader' + (shapeClass ? ' ' + shapeClass : '');
       d.style.color = t.color;
       d.style.background = `radial-gradient(circle at 32% 30%, #ffffff33, transparent 45%), ${t.color}`;
       const eye = document.createElement('div');
-      eye.style.cssText = isVoid
-        ? 'position:absolute;top:16px;left:50%;transform:translateX(-50%);width:30px;height:12px;border-radius:50%;background:radial-gradient(circle at 32% 50%, transparent 44%, #0B1740 46%);box-shadow:0 0 10px rgba(167,139,250,0.85), 0 0 0 2px rgba(167,139,250,0.55) inset;'
-        : 'position:absolute;top:16px;left:50%;transform:translateX(-50%);width:20px;height:20px;background:#0B1740;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,0.5) inset;';
+      eye.className = 'eye-single';
       d.appendChild(eye);
-      if(!isVoid){
-        const pup = document.createElement('div'); pup.style.cssText='position:absolute;top:6px;left:6px;width:8px;height:8px;background:#fff;border-radius:50%;';
+      if(!hidePupil){
+        const pup = document.createElement('div'); pup.className = 'pupil-single';
         eye.appendChild(pup);
-        buildInvaderFeature(d, t);
       }
+      buildInvaderFeature(d, t, world);
+      applyTypeMotion(d, t);
       demoRow.appendChild(d);
     });
   }
-  buildDemoRow(ITYPES, false);
+  buildDemoRow(ITYPES, 'milkyway');
 
   let difficulty = 'easy';
   diffRow.querySelectorAll('.diff-btn').forEach(btn=>{
@@ -4211,12 +4747,38 @@ const pauseSpace = (function(){
   // decorative planet) between the different unlocked worlds.
   const worldRowEl = document.getElementById('world-row-sp');
   const planetEl = document.querySelector('#view-space .planet');
-  const WORLD_PLANET_LOOKS = ['blackhole-look', 'frozencomet-look', 'moltencore-look', 'deepocean-look', 'desertwastes-look', 'stormnebula-look', 'fungalmoon-look', 'toxicswamp-look'];
+  const WORLD_PLANET_LOOKS = ['blackhole-look', 'frozencomet-look', 'moltencore-look', 'deepocean-look', 'desertwastes-look', 'stormnebula-look', 'fungalmoon-look', 'toxicswamp-look', 'crystalcaverns-look'];
+  // Two-stop accent gradient per world, reused for the in-game HUD chips
+  // (level/streak) so the UI chrome itself feels tied to the current
+  // world instead of always being the same neutral blue.
+  const WORLD_ACCENT = {
+    milkyway:     ['#4DE8FF', '#3A6DFF'],
+    blackhole:    ['#C4B5FD', '#7C3AED'],
+    frozencomet:  ['#BAE6FD', '#2E9FD6'],
+    moltencore:   ['#FFB37A', '#D9291C'],
+    deepocean:    ['#7DE8FF', '#0E7A8C'],
+    desertwastes: ['#FFE7A8', '#C98A2E'],
+    stormnebula:  ['#E8D9FF', '#7C3AED'],
+    fungalmoon:   ['#C8FFB0', '#4F9A3F'],
+    toxicswamp:   ['#D4F27A', '#5B6E1A'],
+    crystalcaverns: ['#FFB8F0', '#9C4DCC'],
+  };
+  const WORLD_STAR_CLASSES = ['world-blackhole','world-frozencomet','world-moltencore','world-deepocean','world-desertwastes','world-stormnebula','world-fungalmoon','world-toxicswamp','world-crystalcaverns'];
+  function applyWorldAccent(world){
+    const accent = WORLD_ACCENT[world] || WORLD_ACCENT.milkyway;
+    view.style.setProperty('--world-accent-1', accent[0]);
+    view.style.setProperty('--world-accent-2', accent[1]);
+    if(game){
+      WORLD_STAR_CLASSES.forEach(cls=>game.classList.remove(cls));
+      if(world !== 'milkyway') game.classList.add('world-' + world);
+    }
+  }
   function selectWorld(world){
     currentWorld = world;
     if(typeof setVoiceWorld === 'function') setVoiceWorld(world);
     worldRowEl.querySelectorAll('.world-btn').forEach(b=>b.classList.toggle('selected', b.dataset.world === world));
     updateSetupSummary('world', WORLD_DEFS[world].label);
+    applyWorldAccent(world);
     if(planetEl){
       WORLD_PLANET_LOOKS.forEach(cls=>planetEl.classList.remove(cls));
       if(world === 'blackhole') planetEl.classList.add('blackhole-look');
@@ -4227,8 +4789,9 @@ const pauseSpace = (function(){
       else if(world === 'stormnebula') planetEl.classList.add('stormnebula-look');
       else if(world === 'fungalmoon') planetEl.classList.add('fungalmoon-look');
       else if(world === 'toxicswamp') planetEl.classList.add('toxicswamp-look');
+      else if(world === 'crystalcaverns') planetEl.classList.add('crystalcaverns-look');
     }
-    buildDemoRow(WORLD_DEFS[world].types, world === 'blackhole');
+    buildDemoRow(WORLD_DEFS[world].types, world);
   }
   // Purchasable worlds: Frozen Comet Belt & Molten Core start locked and
   // cost coins to unlock, same pattern as unlockable ships/powers.
@@ -4353,7 +4916,30 @@ const pauseSpace = (function(){
   }
   refreshPowerRow();
 
+  // Lets a player hear a power's signature stinger and see a flash of
+  // its accent color right in the shop, before spending 300-600 coins
+  // on it — same identity (sound + tint) the power actually uses in-game.
+  function previewPower(power, name){
+    const meta = POWER_META[power];
+    playPowerStinger(power);
+    showToast((meta ? meta.emoji : '⚡') + ' ' + (name||power) + (meta ? ' — ' + meta.desc : ''));
+  }
   if(POWER_ROW_EL){
+    POWER_ROW_EL.querySelectorAll('.power-item').forEach(btn=>{
+      const preview = document.createElement('button');
+      preview.type = 'button';
+      preview.className = 'power-preview-btn';
+      preview.textContent = '👁';
+      preview.setAttribute('aria-label', 'Preview ' + (btn.dataset.name || btn.dataset.power));
+      preview.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        previewPower(btn.dataset.power, btn.dataset.name);
+        preview.classList.remove('pulse');
+        void preview.offsetWidth; // restart the pulse animation on repeat taps
+        preview.classList.add('pulse');
+      });
+      btn.appendChild(preview);
+    });
     POWER_ROW_EL.querySelectorAll('.power-item').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         if(btn.classList.contains('power-disabled')) return;
@@ -4593,6 +5179,7 @@ const pauseSpace = (function(){
     stormnebula:  { wave:'sawtooth', startMul:2.4, endMul:0.9,  dur:0.10, detune:22 },          // sharp electric crackle
     fungalmoon:   { wave:'sine',     startMul:0.8, endMul:0.5,  dur:0.22, wobble:true, detune:-8 }, // low squishy warble
     toxicswamp:   { wave:'square',   startMul:1.1, endMul:0.4,  dur:0.18, wobble:true },        // sputtering, uneven drop
+    crystalcaverns: { wave:'triangle', startMul:2.6, endMul:2.0, dur:0.11, detune:16 },          // crisp glassy chime, shimmery
   };
   function playZap(freq){
     if(!audioCtx) return;
@@ -4638,6 +5225,109 @@ const pauseSpace = (function(){
     g.gain.exponentialRampToValueAtTime(0.001, t0+dur);
     o.connect(g); g.connect(audioCtx.destination);
     o.start(t0); o.stop(t0+dur+0.02);
+  }
+
+  // ---- Per-power stinger: a short, distinct synth phrase that plays the
+  // moment a power activates, using the same oscillator-building approach
+  // as playZap/playWorldGimmickSting. Each power gets its own shape so
+  // activating one is recognizable by ear, not just by its overlay tint —
+  // freeze descends into a cold chime, chain zap crackles in triplets,
+  // life support resolves warmly, etc. ----
+  function pTone(freq, type, t0, dur, vol, opts){
+    if(!audioCtx) return null;
+    opts = opts || {};
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type;
+    if(opts.detune) o.detune.setValueAtTime(opts.detune, t0);
+    o.frequency.setValueAtTime(freq, t0);
+    if(opts.toFreq){
+      o.frequency.exponentialRampToValueAtTime(Math.max(20,opts.toFreq), t0+dur);
+    }
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(vol, t0+Math.min(0.03,dur*0.3));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t0); o.stop(t0+dur+0.03);
+    return o;
+  }
+  const POWER_STINGERS = {
+    freeze(t0){ pTone(1100,'triangle',t0,0.16,0.13); pTone(700,'triangle',t0+0.11,0.22,0.12); },
+    slow(t0){ pTone(260,'sine',t0,0.5,0.12,{toFreq:120}); },
+    explode(t0){ pTone(90,'square',t0,0.3,0.16,{toFreq:40}); pTone(900,'sawtooth',t0,0.12,0.1,{detune:-20}); },
+    timewarp(t0){ pTone(200,'sine',t0,0.3,0.1,{toFreq:700}); pTone(700,'sine',t0+0.28,0.32,0.1,{toFreq:150}); },
+    chainzap(t0){ [0,0.09,0.18].forEach((d,i)=> pTone(500+i*160,'sawtooth',t0+d,0.09,0.13,{detune:i*8})); },
+    mirror(t0){ pTone(500,'sine',t0,0.28,0.11); pTone(500,'sine',t0+0.05,0.28,0.09,{detune:12}); },
+    magnetpull(t0){ pTone(140,'sawtooth',t0,0.45,0.12,{toFreq:520}); },
+    ghosttouch(t0){ pTone(440,'sine',t0,0.5,0.09,{toFreq:520}); pTone(660,'sine',t0+0.1,0.4,0.05,{toFreq:600}); },
+    rainbowbeam(t0){ [523,659,784,988].forEach((f,i)=> pTone(f,'triangle',t0+i*0.07,0.16,0.1)); },
+    lifesupport(t0){ pTone(392,'sine',t0,0.22,0.12); pTone(523,'sine',t0+0.08,0.3,0.12); },
+  };
+  function playPowerStinger(power){
+    ensureAudio();
+    if(!audioCtx) return;
+    const fn = POWER_STINGERS[power];
+    if(fn) fn(audioCtx.currentTime);
+  }
+
+  // ---- Per-world ambient drone: a very quiet continuous background
+  // tone (with a slow LFO wobble) that loops for as long as a round is
+  // running, so each world has an audible identity even between zaps —
+  // not just a color/particle swap. Starts with startGame's call to
+  // applyWorldAmbience and is torn down by clearWorldAmbience (game
+  // over / quit / world switch), so it never outlives a round. ----
+  const WORLD_AMBIENT = {
+    milkyway:     { freq:90,  type:'sine',     lfoRate:0.15, lfoDepth:6,  vol:0.045 },
+    blackhole:    { freq:55,  type:'sine',     lfoRate:0.08, lfoDepth:10, vol:0.055 },
+    frozencomet:  { freq:300, type:'sine',     lfoRate:0.3,  lfoDepth:20, vol:0.03 },
+    moltencore:   { freq:70,  type:'sawtooth', lfoRate:4,    lfoDepth:8,  vol:0.04 },
+    deepocean:    { freq:110, type:'sine',     lfoRate:0.2,  lfoDepth:15, vol:0.045 },
+    desertwastes: { freq:130, type:'triangle', lfoRate:0.1,  lfoDepth:5,  vol:0.035 },
+    stormnebula:  { freq:180, type:'sawtooth', lfoRate:6,    lfoDepth:30, vol:0.03 },
+    fungalmoon:   { freq:140, type:'sine',     lfoRate:0.5,  lfoDepth:12, vol:0.04 },
+    toxicswamp:   { freq:95,  type:'square',   lfoRate:1.2,  lfoDepth:10, vol:0.028 },
+    crystalcaverns: { freq:340, type:'triangle', lfoRate:0.6, lfoDepth:25, vol:0.028 },
+  };
+  let ambientOsc = null, ambientLFO = null, ambientGain = null;
+  function stopWorldAmbientAudio(){
+    if(ambientGain && audioCtx){
+      try{
+        const t0 = audioCtx.currentTime;
+        ambientGain.gain.cancelScheduledValues(t0);
+        ambientGain.gain.setValueAtTime(ambientGain.gain.value, t0);
+        ambientGain.gain.linearRampToValueAtTime(0.0001, t0+0.25);
+      }catch(e){}
+    }
+    const osc = ambientOsc, lfo = ambientLFO, g = ambientGain;
+    ambientOsc = null; ambientLFO = null; ambientGain = null;
+    setTimeout(()=>{
+      try{ if(osc) osc.stop(); }catch(e){}
+      try{ if(lfo) lfo.stop(); }catch(e){}
+      try{ if(g) g.disconnect(); }catch(e){}
+    }, 300);
+  }
+  function startWorldAmbientAudio(world){
+    stopWorldAmbientAudio();
+    ensureAudio();
+    if(!audioCtx) return;
+    const cfg = WORLD_AMBIENT[world] || WORLD_AMBIENT.milkyway;
+    const t0 = audioCtx.currentTime;
+    ambientGain = audioCtx.createGain();
+    ambientGain.gain.setValueAtTime(0.0001, t0);
+    ambientGain.gain.linearRampToValueAtTime(cfg.vol, t0+0.8);
+    ambientGain.connect(audioCtx.destination);
+    ambientOsc = audioCtx.createOscillator();
+    ambientOsc.type = cfg.type;
+    ambientOsc.frequency.setValueAtTime(cfg.freq, t0);
+    ambientOsc.connect(ambientGain);
+    ambientLFO = audioCtx.createOscillator();
+    ambientLFO.frequency.setValueAtTime(cfg.lfoRate, t0);
+    const lfoGain = audioCtx.createGain();
+    lfoGain.gain.setValueAtTime(cfg.lfoDepth, t0);
+    ambientLFO.connect(lfoGain);
+    lfoGain.connect(ambientOsc.frequency);
+    ambientOsc.start(t0);
+    ambientLFO.start(t0);
   }
 
   function burstExplosion(x,y,color){
@@ -4929,6 +5619,7 @@ const pauseSpace = (function(){
     if(powerCharges <= 0) return;
     powerCharges -= 1;
     updatePowerBadge();
+    playPowerStinger(power);
     if(power === 'freeze') triggerFreezePower();
     else if(power === 'slow') triggerSlowPower();
     else if(power === 'explode') triggerExplodePower();
@@ -4941,8 +5632,26 @@ const pauseSpace = (function(){
     else if(power === 'lifesupport') triggerLifeSupportPower();
   }
 
+  // Central per-power identity: emoji + 2-stop accent gradient (also used
+  // by the shop preview toast) + a one-line description for the preview.
+  // This is what lets the charge badge and streak pill show the equipped
+  // power's own look instead of one generic yellow pill for everything.
+  const POWER_META = {
+    freeze:      { emoji:'❄️', c1:'#BAE6FD', c2:'#2E9FD6', desc:'Freezes every invader for a few seconds' },
+    slow:        { emoji:'🐌', c1:'#7BE0AD', c2:'#1CA88F', desc:'Slows every invader down for a while' },
+    explode:     { emoji:'💥', c1:'#FFB37A', c2:'#D9291C', desc:'Clears every invader on screen instantly' },
+    mirror:      { emoji:'🪞', c1:'#9EEBFF', c2:'#B84DFF', desc:'Doubles your ship to hit up to 4 invaders at once' },
+    timewarp:    { emoji:'⏳', c1:'#C4B5FD', c2:'#6C4DFF', desc:'Sends invaders back up the screen' },
+    chainzap:    { emoji:'⚡', c1:'#FFF3A0', c2:'#FFD23F', desc:'Strikes lightning through lined-up invaders' },
+    magnetpull:  { emoji:'🧲', c1:'#FFC2E0', c2:'#FF4DA6', desc:'Pulls every invader in and pops them together' },
+    ghosttouch:  { emoji:'👻', c1:'#EAF4FF', c2:'#A78BFA', desc:'Any key press pops the nearest invader' },
+    rainbowbeam: { emoji:'🌈', c1:'#FF9EDB', c2:'#4DE8FF', desc:'A sweeping beam pops everything it touches' },
+    lifesupport: { emoji:'💚', c1:'#A8FFC8', c2:'#2ECC71', desc:'Instantly grants an extra heart' },
+  };
+
   // Small floating badge over the cannon showing banked charges, so the
-  // player can see at a glance whether a power is ready to use.
+  // player can see at a glance whether a power is ready to use. Themed
+  // to whichever power is equipped instead of one generic yellow pill.
   let powerBadgeEl = null;
   function updatePowerBadge(){
     if(!powerBadgeEl){
@@ -4952,7 +5661,9 @@ const pauseSpace = (function(){
       game.appendChild(powerBadgeEl);
     }
     if(powerCharges > 0){
-      powerBadgeEl.textContent = '⚡' + powerCharges;
+      const meta = POWER_META[getEquippedPower()];
+      powerBadgeEl.textContent = (meta ? meta.emoji : '⚡') + powerCharges;
+      powerBadgeEl.style.background = meta ? `linear-gradient(135deg, ${meta.c1}, ${meta.c2})` : 'linear-gradient(135deg,#FFE58A,#FFD23F)';
       powerBadgeEl.style.opacity = '1';
     } else {
       powerBadgeEl.style.opacity = '0';
@@ -4973,15 +5684,50 @@ const pauseSpace = (function(){
       game.appendChild(streakBadgeEl);
     }
     const prog = streak % 10;
-    streakBadgeEl.textContent = prog + '/10';
+    const meta = POWER_META[power];
+    streakBadgeEl.textContent = (meta ? meta.emoji + ' ' : '') + prog + '/10';
+    streakBadgeEl.style.background = meta ? `linear-gradient(135deg, ${hexToRgba(meta.c2,0.55)}, rgba(20,28,64,0.7))` : 'rgba(20,28,64,0.65)';
     streakBadgeEl.style.opacity = (running && !paused) ? '1' : '0';
   }
 
+  // Each world gives ONE thematically-matching power a longer active
+  // duration — Freeze Blast lingers longer in the already-icy Frozen
+  // Comet Belt, Slow Field drags on longer in Deep Ocean's currents, etc.
+  // Every other power/world combo runs at its normal base duration.
+  const WORLD_POWER_AFFINITY = {
+    frozencomet:  { freeze: 1.5 },
+    deepocean:    { slow: 1.4 },
+    blackhole:    { timewarp: 1.4 },
+    stormnebula:  { mirror: 1.3 },
+    desertwastes: { ghosttouch: 1.3 },
+    fungalmoon:   { magnetpull: 1.3 },
+    toxicswamp:   { rainbowbeam: 1.3 },
+    moltencore:   { chainzap: 1.3 },
+    crystalcaverns: { explode: 1.3 },
+  };
+  function powerDurationMs(baseMs, powerKey){
+    const mult = (WORLD_POWER_AFFINITY[currentWorld] || {})[powerKey] || 1;
+    return Math.round(baseMs * mult);
+  }
+  function hexToRgba(hex, alpha){
+    const h = hex.replace('#','');
+    const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+  // Every power keeps its own recognizable base tint (icy blue for Freeze,
+  // teal for Slow, etc.) but gets a low-opacity wash of the current
+  // world's accent color layered underneath, so the same power reads as
+  // "native" to Molten Core vs Frozen Comet Belt instead of always
+  // looking identical regardless of world.
   function showPowerOverlay(tint){
+    const accent = WORLD_ACCENT[currentWorld] || WORLD_ACCENT.milkyway;
+    const wash = currentWorld !== 'milkyway'
+      ? `, linear-gradient(160deg, ${hexToRgba(accent[1], 0.14)}, transparent 55%)`
+      : '';
     const ov = document.createElement('div');
     ov.className = 'power-screen-overlay';
     ov.id = 'power-overlay-sp';
-    ov.style.cssText = `position:absolute;inset:0;pointer-events:none;z-index:8;background:${tint};transition:opacity 0.25s ease;opacity:0;`;
+    ov.style.cssText = `position:absolute;inset:0;pointer-events:none;z-index:8;background:${tint}${wash};transition:opacity 0.25s ease;opacity:0;`;
     game.appendChild(ov);
     requestAnimationFrame(()=>{ ov.style.opacity = '1'; });
     return ov;
@@ -5010,12 +5756,13 @@ const pauseSpace = (function(){
     showPowerOverlay('radial-gradient(circle, rgba(123,232,255,0.20), rgba(46,159,214,0.30))');
     showToast('❄️ Freeze Blast!');
     speak('Freeze Blast!');
+    const dur = powerDurationMs(FREEZE_MS, 'freeze');
     setTimeout(()=>{
       freezeActive = false;
       freezeInvadersVisual(false);
       hidePowerOverlay();
       if(running && !paused) scheduleSpawn();
-    }, FREEZE_MS);
+    }, dur);
   }
 
   // ---- Slow Field (200-coin ships): slows every invader on screen by 70%
@@ -5034,6 +5781,7 @@ const pauseSpace = (function(){
     showPowerOverlay('radial-gradient(circle, rgba(46,217,195,0.20), rgba(28,168,143,0.28))');
     showToast('🐌 Slow Field!');
     speak('Slow Field!');
+    const dur = powerDurationMs(SLOW_MS, 'slow');
     setTimeout(()=>{
       slowActive = false;
       invaders.forEach(c=>{
@@ -5043,7 +5791,7 @@ const pauseSpace = (function(){
         }
       });
       hidePowerOverlay();
-    }, SLOW_MS);
+    }, dur);
   }
 
   // Pops a given list of invaders with a bonus-scored explosion each,
@@ -5101,6 +5849,7 @@ const pauseSpace = (function(){
     showPowerOverlay('radial-gradient(circle, rgba(167,139,250,0.20), rgba(76,110,245,0.28))');
     showToast('⏳ Time Warp!');
     speak('Time warp!');
+    const dur = powerDurationMs(TIME_WARP_MS, 'timewarp');
     setTimeout(()=>{
       timeWarpActive = false;
       hidePowerOverlay();
@@ -5109,7 +5858,7 @@ const pauseSpace = (function(){
         if(!c.warpedBack) c.warpResumeAt = resumeAt;
         c.warpedBack = false;
       });
-    }, TIME_WARP_MS);
+    }, dur);
   }
 
   // ---- Chain Zap: strikes 2 lightning lines across the field (each can be
@@ -5194,8 +5943,9 @@ const pauseSpace = (function(){
     showToast('⚡ Chain Zap!');
     speak('Chain zap!');
     strikeBestLine();
+    const dur = powerDurationMs(CHAIN_ZAP_MS, 'chainzap');
     const iv = setInterval(strikeBestLine, CHAIN_ZAP_INTERVAL);
-    setTimeout(()=>clearInterval(iv), CHAIN_ZAP_MS);
+    setTimeout(()=>clearInterval(iv), dur);
   }
 
   // ---- Mirror Blaster: duplicates the ship into 4, stacked vertically
@@ -5275,7 +6025,8 @@ const pauseSpace = (function(){
   }
   function triggerMirrorBlasterPower(){
     if(mirrorBlasterUntil > performance.now()) return;
-    mirrorBlasterUntil = performance.now() + MIRROR_MS;
+    const dur = powerDurationMs(MIRROR_MS, 'mirror');
+    mirrorBlasterUntil = performance.now() + dur;
     spawnMirrorShips();
     showPowerOverlay('radial-gradient(circle, rgba(77,232,255,0.16), rgba(184,77,255,0.20))');
     showToast('🪞 Mirror Blaster!');
@@ -5283,7 +6034,7 @@ const pauseSpace = (function(){
     setTimeout(()=>{
       hidePowerOverlay();
       removeMirrorShips();
-    }, MIRROR_MS);
+    }, dur);
   }
 
   // ---- Magnet Pull: a big vacuum circle opens at the center of the field,
@@ -5305,8 +6056,9 @@ const pauseSpace = (function(){
     requestAnimationFrame(()=>circle.classList.add('show'));
     const centerX = game.clientWidth/2;
     const centerY = game.clientHeight/2;
+    const dur = powerDurationMs(MAGNET_PULL_MS, 'magnetpull');
     onScreen.forEach(c=>{
-      c.el.style.transition = `left ${MAGNET_PULL_MS}ms cubic-bezier(.55,0,.85,.35), top ${MAGNET_PULL_MS}ms cubic-bezier(.55,0,.85,.35), transform ${MAGNET_PULL_MS}ms cubic-bezier(.55,0,.85,.35)`;
+      c.el.style.transition = `left ${dur}ms cubic-bezier(.55,0,.85,.35), top ${dur}ms cubic-bezier(.55,0,.85,.35), transform ${dur}ms cubic-bezier(.55,0,.85,.35)`;
       c.el.style.left = (centerX-24)+'px';
       c.el.style.top = (centerY-24)+'px';
       c.el.style.transform = 'scale(0.35)';
@@ -5318,7 +6070,7 @@ const pauseSpace = (function(){
       freezeActive = false;
       popInvaderGroup(onScreen, 10);
       if(running && !paused) scheduleSpawn();
-    }, MAGNET_PULL_MS);
+    }, dur);
   }
 
   // ---- Ghost Touch: for a few seconds, tapping the A key always counts as
@@ -5332,11 +6084,12 @@ const pauseSpace = (function(){
     showPowerOverlay('radial-gradient(circle, rgba(234,244,255,0.14), rgba(167,139,250,0.18))');
     showToast('👻 Ghost Touch! Tap A!');
     speak('Ghost touch!');
+    const dur = powerDurationMs(GHOST_TOUCH_MS, 'ghosttouch');
     setTimeout(()=>{
       ghostTouchActive = false;
       if(keyEls['a']) keyEls['a'].classList.remove('ghost-touch-glow');
       hidePowerOverlay();
-    }, GHOST_TOUCH_MS);
+    }, dur);
   }
 
   // ---- Rainbow Beam: a single beam sweeps top-to-bottom over ~2s, popping
@@ -5350,9 +6103,10 @@ const pauseSpace = (function(){
     game.appendChild(beam);
     const groundY = game.clientHeight - 70;
     const startTime = performance.now();
+    const dur = powerDurationMs(RAINBOW_BEAM_MS, 'rainbowbeam');
     const popped = new Set();
     function step(now){
-      const t = Math.min(1, (now-startTime)/RAINBOW_BEAM_MS);
+      const t = Math.min(1, (now-startTime)/dur);
       const beamY = t * (groundY+40) - 20;
       beam.style.top = beamY+'px';
       invaders.forEach(c=>{
@@ -5383,6 +6137,23 @@ const pauseSpace = (function(){
     gainHeart();
   }
 
+  // Per-world movement feel: a speed multiplier (layered on top of
+  // difficulty) plus a gentle side-to-side drift for otherwise-"straight"
+  // invaders, so worlds read differently in how they move, not just how
+  // they look. Levels that already force zigzag (13+) are unaffected —
+  // drift only applies to invaders that would otherwise fall dead straight.
+  const WORLD_MOVE_MOD = {
+    milkyway:     { speedMult:1,    drift:0  },
+    blackhole:    { speedMult:0.95, drift:0  },
+    frozencomet:  { speedMult:0.9,  drift:14 },
+    moltencore:   { speedMult:1.15, drift:0  },
+    deepocean:    { speedMult:0.92, drift:10 },
+    desertwastes: { speedMult:1.05, drift:0  },
+    stormnebula:  { speedMult:1.1,  drift:22 },
+    fungalmoon:   { speedMult:0.88, drift:8  },
+    toxicswamp:   { speedMult:0.97, drift:6  },
+    crystalcaverns: { speedMult:1.0, drift:12 },
+  };
   function spawnInvader(){
     if(!running || paused) return;
     const cfg = LEVELS[level];
@@ -5414,7 +6185,8 @@ const pauseSpace = (function(){
     const isShiny = !isShielded && Math.random() < SHINY_CHANCE;
 
     const el = document.createElement('div');
-    el.className = 'invader ' + type.key + '-type' + (isElite ? ' elite' : '') + (isShielded ? ' shielded' : '') + (isZigzag ? ' zigzag' : '') + (isShiny ? ' shiny-invader' : '') + (currentWorld === 'blackhole' ? ' void-invader' : '');
+    const worldShape = WORLD_SHAPE_CLASS[currentWorld] || '';
+    el.className = 'invader ' + type.key + '-type' + (isElite ? ' elite' : '') + (isShielded ? ' shielded' : '') + (isZigzag ? ' zigzag' : '') + (isShiny ? ' shiny-invader' : '') + (worldShape ? ' ' + worldShape : '');
     if(isShiny){
       el.style.color = '#7A4A00';
     } else {
@@ -5452,7 +6224,8 @@ const pauseSpace = (function(){
 
     eye.appendChild(pup);
     el.appendChild(eye); el.appendChild(letterTxt);
-    buildInvaderFeature(el, type);
+    buildInvaderFeature(el, type, currentWorld);
+    applyTypeMotion(el, type);
     if(isShielded){
       const shieldIcon = document.createElement('div');
       shieldIcon.className = 'shield-icon';
@@ -5461,17 +6234,19 @@ const pauseSpace = (function(){
     }
     game.appendChild(el);
 
+    const worldMove = WORLD_MOVE_MOD[currentWorld] || WORLD_MOVE_MOD.milkyway;
+    const useDrift = !isZigzag && worldMove.drift > 0;
     const c = {
       id: idCounter++,
       letter, letters, shielded: isShielded, shieldIndex: 0,
-      moveType: isZigzag ? 'zigzag' : 'straight',
-      zigAmp: 26 + Math.random()*22,
+      moveType: isZigzag ? 'zigzag' : (useDrift ? 'drift' : 'straight'),
+      zigAmp: isZigzag ? (26 + Math.random()*22) : worldMove.drift,
       zigSeed: Math.random()*Math.PI*2,
       zigTime: 0,
       el, x, baseX: x, y:-70,
       revealed: false,
       spawnTime: performance.now(),
-      speed: cfg.speed * (0.85 + Math.random()*0.4) * diff.speedMult * (isZigzag ? 0.85 : 1) * (isShielded ? 0.8 : 1) * (slowActive ? SLOW_FACTOR : 1),
+      speed: cfg.speed * (0.85 + Math.random()*0.4) * diff.speedMult * worldMove.speedMult * (isZigzag ? 0.85 : 1) * (isShielded ? 0.8 : 1) * (slowActive ? SLOW_FACTOR : 1),
       color: isShiny ? '#FFD700' : type.color,
       typeKey: type.key,
       shiny: isShiny
@@ -5512,7 +6287,7 @@ const pauseSpace = (function(){
           // instead of falling, and can't land on the ground while it's active.
           c.y = Math.max(-70, c.y - c.speed);
           c.el.style.top = c.y+'px';
-          if(c.moveType === 'zigzag'){
+          if(c.moveType === 'zigzag' || c.moveType === 'drift'){
             c.zigTime += 1;
             const wobble = Math.sin(c.zigTime * 0.06 + c.zigSeed) * c.zigAmp;
             const nx = Math.max(6, Math.min(gw-66, c.baseX + wobble));
@@ -5534,7 +6309,7 @@ const pauseSpace = (function(){
           c.revealed = true;
           justRevealed = true;
         }
-        if(c.moveType === 'zigzag'){
+        if(c.moveType === 'zigzag' || c.moveType === 'drift'){
           c.zigTime += 1;
           const wobble = Math.sin(c.zigTime * 0.06 + c.zigSeed) * c.zigAmp;
           const nx = Math.max(6, Math.min(gw-66, c.baseX + wobble));
@@ -5722,12 +6497,10 @@ const pauseSpace = (function(){
     handleLetter(ch);
   });
 
-  Object.keys(keyEls).forEach(ch=>{
-    keyEls[ch].addEventListener('click', ()=>{
-      if(keyEls[ch].classList.contains('locked')) return;
-      handleLetter(ch);
-    });
-  });
+  // The on-screen keyboard (shown for easy/medium) is a visual guide
+  // only — it highlights which key to press next but is not itself
+  // clickable, so a mouse/touch tap can't fire the cannon the way a
+  // real keypress does. Hard mode hides it entirely (see startGame).
 
   function renderHearts(justLostIdx){
     heartsVal.innerHTML = '';
@@ -5756,6 +6529,7 @@ const pauseSpace = (function(){
     slowActive = false;
     ghostTouchActive = false;
     resetWorldEffect();
+    clearWorldAmbience();
     hidePowerOverlay();
     powerCharges = 0;
     updatePowerBadge();
@@ -5805,6 +6579,7 @@ const pauseSpace = (function(){
     slowActive = false;
     ghostTouchActive = false;
     resetWorldEffect();
+    clearWorldAmbience();
     hidePowerOverlay();
     powerCharges = 0;
     updatePowerBadge();
@@ -5832,7 +6607,8 @@ const pauseSpace = (function(){
     slowActive = false;
     ghostTouchActive = false;
     resetWorldEffect();
-    scheduleNextWorldEffect();
+    scheduleNextWorldEffect(true);
+    applyWorldAmbience(currentWorld);
     hidePowerOverlay();
     powerCharges = 0;
     updatePowerBadge();
