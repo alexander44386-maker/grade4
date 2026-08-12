@@ -631,7 +631,7 @@
   .invader.dune-invader .eye-single, .demo-invader.dune-invader .eye-single{
     top:19px;
     background:#3A1E06;
-    box-shadow:0 0 0 3px rgba(255,224,178,0.6) inset;
+    box-shadow:0 0 8px rgba(255,224,178,0.75), 0 0 0 3px rgba(255,224,178,0.6) inset;
   }
 
   /* Storm Nebula: jagged electric-burst silhouette, fast flicker jitter */
@@ -654,23 +654,25 @@
   }
   .invader.volt-invader .pupil-single, .demo-invader.volt-invader .pupil-single{ display:none; }
 
-  /* Fungal Moon: flattened mushroom-cap dome, slow breathing pulse */
-  .invader.spore-invader, .demo-invader.spore-invader{
-    border-radius: 55% 55% 15% 15% / 78% 78% 18% 18%;
-    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, spore-breathe 2.3s ease-in-out 0.3s infinite;
+  /* Pluto's Paradise: soft aurora-lit ice-heart shape (a nod to Pluto's
+     Tombaugh Regio "heart"), gentle glowing pulse with a slow hue drift
+     so it shimmers through the aurora palette instead of just one color. */
+  .invader.aurora-invader, .demo-invader.aurora-invader{
+    clip-path: polygon(50% 20%, 61% 8%, 75% 8%, 88% 20%, 88% 38%, 50% 85%, 12% 38%, 12% 20%, 25% 8%, 39% 8%);
+    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, aurora-shimmer 2.4s ease-in-out 0.3s infinite;
   }
-  .demo-invader.spore-invader{ animation:none; }
-  @keyframes spore-breathe{
-    0%,100%{ transform: scale(1); }
-    50%{ transform: scale(1.06); }
+  .demo-invader.aurora-invader{ animation:none; }
+  @keyframes aurora-shimmer{
+    0%,100%{ transform: scale(1); filter:brightness(1) hue-rotate(0deg); }
+    50%{ transform: scale(1.06); filter:brightness(1.3) hue-rotate(28deg); }
   }
-  .invader.spore-invader.elite, .demo-invader.spore-invader.elite{
-    border-radius: 50% 50% 8% 8% / 88% 88% 12% 12%;
+  .invader.aurora-invader.elite, .demo-invader.aurora-invader.elite{
+    clip-path: polygon(50% 12%, 64% -2%, 80% 4%, 92% 20%, 92% 42%, 50% 92%, 8% 42%, 8% 20%, 20% 4%, 36% -2%);
   }
-  .invader.spore-invader .eye-single, .demo-invader.spore-invader .eye-single{
-    top:20px;
+  .invader.aurora-invader .eye-single, .demo-invader.aurora-invader .eye-single{
+    top:24px;
     background:#0B1740;
-    box-shadow:0 0 8px rgba(180,255,150,0.7), 0 0 0 3px rgba(255,255,255,0.4) inset;
+    box-shadow:0 0 10px rgba(255,143,214,0.85), 0 0 0 3px rgba(124,255,196,0.5) inset;
   }
 
   /* Toxic Swamp: dripping ooze blob with a drawn-out drip tail */
@@ -1402,11 +1404,13 @@
     flex:none;
     /* Sticky + opaque so the close button always sits in its own bar
        above the panel content (e.g. the keys grid) instead of ever
-       scrolling underneath/overlapping it. */
+       scrolling underneath/overlapping it. Kept compact (smaller
+       padding/title) so on short panels like Difficulty it doesn't
+       loom over the row of buttons right below it. */
     position:sticky;
     top:0;
     margin:-24px -32px 0;
-    padding:24px 32px 10px;
+    padding:16px 32px 8px;
     background:#fff;
     border-radius:24px 24px 0 0;
     z-index:2;
@@ -1416,7 +1420,7 @@
   .setup-panel-title{
     font-family:'Baloo 2', sans-serif;
     font-weight:800;
-    font-size:19px;
+    font-size:17px;
     color:var(--ink);
     flex:1;
     min-width:0;
@@ -1437,7 +1441,7 @@
     flex:none;
   }
   #view-space .setup-panel-close{ background:#223066; color:#EAF4FF; }
-  .setup-panel-section{ display:none; flex-direction:column; gap:10px; align-items:center; text-align:center; }
+  .setup-panel-section{ display:none; flex-direction:column; gap:10px; align-items:center; text-align:center; margin-top:8px; }
   .setup-panel-section.active{ display:flex; }
 
   /* ---------- Captain name panel ---------- */
@@ -1493,7 +1497,7 @@
   .world-btn[data-world="deepocean"]{ --sw1:#7DE8FF; --sw2:#0E7A8C; }
   .world-btn[data-world="desertwastes"]{ --sw1:#FFE7A8; --sw2:#C98A2E; }
   .world-btn[data-world="stormnebula"]{ --sw1:#E8D9FF; --sw2:#7C3AED; }
-  .world-btn[data-world="fungalmoon"]{ --sw1:#C8FFB0; --sw2:#4F9A3F; }
+  .world-btn[data-world="plutoparadise"]{ --sw1:#7CFFC4; --sw2:#FF8FD6; }
   .world-btn[data-world="toxicswamp"]{ --sw1:#D4F27A; --sw2:#5B6E1A; }
   .world-btn[data-world="crystalcaverns"]{ --sw1:#FFD6F5; --sw2:#9C4DCC; }
   .world-btn[data-world="milkyway"]{ --sw1:#BFE8FF; --sw2:#4DE8FF; }
@@ -2116,18 +2120,24 @@
   .planet.stormnebula-look::after{
     border-color: rgba(244,224,77,0.55);
   }
-  /* Fungal Moon world: a damp, bioluminescent overgrown moon. */
-  .planet.fungalmoon-look{
-    background: radial-gradient(circle at 35% 35%, #C5E1A5, #6FBF73 55%, #2E4A24 100%);
-    box-shadow:0 0 30px 10px rgba(139,195,74,0.5), inset -10px -8px 18px rgba(0,0,0,0.35);
+  /* Pluto's Paradise world: swaps the sunny planet for a pale icy dwarf
+     planet glowing with shifting aurora light. */
+  .planet.plutoparadise-look{
+    background: radial-gradient(circle at 35% 35%, #EAF6FF, #B8D4FF 55%, #6B7FB3 100%);
+    box-shadow:0 0 30px 10px rgba(124,255,196,0.4), 0 0 20px 6px rgba(255,143,214,0.3), inset -10px -8px 18px rgba(0,0,0,0.25);
+    animation: plutoparadise-aurora 3.6s ease-in-out infinite;
   }
-  .planet.fungalmoon-look::after{
-    border-color: rgba(197,225,165,0.55);
+  @keyframes plutoparadise-aurora{
+    0%,100%{ filter:hue-rotate(0deg) brightness(1); }
+    50%{ filter:hue-rotate(20deg) brightness(1.12); }
+  }
+  .planet.plutoparadise-look::after{
+    border-color: rgba(255,214,240,0.55);
   }
   /* Toxic Swamp world: a murky, fog-shrouded bog moon. */
   .planet.toxicswamp-look{
-    background: radial-gradient(circle at 35% 35%, #D4C97A, #6B7A2F 55%, #2A2F0E 100%);
-    box-shadow:0 0 30px 10px rgba(195,216,37,0.45), inset -10px -8px 18px rgba(0,0,0,0.4);
+    background: radial-gradient(circle at 35% 35%, #E8E296, #6B7A2F 55%, #2A2F0E 100%);
+    box-shadow:0 0 32px 10px rgba(195,216,37,0.55), inset -10px -8px 18px rgba(0,0,0,0.4);
   }
   .planet.toxicswamp-look::after{
     border-color: rgba(212,201,122,0.5);
@@ -2211,7 +2221,7 @@
   #game-space.world-deepocean{ --star-color:#7DE8FF; --space-bg: linear-gradient(180deg, #063040 0%, #02141A 55%, #01090C 100%); }
   #game-space.world-desertwastes{ --star-color:#FFE7A8; --space-bg: linear-gradient(180deg, #2E2008 0%, #1A1206 55%, #0D0A03 100%); }
   #game-space.world-stormnebula{ --star-color:#E8D9FF; --space-bg: linear-gradient(180deg, #180A3A 0%, #0D0620 55%, #05030F 100%); }
-  #game-space.world-fungalmoon{ --star-color:#C8FFB0; --space-bg: linear-gradient(180deg, #0D2410 0%, #06140A 55%, #030A05 100%); }
+  #game-space.world-plutoparadise{ --star-color:#B8FFE0; --space-bg: linear-gradient(180deg, #0A1A2E 0%, #120A26 55%, #05030F 100%); }
   #game-space.world-toxicswamp{ --star-color:#D4F27A; --space-bg: linear-gradient(180deg, #1E2210 0%, #12140A 55%, #090A05 100%); }
   #game-space.world-crystalcaverns{ --star-color:#FFB8F0; --space-bg: linear-gradient(180deg, #2A0A38 0%, #180620 55%, #0A0210 100%); }
   /* ---------- Per-world ambient atmosphere: a tinted colour wash plus
@@ -2228,7 +2238,17 @@
   .world-ambience-tint.env-deepocean{ background: radial-gradient(circle at 50% 50%, rgba(77,232,255,0.12), transparent 65%), linear-gradient(180deg, rgba(4,30,40,0.2), rgba(4,20,26,0.4)); }
   .world-ambience-tint.env-desertwastes{ background: radial-gradient(circle at 50% 30%, rgba(240,217,168,0.16), transparent 60%), linear-gradient(180deg, rgba(80,50,10,0.12), rgba(40,25,5,0.28)); }
   .world-ambience-tint.env-stormnebula{ background: radial-gradient(circle at 50% 25%, rgba(185,131,255,0.18), transparent 55%), linear-gradient(180deg, rgba(20,10,50,0.2), rgba(10,5,25,0.4)); position:relative; }
-  .world-ambience-tint.env-fungalmoon{ background: radial-gradient(circle at 50% 40%, rgba(180,255,150,0.14), transparent 60%), linear-gradient(180deg, rgba(10,40,10,0.16), rgba(5,20,5,0.32)); }
+  .world-ambience-tint.env-plutoparadise{ background: radial-gradient(circle at 50% 25%, rgba(124,255,196,0.16), transparent 55%), radial-gradient(circle at 70% 55%, rgba(255,143,214,0.12), transparent 55%), linear-gradient(180deg, rgba(20,10,40,0.16), rgba(8,4,20,0.32)); position:relative; }
+  .world-ambience-tint.env-plutoparadise::after{
+    content:''; position:absolute; inset:0;
+    background: linear-gradient(120deg, transparent, rgba(124,255,196,0.14), transparent 60%);
+    opacity:0;
+    animation: amb-aurora-drift 6s ease-in-out infinite;
+  }
+  @keyframes amb-aurora-drift{
+    0%,100%{ opacity:0; transform:translateX(-10%); }
+    50%{ opacity:1; transform:translateX(10%); }
+  }
   .world-ambience-tint.env-toxicswamp{ background: radial-gradient(circle at 50% 60%, rgba(163,230,53,0.16), transparent 60%), linear-gradient(180deg, rgba(30,40,5,0.18), rgba(15,20,5,0.36)); }
   .world-ambience-tint.env-crystalcaverns{ background: radial-gradient(circle at 50% 30%, rgba(255,184,240,0.18), transparent 60%), linear-gradient(180deg, rgba(40,10,50,0.16), rgba(20,4,25,0.34)); }
   .world-ambience-tint.env-stormnebula::after{
@@ -2271,15 +2291,22 @@
   .amb-particle.amb-fall{ animation-name:amb-fall; animation-timing-function:linear; animation-iteration-count:infinite; }
   .amb-particle.amb-rise{ animation-name:amb-rise; animation-timing-function:linear; animation-iteration-count:infinite; }
   .amb-particle.amb-blow{ animation-name:amb-blow; animation-timing-function:linear; animation-iteration-count:infinite; }
-  .amb-void{ width:4px;height:4px; background:radial-gradient(circle,#C4B5FD,#7C3AED); border-radius:50%; box-shadow:0 0 6px #A78BFA; }
+  /* Brightness/glow pass: frozencomet's amb-snow (pure white) and
+     stormnebula's amb-spark (white-to-yellow + strong glow) read as
+     vivid against their dark backgrounds because their core color sits
+     far from the background hue. The other worlds' particles used a
+     mid-tone color close to their own background hue, so they blended
+     in and read "plain" — lightened cores + stronger glow radius fix
+     that without changing each world's palette identity. */
+  .amb-void{ width:4px;height:4px; background:radial-gradient(circle,#F3F0FF,#A78BFA); border-radius:50%; box-shadow:0 0 8px #C4B5FD, 0 0 14px rgba(124,58,237,0.65); }
   .amb-snow{ width:5px;height:5px; background:#fff; border-radius:50%; box-shadow:0 0 4px #fff; }
-  .amb-ember{ width:4px;height:4px; background:radial-gradient(circle,#FFD166,#FF6F3C); border-radius:50%; box-shadow:0 0 6px #FF9F45; }
-  .amb-bubble{ width:8px;height:8px; border:1px solid rgba(255,255,255,0.55); border-radius:50%; background:rgba(255,255,255,0.06); }
-  .amb-sand{ width:3px;height:3px; background:#E8B75A; border-radius:50%; }
+  .amb-ember{ width:4px;height:4px; background:radial-gradient(circle,#FFF3B0,#FF6F3C); border-radius:50%; box-shadow:0 0 8px #FFD166, 0 0 14px rgba(255,111,60,0.6); }
+  .amb-bubble{ width:8px;height:8px; border:1px solid rgba(200,245,255,0.75); border-radius:50%; background:rgba(200,245,255,0.14); box-shadow:0 0 6px rgba(125,211,252,0.6); }
+  .amb-sand{ width:3px;height:3px; background:radial-gradient(circle,#FFE7A8,#E8B75A); border-radius:50%; box-shadow:0 0 5px rgba(255,231,168,0.7); }
   .amb-spark{ width:3px;height:13px; background:linear-gradient(180deg,#fff,#F4E04D); box-shadow:0 0 6px #F4E04D; border-radius:2px; }
-  .amb-spore{ width:6px;height:6px; background:radial-gradient(circle,#E8FFD8,#8FE07A); border-radius:50%; opacity:0.85; }
-  .amb-goo{ width:6px;height:6px; background:radial-gradient(circle,#D8FFA0,#7CFC6A); border-radius:50%; box-shadow:0 0 5px #A3E635; }
-  .amb-crystal{ width:5px;height:5px; background:radial-gradient(circle,#FFFFFF,#E0AFFF); transform:rotate(45deg); box-shadow:0 0 6px #FFB8F0; }
+  .amb-aurora{ width:6px;height:6px; background:radial-gradient(circle,#EAFFF6,#7CFFC4); border-radius:50%; box-shadow:0 0 8px #FF8FD6, 0 0 14px rgba(124,255,196,0.6); }
+  .amb-goo{ width:6px;height:6px; background:radial-gradient(circle,#EEFFC0,#7CFC6A); border-radius:50%; box-shadow:0 0 8px #A3E635, 0 0 14px rgba(163,230,53,0.55); }
+  .amb-crystal{ width:5px;height:5px; background:radial-gradient(circle,#FFFFFF,#E0AFFF); transform:rotate(45deg); box-shadow:0 0 8px #FFB8F0, 0 0 14px rgba(224,175,255,0.55); }
 
   .cannon{
     position:absolute;
@@ -2468,12 +2495,12 @@
     background: repeating-linear-gradient(100deg, rgba(217,164,65,0.4) 0 26px, rgba(140,90,46,0.45) 26px 52px);
     animation: sand-sweep 1.5s linear infinite;
   }
-  .world-cloak-sweep.spore{
-    background: radial-gradient(circle at 30% 30%, rgba(139,195,74,0.4) 0 40px, transparent 41px),
-                radial-gradient(circle at 70% 60%, rgba(181,126,220,0.35) 0 50px, transparent 51px),
-                radial-gradient(circle at 50% 20%, rgba(139,195,74,0.3) 0 35px, transparent 36px),
-                rgba(78,140,63,0.22);
-    animation: spore-pulse 1.8s ease-in-out infinite;
+  .world-cloak-sweep.aurora{
+    background: radial-gradient(circle at 30% 30%, rgba(124,255,196,0.4) 0 40px, transparent 41px),
+                radial-gradient(circle at 70% 60%, rgba(255,143,214,0.35) 0 50px, transparent 51px),
+                radial-gradient(circle at 50% 20%, rgba(155,140,255,0.3) 0 35px, transparent 36px),
+                rgba(40,20,60,0.22);
+    animation: aurora-pulse 1.8s ease-in-out infinite;
   }
   .world-cloak-sweep.crystal{
     background: repeating-linear-gradient(135deg, rgba(255,184,240,0.35) 0 20px, rgba(156,77,204,0.4) 20px 40px);
@@ -2481,7 +2508,7 @@
   }
   @keyframes water-sweep{ 0%{ background-position:0 0; } 100%{ background-position:220px 110px; } }
   @keyframes sand-sweep{ 0%{ background-position:0 0; } 100%{ background-position:260px 40px; } }
-  @keyframes spore-pulse{ 0%,100%{ filter:blur(0px); opacity:0.9; } 50%{ filter:blur(2px); opacity:1; } }
+  @keyframes aurora-pulse{ 0%,100%{ filter:blur(0px); opacity:0.9; } 50%{ filter:blur(2px); opacity:1; } }
   @keyframes crystal-sweep{ 0%{ background-position:0 0; } 100%{ background-position:-200px 120px; } }
 
   /* ---------- Magnet Pull power: a big vacuum circle opens at the center
@@ -2509,8 +2536,11 @@
   }
   @keyframes magnet-pull-spin{ 0%{ filter:hue-rotate(0deg); } 100%{ filter:hue-rotate(360deg); } }
 
-  /* ---------- Rainbow Beam power: a full-width beam sweeps top to bottom,
-     popping anything it passes through. ---------- */
+  /* ---------- Rainbow Beam power: a full-width beam sweeps bottom to top,
+     popping anything it passes through. (Top-to-bottom used to chase
+     falling invaders in the same direction they were already moving, so
+     it rarely caught up to anything — sweeping upward crosses every
+     invader's path instead.) ---------- */
   .rainbow-beam-sweep{
     position:absolute;
     left:0; right:0;
@@ -3095,7 +3125,7 @@
                 <button class="diff-btn world-btn world-locked" data-world="deepocean" data-cost="300" data-name="Deep Ocean">🌊 Deep Ocean <span class="world-lock-tag">🔒 300</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="desertwastes" data-cost="300" data-name="Desert Wastes">🏜️ Desert Wastes <span class="world-lock-tag">🔒 300</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="stormnebula" data-cost="400" data-name="Storm Nebula">⚡ Storm Nebula <span class="world-lock-tag">🔒 400</span></button>
-                <button class="diff-btn world-btn world-locked" data-world="fungalmoon" data-cost="400" data-name="Fungal Moon">🍄 Fungal Moon <span class="world-lock-tag">🔒 400</span></button>
+                <button class="diff-btn world-btn world-locked" data-world="plutoparadise" data-cost="400" data-name="Pluto's Paradise">🪐 Pluto's Paradise <span class="world-lock-tag">🔒 400</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="toxicswamp" data-cost="400" data-name="Toxic Swamp">☠️ Toxic Swamp <span class="world-lock-tag">🔒 400</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="crystalcaverns" data-cost="450" data-name="Crystal Caverns">💎 Crystal Caverns <span class="world-lock-tag">🔒 450</span></button>
               </div>
@@ -3529,7 +3559,7 @@ const WORLD_VOICE_STYLES = {
   deepocean:    { pitch:0.90, rate:0.85, prefer:/female|samantha|victoria|karen|zira|moira|tessa/i },
   desertwastes: { pitch:1.00, rate:0.95, prefer:/male|daniel|fred|alex|david|george/i },
   stormnebula:  { pitch:1.35, rate:1.20, prefer:/female|samantha|victoria|karen|zira|fiona/i },
-  fungalmoon:   { pitch:1.55, rate:1.10, prefer:/child|kid|female|samantha|karen|zira/i },
+  plutoparadise:{ pitch:1.45, rate:1.05, prefer:/child|kid|female|samantha|karen|zira/i },
   toxicswamp:   { pitch:0.75, rate:0.90, prefer:/male|daniel|fred|alex|david|george/i },
   crystalcaverns: { pitch:1.45, rate:1.00, prefer:/female|samantha|victoria|karen|zira|fiona|moira|child|kid/i },
 };
@@ -3725,18 +3755,18 @@ const BOSS_THEMES = {
     ],
     overlayBg:'radial-gradient(circle at 50% 40%, rgba(139,92,246,0.55), rgba(10,6,30,0.9))', hpGradient:'linear-gradient(90deg, #F4E04D, #8B5CF6)', glow:'rgba(244,224,77,0.8)'
   },
-  fungalmoon: {
-    emojis:['🍄','🦠','👹','🕷️','🐸','🌿','☠️'],
+  plutoparadise: {
+    emojis:['🪐','💗','❄️','✨','🌌','💫','🩵'],
     bosses:[
-      { name:'Sporemaster', taunt:'Sporemaster grows a typo for every mistake, {captain}!' },
-      { name:'Mildew King', taunt:'The Mildew King spreads slow across your screen, {captain}!' },
-      { name:'Rotfang',     taunt:'Rotfang festers on hesitant spellers, {captain}!' },
-      { name:'Mosshide',    taunt:'Mosshide creeps up before you finish typing, {captain}!' },
-      { name:'Puffshroom',  taunt:'Puffshroom pops clouds of confusion, {captain}!' },
-      { name:'Blightclaw',  taunt:'Blightclaw wilts weak spelling on contact, {captain}!' },
-      { name:'Fungalisk',   taunt:'Fungalisk turns slow typers to stone moss, {captain}!' },
+      { name:'Auroraqueen', taunt:'Auroraqueen lights up every mistake, {captain}!' },
+      { name:'Frostheart',  taunt:'Frostheart glows brighter with your hesitation, {captain}!' },
+      { name:'Prismwing',   taunt:'Prismwing dazzles slow spellers, {captain}!' },
+      { name:'Duskveil',    taunt:'Duskveil drifts closer while you think, {captain}!' },
+      { name:'Glimmermaw',  taunt:'Glimmermaw feasts on typos, {captain}!' },
+      { name:'Starbloom',   taunt:'Starbloom blooms brighter with every miss, {captain}!' },
+      { name:'Heartlight',  taunt:'Heartlight beats faster than your keystrokes, {captain}!' },
     ],
-    overlayBg:'radial-gradient(circle at 50% 40%, rgba(139,195,74,0.55), rgba(10,20,4,0.9))', hpGradient:'linear-gradient(90deg, #C5E1A5, #6FBF73)', glow:'rgba(197,225,165,0.8)'
+    overlayBg:'radial-gradient(circle at 50% 40%, rgba(124,255,196,0.5), rgba(20,10,40,0.9))', hpGradient:'linear-gradient(90deg, #FF8FD6, #7CFFC4)', glow:'rgba(255,143,214,0.8)'
   },
   toxicswamp: {
     emojis:['☠️','🐊','🦟','🧪','🐍','🦟','💀'],
@@ -4165,11 +4195,11 @@ const pauseSpace = (function(){
     { key:'blip',  name:'Shadenoid', color:'#8B5CF6' },
     { key:'volt',  name:'Gloomtrix', color:'#C4B5FD' },
     { key:'magno', name:'Duskoid',   color:'#7C3AED' },
-    { key:'crag',  name:'Umbroid',   color:'#6D28D9' },
-    { key:'nebu',  name:'Eventide',  color:'#5B21B6' },
+    { key:'crag',  name:'Umbroid',   color:'#8B5FE8' },
+    { key:'nebu',  name:'Eventide',  color:'#7440D6' },
   ];
   const BLACKHOLE_ELITE_ITYPES = [
-    { key:'grym',  name:'Nightlord', color:'#4C1D95' },
+    { key:'grym',  name:'Nightlord', color:'#6B32C4' },
     { key:'obsi',  name:'Voidstone', color:'#C4B5FD' },
     { key:'ferro', name:'Dreadalloy',color:'#9CA3AF' },
     { key:'venx',  name:'Hexnox',    color:'#A78BFA' },
@@ -4266,39 +4296,40 @@ const pauseSpace = (function(){
     { key:'nyx',   name:'Cyclonestar',color:'#B983FF' },
   ];
 
-  // Fungal Moon: sickly green/purple palette.
-  const FUNGALMOON_ITYPES = [
-    { key:'zorp',  name:'Sporeling',  color:'#8BC34A' },
-    { key:'blip',  name:'Mycomite',   color:'#B57EDC' },
-    { key:'volt',  name:'Fungrot',    color:'#6FBF73' },
-    { key:'magno', name:'Toxidrone',  color:'#9575CD' },
-    { key:'crag',  name:'Rotcap',     color:'#4E8C3F' },
-    { key:'nebu',  name:'Spraywisp',  color:'#C5E1A5' },
+  // Pluto's Paradise: pastel aurora palette — mint, pink, and violet light
+  // over an icy dwarf-planet backdrop.
+  const PLUTOPARADISE_ITYPES = [
+    { key:'zorp',  name:'Auroraling',  color:'#7CFFC4' },
+    { key:'blip',  name:'Glimmerwisp', color:'#FF8FD6' },
+    { key:'volt',  name:'Prismray',    color:'#A8FFE0' },
+    { key:'magno', name:'Duskheart',   color:'#9B8CFF' },
+    { key:'crag',  name:'Frostbloom',  color:'#6FE0B8' },
+    { key:'nebu',  name:'Starveil',    color:'#FFD6F0' },
   ];
-  const FUNGALMOON_ELITE_ITYPES = [
-    { key:'grym',  name:'Mold Lord',  color:'#4A6741' },
-    { key:'obsi',  name:'Sporestone', color:'#C5E1A5' },
-    { key:'ferro', name:'Rotbark',    color:'#7CB342' },
-    { key:'venx',  name:'Mildewfang', color:'#9575CD' },
-    { key:'scorc', name:'Blightroot', color:'#66BB6A' },
-    { key:'nyx',   name:'Puffcloud',  color:'#B57EDC' },
+  const PLUTOPARADISE_ELITE_ITYPES = [
+    { key:'grym',  name:'Aurora Sovereign', color:'#4FD9A8' },
+    { key:'obsi',  name:'Glacierheart',     color:'#FFE8F5' },
+    { key:'ferro', name:'Ribbonguard',      color:'#C4B8FF' },
+    { key:'venx',  name:'Prismfang',        color:'#FF6FC4' },
+    { key:'scorc', name:'Duskglow',         color:'#8B7AFF' },
+    { key:'nyx',   name:'Heartstar',        color:'#7CFFC4' },
   ];
 
   // Toxic Swamp: mustard yellow/brown palette.
   const TOXICSWAMP_ITYPES = [
     { key:'zorp',  name:'Bogling',    color:'#B5A642' },
-    { key:'blip',  name:'Mudspike',   color:'#8D6E3A' },
+    { key:'blip',  name:'Mudspike',   color:'#A8853F' },
     { key:'volt',  name:'Gasbloat',   color:'#C3D825' },
-    { key:'magno', name:'Sludgoid',   color:'#6B7A2F' },
-    { key:'crag',  name:'Croakfang',  color:'#556B2F' },
+    { key:'magno', name:'Sludgoid',   color:'#8A9C3F' },
+    { key:'crag',  name:'Croakfang',  color:'#6E8A3A' },
     { key:'nebu',  name:'Vaporwisp',  color:'#D4C97A' },
   ];
   const TOXICSWAMP_ELITE_ITYPES = [
-    { key:'grym',  name:'Bog Lord',   color:'#4A5A1A' },
+    { key:'grym',  name:'Bog Lord',   color:'#6B7E2A' },
     { key:'obsi',  name:'Muckstone',  color:'#D4C97A' },
-    { key:'ferro', name:'Rustfang',   color:'#8D6E3A' },
+    { key:'ferro', name:'Rustfang',   color:'#A8853F' },
     { key:'venx',  name:'Venomtail',  color:'#9CB520' },
-    { key:'scorc', name:'Scumlord',   color:'#6B7A2F' },
+    { key:'scorc', name:'Scumlord',   color:'#8A9C3F' },
     { key:'nyx',   name:'Miasmastar', color:'#C3D825' },
   ];
 
@@ -4328,7 +4359,7 @@ const pauseSpace = (function(){
     deepocean:    { label:'Deep Ocean',        types: DEEPOCEAN_ITYPES,    eliteTypes: DEEPOCEAN_ELITE_ITYPES },
     desertwastes: { label:'Desert Wastes',     types: DESERTWASTES_ITYPES, eliteTypes: DESERTWASTES_ELITE_ITYPES },
     stormnebula:  { label:'Storm Nebula',      types: STORMNEBULA_ITYPES,  eliteTypes: STORMNEBULA_ELITE_ITYPES },
-    fungalmoon:   { label:'Fungal Moon',       types: FUNGALMOON_ITYPES,   eliteTypes: FUNGALMOON_ELITE_ITYPES },
+    plutoparadise: { label:'Pluto\'s Paradise', types: PLUTOPARADISE_ITYPES, eliteTypes: PLUTOPARADISE_ELITE_ITYPES },
     toxicswamp:   { label:'Toxic Swamp',       types: TOXICSWAMP_ITYPES,   eliteTypes: TOXICSWAMP_ELITE_ITYPES },
     crystalcaverns: { label:'Crystal Caverns', types: CRYSTALCAVERNS_ITYPES, eliteTypes: CRYSTALCAVERNS_ELITE_ITYPES },
   };
@@ -4360,7 +4391,7 @@ const pauseSpace = (function(){
     deepocean:    { kind:'cloak',  sweepClass:'water',              toast:'🌊 A wave hides the invaders!' },
     desertwastes: { kind:'cloak',  sweepClass:'sand',                toast:'🏜️ A sandstorm blinds you!' },
     stormnebula:  { kind:'player', statusClass:'status-shocked',   toast:'⚡ Zapped! Controls scrambled!', tint:'radial-gradient(circle, rgba(244,224,77,0.22), rgba(20,10,50,0.4))' },
-    fungalmoon:   { kind:'cloak',  sweepClass:'spore',              toast:'🍄 A spore cloud blinds you!' },
+    plutoparadise: { kind:'cloak',  sweepClass:'aurora',              toast:'✨ An aurora mist blinds you!' },
     toxicswamp:   { kind:'player', statusClass:'status-poisoned',  toast:'☠️ Poisoned! Vision blurring!', tint:'radial-gradient(circle, rgba(195,216,37,0.22), rgba(50,60,10,0.35))' },
     crystalcaverns: { kind:'cloak', sweepClass:'crystal',          toast:'💎 A crystal glare blinds you!' },
   };
@@ -4463,7 +4494,7 @@ const pauseSpace = (function(){
     deepocean:    { cls:'amb-rise', look:'amb-bubble', count:10 },
     desertwastes: { cls:'amb-blow', look:'amb-sand',   count:14 },
     stormnebula:  { cls:'amb-fall', look:'amb-spark',  count:8  },
-    fungalmoon:   { cls:'amb-rise', look:'amb-spore',  count:10 },
+    plutoparadise: { cls:'amb-rise', look:'amb-aurora', count:12 },
     toxicswamp:   { cls:'amb-rise', look:'amb-goo',    count:10 },
     crystalcaverns: { cls:'amb-rise', look:'amb-crystal', count:12 },
   };
@@ -4621,7 +4652,7 @@ const pauseSpace = (function(){
   const WORLD_SHAPE_CLASS = {
     milkyway: '', blackhole: 'void-invader', frozencomet: 'frost-invader',
     moltencore: 'magma-invader', deepocean: 'tide-invader', desertwastes: 'dune-invader',
-    stormnebula: 'volt-invader', fungalmoon: 'spore-invader', toxicswamp: 'bog-invader',
+    stormnebula: 'volt-invader', plutoparadise: 'aurora-invader', toxicswamp: 'bog-invader',
     crystalcaverns: 'gem-invader'
   };
   const NO_PUPIL_WORLDS = ['blackhole', 'frozencomet', 'stormnebula', 'crystalcaverns'];
@@ -4747,7 +4778,7 @@ const pauseSpace = (function(){
   // decorative planet) between the different unlocked worlds.
   const worldRowEl = document.getElementById('world-row-sp');
   const planetEl = document.querySelector('#view-space .planet');
-  const WORLD_PLANET_LOOKS = ['blackhole-look', 'frozencomet-look', 'moltencore-look', 'deepocean-look', 'desertwastes-look', 'stormnebula-look', 'fungalmoon-look', 'toxicswamp-look', 'crystalcaverns-look'];
+  const WORLD_PLANET_LOOKS = ['blackhole-look', 'frozencomet-look', 'moltencore-look', 'deepocean-look', 'desertwastes-look', 'stormnebula-look', 'plutoparadise-look', 'toxicswamp-look', 'crystalcaverns-look'];
   // Two-stop accent gradient per world, reused for the in-game HUD chips
   // (level/streak) so the UI chrome itself feels tied to the current
   // world instead of always being the same neutral blue.
@@ -4759,11 +4790,11 @@ const pauseSpace = (function(){
     deepocean:    ['#7DE8FF', '#0E7A8C'],
     desertwastes: ['#FFE7A8', '#C98A2E'],
     stormnebula:  ['#E8D9FF', '#7C3AED'],
-    fungalmoon:   ['#C8FFB0', '#4F9A3F'],
+    plutoparadise:['#7CFFC4', '#FF8FD6'],
     toxicswamp:   ['#D4F27A', '#5B6E1A'],
     crystalcaverns: ['#FFB8F0', '#9C4DCC'],
   };
-  const WORLD_STAR_CLASSES = ['world-blackhole','world-frozencomet','world-moltencore','world-deepocean','world-desertwastes','world-stormnebula','world-fungalmoon','world-toxicswamp','world-crystalcaverns'];
+  const WORLD_STAR_CLASSES = ['world-blackhole','world-frozencomet','world-moltencore','world-deepocean','world-desertwastes','world-stormnebula','world-plutoparadise','world-toxicswamp','world-crystalcaverns'];
   function applyWorldAccent(world){
     const accent = WORLD_ACCENT[world] || WORLD_ACCENT.milkyway;
     view.style.setProperty('--world-accent-1', accent[0]);
@@ -4787,7 +4818,7 @@ const pauseSpace = (function(){
       else if(world === 'deepocean') planetEl.classList.add('deepocean-look');
       else if(world === 'desertwastes') planetEl.classList.add('desertwastes-look');
       else if(world === 'stormnebula') planetEl.classList.add('stormnebula-look');
-      else if(world === 'fungalmoon') planetEl.classList.add('fungalmoon-look');
+      else if(world === 'plutoparadise') planetEl.classList.add('plutoparadise-look');
       else if(world === 'toxicswamp') planetEl.classList.add('toxicswamp-look');
       else if(world === 'crystalcaverns') planetEl.classList.add('crystalcaverns-look');
     }
@@ -5177,7 +5208,7 @@ const pauseSpace = (function(){
     deepocean:    { wave:'sine',     startMul:1.2, endMul:0.9,  dur:0.24, wobble:true },       // watery warble/bubble
     desertwastes: { wave:'square',   startMul:2.0, endMul:1.8,  dur:0.08 },                    // short dry percussive click
     stormnebula:  { wave:'sawtooth', startMul:2.4, endMul:0.9,  dur:0.10, detune:22 },          // sharp electric crackle
-    fungalmoon:   { wave:'sine',     startMul:0.8, endMul:0.5,  dur:0.22, wobble:true, detune:-8 }, // low squishy warble
+    plutoparadise:{ wave:'sine',     startMul:1.6, endMul:1.1,  dur:0.16 }, // bright airy aurora chime
     toxicswamp:   { wave:'square',   startMul:1.1, endMul:0.4,  dur:0.18, wobble:true },        // sputtering, uneven drop
     crystalcaverns: { wave:'triangle', startMul:2.6, endMul:2.0, dur:0.11, detune:16 },          // crisp glassy chime, shimmery
   };
@@ -5284,7 +5315,7 @@ const pauseSpace = (function(){
     deepocean:    { freq:110, type:'sine',     lfoRate:0.2,  lfoDepth:15, vol:0.045 },
     desertwastes: { freq:130, type:'triangle', lfoRate:0.1,  lfoDepth:5,  vol:0.035 },
     stormnebula:  { freq:180, type:'sawtooth', lfoRate:6,    lfoDepth:30, vol:0.03 },
-    fungalmoon:   { freq:140, type:'sine',     lfoRate:0.5,  lfoDepth:12, vol:0.04 },
+    plutoparadise:{ freq:220, type:'sine',     lfoRate:0.4,  lfoDepth:15, vol:0.035 },
     toxicswamp:   { freq:95,  type:'square',   lfoRate:1.2,  lfoDepth:10, vol:0.028 },
     crystalcaverns: { freq:340, type:'triangle', lfoRate:0.6, lfoDepth:25, vol:0.028 },
   };
@@ -5700,7 +5731,7 @@ const pauseSpace = (function(){
     blackhole:    { timewarp: 1.4 },
     stormnebula:  { mirror: 1.3 },
     desertwastes: { ghosttouch: 1.3 },
-    fungalmoon:   { magnetpull: 1.3 },
+    plutoparadise:{ magnetpull: 1.3 },
     toxicswamp:   { rainbowbeam: 1.3 },
     moltencore:   { chainzap: 1.3 },
     crystalcaverns: { explode: 1.3 },
@@ -6039,9 +6070,12 @@ const pauseSpace = (function(){
 
   // ---- Magnet Pull: a big vacuum circle opens at the center of the field,
   // every on-screen invader gets yanked toward it (movement paused via
-  // freezeActive so the pull can't be interrupted by landings), then the
-  // whole pulled-in group pops together. ----
+  // freezeActive so the pull can't be interrupted by landings). The yank
+  // itself is quick (PULL_ANIM_MS) so it reads as a snappy vacuum grab
+  // rather than a slow drift — the full power duration is still spent
+  // holding everything gathered at the center before it pops.
   const MAGNET_PULL_MS = 5000;
+  const PULL_ANIM_MS = 550;
   function triggerMagnetPullPower(){
     if(freezeActive) return;
     const onScreen = invaders.filter(c=>!c.popping && !c.missed);
@@ -6057,8 +6091,9 @@ const pauseSpace = (function(){
     const centerX = game.clientWidth/2;
     const centerY = game.clientHeight/2;
     const dur = powerDurationMs(MAGNET_PULL_MS, 'magnetpull');
+    const pullMs = Math.min(PULL_ANIM_MS, dur);
     onScreen.forEach(c=>{
-      c.el.style.transition = `left ${dur}ms cubic-bezier(.55,0,.85,.35), top ${dur}ms cubic-bezier(.55,0,.85,.35), transform ${dur}ms cubic-bezier(.55,0,.85,.35)`;
+      c.el.style.transition = `left ${pullMs}ms cubic-bezier(.34,1.56,.64,1), top ${pullMs}ms cubic-bezier(.34,1.56,.64,1), transform ${pullMs}ms cubic-bezier(.34,1.56,.64,1)`;
       c.el.style.left = (centerX-24)+'px';
       c.el.style.top = (centerY-24)+'px';
       c.el.style.transform = 'scale(0.35)';
@@ -6092,8 +6127,10 @@ const pauseSpace = (function(){
     }, dur);
   }
 
-  // ---- Rainbow Beam: a single beam sweeps top-to-bottom over ~2s, popping
-  // any invader it passes through along the way. ----
+  // ---- Rainbow Beam: a single beam sweeps bottom-to-top over ~2s, popping
+  // any invader it passes through along the way. Sweeping upward — against
+  // the direction invaders fall — guarantees it crosses paths with
+  // everything on screen instead of just chasing them downward. ----
   const RAINBOW_BEAM_MS = 5000;
   function triggerRainbowBeamPower(){
     showToast('🌈 Rainbow Beam!');
@@ -6107,7 +6144,7 @@ const pauseSpace = (function(){
     const popped = new Set();
     function step(now){
       const t = Math.min(1, (now-startTime)/dur);
-      const beamY = t * (groundY+40) - 20;
+      const beamY = (1-t) * (groundY+40) - 20;
       beam.style.top = beamY+'px';
       invaders.forEach(c=>{
         if(c.popping || c.missed || popped.has(c.id)) return;
@@ -6150,7 +6187,7 @@ const pauseSpace = (function(){
     deepocean:    { speedMult:0.92, drift:10 },
     desertwastes: { speedMult:1.05, drift:0  },
     stormnebula:  { speedMult:1.1,  drift:22 },
-    fungalmoon:   { speedMult:0.88, drift:8  },
+    plutoparadise:{ speedMult:0.85, drift:10 },
     toxicswamp:   { speedMult:0.97, drift:6  },
     crystalcaverns: { speedMult:1.0, drift:12 },
   };
