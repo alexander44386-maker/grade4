@@ -242,7 +242,7 @@
     flex:none;
     box-shadow:0 0 12px rgba(77,232,255,0.6);
   }
-  #title-sp{ cursor:pointer; user-select:none; }
+  #invaders-title-sp{ cursor:pointer; user-select:none; }
   .dev-mode-badge{
     display:none;
     font-family:'Baloo 2', sans-serif;
@@ -258,7 +258,7 @@
     box-shadow:0 0 8px rgba(92,255,143,0.6);
     animation: dev-badge-pulse 1.6s ease-in-out infinite;
   }
-  body.dev-mode-active .dev-mode-badge{ display:inline-block; }
+  body.dev-mode-active .dev-mode-badge{ display:inline-block; cursor:pointer; }
   @keyframes dev-badge-pulse{
     0%,100%{ opacity:0.85; transform:scale(1); }
     50%{ opacity:1; transform:scale(1.06); }
@@ -2946,7 +2946,7 @@
       <div class="shooting-star"></div>
 
       <header>
-        <h1 id="title-sp" title="Psst..."><span class="rocket-badge">🚀</span>Galaxy Blaster<span class="dev-mode-badge" id="dev-mode-badge-sp">DEV</span></h1>
+        <h1 id="title-sp"><span class="rocket-badge">🚀</span>Galaxy Blaster</h1>
         <div class="stat-row">
           <div class="stat level-chip"><span class="label">LEVEL</span><span id="level-val-sp">1</span></div>
           <div class="stat diff-chip"><span class="label">MODE</span><span id="diff-val-sp">Medium</span></div>
@@ -2962,7 +2962,7 @@
         <div class="cannon"><div class="base"></div><div class="barrel"></div></div>
         <div class="intro" id="intro-sp">
           <div class="demo-row" id="demo-row-sp"></div>
-          <h2>Blast the Alien Invaders!</h2>
+          <h2 id="invaders-title-sp" title="Psst...">Blast the Alien Invaders!<span class="dev-mode-badge" id="dev-mode-badge-sp" title="Click to add coins">DADDY MODE</span></h2>
           <p>Alien invaders are dropping in from deep space, each one carrying a letter. Zap it with your laser cannon by pressing the matching key before it lands!</p>
           <div class="setup-menu" id="setup-menu-sp">
             <button class="setup-btn" id="setup-btn-captain" data-panel="captain">
@@ -3996,15 +3996,15 @@ const pauseSpace = (function(){
   let cannonReturnTimer = null;
 
   // ============================================================
-  // Dev mode: click the "Galaxy Blaster" title (top left), enter the
+  // Dev mode: click the "Blast the Alien Invaders!" subtitle, enter the
   // password, and every ship/world/power in the setup menu becomes
   // pickable without spending coins — nothing is actually purchased or
-  // saved to storage, so clicking the title again just turns the CSS/JS
+  // saved to storage, so clicking the subtitle again just turns the CSS/JS
   // override back off and everything returns to its real locked state.
   // ============================================================
   const DEV_MODE_PASSWORD = 'bcd1';
   let galaxyDevMode = false;
-  const titleEl = document.getElementById('title-sp');
+  const titleEl = document.getElementById('invaders-title-sp');
   function setDevMode(active){
     galaxyDevMode = active;
     document.body.classList.toggle('dev-mode-active', active);
@@ -4024,6 +4024,31 @@ const pauseSpace = (function(){
       } else {
         showToast('❌ Wrong password');
       }
+    });
+  }
+  // ------------------------------------------------------------
+  // Dev mode coin grant: while dev mode is active, the "DADDY MODE"
+  // pill itself is a separate click target (stopPropagation keeps it
+  // from also toggling dev mode off via the subtitle's own handler).
+  // Coins are added through the same addCoins() used everywhere else,
+  // so the amount is written to localStorage immediately and persists
+  // across sessions/reloads exactly like normally-earned coins.
+  // ------------------------------------------------------------
+  const devModeBadgeEl = document.getElementById('dev-mode-badge-sp');
+  if(devModeBadgeEl){
+    devModeBadgeEl.addEventListener('click', (e)=>{
+      if(!galaxyDevMode) return;
+      e.stopPropagation();
+      const entered = window.prompt('Add how many coins?', '1000');
+      if(entered === null) return; // cancelled
+      const amount = parseInt(entered, 10);
+      if(!Number.isFinite(amount) || amount === 0){
+        showToast('❌ Enter a valid number');
+        return;
+      }
+      const total = addCoins(amount);
+      updateCoinBadge();
+      showToast(`💰 +${amount} coins added (total: ${total})`);
     });
   }
   function moveCannonTo(targetX){
