@@ -3971,22 +3971,25 @@ function saveFractionTinikProblems(m) {
   queueCloudSync();
 }
 /* =========================================================
-   SPELLING — a small, fixed practice sheet under Questions
-   (separate from the General Knowledge spelling checklist).
-   Exactly 3 levels, 3 words each. Level 1 is easy everyday
-   words, building up to Level 3, which is still ordinary Grade 4
-   vocabulary — noticeably easier than the General "English
-   Spelling Words" reference list (e.g. "necessary", "vegetable",
-   "government", "opportunity"). Words are fixed, not randomly
-   generated, since this is a curated list rather than a
-   number-fact drill.
+   SPELLING TINIK — same numbered-set/leveled-worksheet shape as
+   Math Tinik, Time Tinik & Fraction Tinik: ten numbered sets, each
+   with the same 3 fixed levels, and a "Generate New Words" button
+   that reshuffles. Unlike the number-fact drills, each level draws
+   its 3 words per set from a fixed word bank (curated words can't
+   be procedurally generated), so "generating" means re-sampling 3
+   words at random from that level's bank instead of computing new
+   numbers. Level 1 is easy everyday words, building up to Level 3,
+   which is still ordinary Grade 4 vocabulary — noticeably easier
+   than the General "English Spelling Words" reference list (e.g.
+   "necessary", "vegetable", "government", "opportunity").
    ========================================================= */
-const SPELLING_LEVELS = [{
+const SPELLING_TINIK_SET_COUNT = 10;
+const SPELLING_TINIK_LEVELS = [{
   id: 1,
   title: "Easy Words",
   short: "everyday words",
   icon: "🔤",
-  words: [{
+  bank: [{
     word: "circle",
     clue: "a round shape with no corners"
   }, {
@@ -3995,13 +3998,34 @@ const SPELLING_LEVELS = [{
   }, {
     word: "kitchen",
     clue: "the room where meals are cooked"
+  }, {
+    word: "garden",
+    clue: "a place where plants grow"
+  }, {
+    word: "window",
+    clue: "you look through it to see outside"
+  }, {
+    word: "pencil",
+    clue: "you write with it"
+  }, {
+    word: "yellow",
+    clue: "the color of a banana"
+  }, {
+    word: "autumn",
+    clue: "the season that comes after summer"
+  }, {
+    word: "jacket",
+    clue: "you wear it to stay warm"
+  }, {
+    word: "bottle",
+    clue: "a container for liquid"
   }]
 }, {
   id: 2,
   title: "Medium Words",
   short: "common two-syllable words",
   icon: "✏️",
-  words: [{
+  bank: [{
     word: "special",
     clue: "not ordinary; important in its own way"
   }, {
@@ -4010,13 +4034,34 @@ const SPELLING_LEVELS = [{
   }, {
     word: "answer",
     clue: "what you give after solving a question"
+  }, {
+    word: "sudden",
+    clue: "happening quickly, without warning"
+  }, {
+    word: "purchase",
+    clue: "to buy something"
+  }, {
+    word: "journey",
+    clue: "a trip from one place to another"
+  }, {
+    word: "package",
+    clue: "a wrapped box or parcel"
+  }, {
+    word: "capture",
+    clue: "to catch or take hold of"
+  }, {
+    word: "mistake",
+    clue: "an error, something done wrong"
+  }, {
+    word: "remember",
+    clue: "to keep something in your memory"
   }]
 }, {
   id: 3,
   title: "Challenge Words",
   short: "common Grade 4 spelling words",
   icon: "📝",
-  words: [{
+  bank: [{
     word: "afternoon",
     clue: "the part of the day after noon, before evening"
   }, {
@@ -4025,8 +4070,397 @@ const SPELLING_LEVELS = [{
   }, {
     word: "important",
     clue: "having great meaning or value"
+  }, {
+    word: "elephant",
+    clue: "a huge animal with a long trunk"
+  }, {
+    word: "chocolate",
+    clue: "a sweet treat made from cacao"
+  }, {
+    word: "umbrella",
+    clue: "you use it to stay dry in the rain"
+  }, {
+    word: "continue",
+    clue: "to keep going without stopping"
+  }, {
+    word: "mountain",
+    clue: "a very tall landform, taller than a hill"
+  }, {
+    word: "birthday",
+    clue: "the yearly anniversary of the day you were born"
+  }, {
+    word: "holiday",
+    clue: "a special day for celebration or rest"
   }]
 }];
+// Fisher-Yates shuffle-and-take: returns `count` distinct entries picked
+// at random from `arr`, without mutating the original array.
+function sgSampleWithoutReplacement(arr, count) {
+  const pool = arr.slice();
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, count);
+}
+// Builds a fresh set of 3 problems for a given Spelling Tinik level id (1-3)
+// by randomly sampling 3 words from that level's bank.
+function sgGenerateProblems(levelId) {
+  const level = SPELLING_TINIK_LEVELS.find(l => l.id === levelId);
+  const picks = sgSampleWithoutReplacement(level.bank, 3);
+  return picks.map(w => ({
+    text: w.clue,
+    answer: w.word
+  }));
+}
+// Builds all 10 sets × 3 levels of Spelling Tinik problems at once.
+function sgGenerateAllSets() {
+  const sets = {};
+  for (let setId = 1; setId <= SPELLING_TINIK_SET_COUNT; setId++) {
+    const byLevel = {};
+    SPELLING_TINIK_LEVELS.forEach(l => {
+      byLevel[l.id] = sgGenerateProblems(l.id);
+    });
+    sets[setId] = byLevel;
+  }
+  return sets;
+}
+const STORAGE_KEY_SPELLING_TINIK_PROBLEMS = "gs4_spelling_tinik_problems_v1";
+function loadSpellingTinikProblems() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_SPELLING_TINIK_PROBLEMS);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return null;
+}
+function saveSpellingTinikProblems(m) {
+  try {
+    localStorage.setItem(STORAGE_KEY_SPELLING_TINIK_PROBLEMS, JSON.stringify(m));
+  } catch (e) {}
+  queueCloudSync();
+}
+/* =========================================================
+   MONEY TINIK — same numbered-set/leveled-worksheet shape as
+   Math Tinik. Ten sets, 6 fixed levels, 5 fresh problems per level
+   every time it's played. Calibrated to Grade 4 money concepts —
+   larger peso amounts (up to ₱9999) and centavo (decimal) values,
+   plus multiplying/dividing money by a whole number, which is
+   noticeably beyond the whole-pesos-only Grade 2 version. Amounts
+   are tracked internally as integer centavos to avoid floating-
+   point rounding, then formatted as "₱123.45" strings. Answers are
+   peso strings or a comparison symbol ("<", ">", "=").
+   ========================================================= */
+const MONEY_TINIK_SET_COUNT = 10;
+const MONEY_TINIK_LEVELS = [{
+  id: 1,
+  title: "Adding Money — With Regrouping",
+  short: "peso amounts up to \u20b19,999",
+  icon: "➕"
+}, {
+  id: 2,
+  title: "Subtracting Money — With Regrouping",
+  short: "peso amounts up to \u20b19,999",
+  icon: "➖"
+}, {
+  id: 3,
+  title: "Multiplying Money",
+  short: "unit price \u00d7 quantity",
+  icon: "✖️"
+}, {
+  id: 4,
+  title: "Dividing Money",
+  short: "sharing a total equally, exact",
+  icon: "➗"
+}, {
+  id: 5,
+  title: "Comparing Money",
+  short: "<, >, or = (with centavos)",
+  icon: "⚖️"
+}, {
+  id: 6,
+  title: "Making Change",
+  short: "pay with a bill, find the change",
+  icon: "💵"
+}];
+// Formats an integer centavo amount as a peso string, e.g. 123456 -> "₱1234.56".
+function mnFormatPeso(centavos) {
+  const pesos = Math.floor(centavos / 100);
+  const cents = centavos % 100;
+  return `\u20b1${pesos}.${String(cents).padStart(2, "0")}`;
+}
+// Picks a random peso amount (as integer centavos) between minP and maxP whole
+// pesos, with a random centavo tail drawn from centOptions (e.g. 0/25/50/75,
+// echoing real 25-sentimo coin denominations).
+function mnRandPesoAmount(minP, maxP, centOptions) {
+  const pesos = mtRandInt(minP, maxP);
+  const cents = centOptions[mtRandInt(0, centOptions.length - 1)];
+  return pesos * 100 + cents;
+}
+// Level 1: 3-4 digit peso addition (whole pesos, .00), forced to regroup, sum kept under ₱9999.
+function mnGenAddRegroup() {
+  let a, b;
+  do {
+    a = mtRandInt(100, 4899);
+    b = mtRandInt(100, 4899);
+  } while (a % 10 + b % 10 < 10 || a + b > 9999);
+  return {
+    text: `${mnFormatPeso(a * 100)} + ${mnFormatPeso(b * 100)}`,
+    answer: mnFormatPeso((a + b) * 100)
+  };
+}
+// Level 2: 3-4 digit peso subtraction (whole pesos, .00), forced to regroup.
+function mnGenSubRegroup() {
+  let a, b;
+  do {
+    a = mtRandInt(1000, 9999);
+    b = mtRandInt(100, a - 1);
+  } while (a % 10 >= b % 10);
+  return {
+    text: `${mnFormatPeso(a * 100)} \u2212 ${mnFormatPeso(b * 100)}`,
+    answer: mnFormatPeso((a - b) * 100)
+  };
+}
+// Level 3: unit price (with realistic centavo tail) × a small whole-number quantity.
+function mnGenMultiply() {
+  const centOptions = [0, 25, 50, 75];
+  const unit = mnRandPesoAmount(5, 99, centOptions);
+  const qty = mtRandInt(2, 9);
+  return {
+    text: `${mnFormatPeso(unit)} \u00d7 ${qty}`,
+    answer: mnFormatPeso(unit * qty)
+  };
+}
+// Level 4: a total (built from an exact unit price so the division has no remainder) ÷ a whole number.
+function mnGenDivide() {
+  const centOptions = [0, 25, 50, 75];
+  const divisor = mtRandInt(2, 9);
+  const quotient = mnRandPesoAmount(2, 49, centOptions);
+  return {
+    text: `${mnFormatPeso(quotient * divisor)} \u00f7 ${divisor}`,
+    answer: mnFormatPeso(quotient)
+  };
+}
+// Level 5: compare two peso amounts, each with a centavo tail.
+function mnGenCompare() {
+  const centOptions = [0, 25, 50, 75];
+  const a = mnRandPesoAmount(10, 999, centOptions);
+  let b;
+  if (mtRandInt(1, 6) === 1) {
+    b = a; // occasional equal case
+  } else {
+    do {
+      b = mnRandPesoAmount(10, 999, centOptions);
+    } while (b === a);
+  }
+  const symbol = a < b ? "<" : a > b ? ">" : "=";
+  return {
+    text: `${mnFormatPeso(a)} ___ ${mnFormatPeso(b)}`,
+    answer: symbol
+  };
+}
+// Level 6: pay with a round bill, find the change from a cost with a centavo tail.
+function mnGenChange() {
+  const centOptions = [0, 25, 50, 75];
+  const bills = [500, 1000, 2000, 5000];
+  const payment = bills[mtRandInt(0, bills.length - 1)] * 100;
+  const cost = mnRandPesoAmount(10, payment / 100 - 5, centOptions);
+  return {
+    text: `You pay ${mnFormatPeso(payment)} for something that costs ${mnFormatPeso(cost)}. How much change?`,
+    answer: mnFormatPeso(payment - cost)
+  };
+}
+// Builds a fresh set of 5 problems for a given Money Tinik level id (1-6).
+function mnGenerateProblems(levelId) {
+  const out = [];
+  for (let i = 0; i < 5; i++) {
+    let p;
+    if (levelId === 1) p = mnGenAddRegroup();else if (levelId === 2) p = mnGenSubRegroup();else if (levelId === 3) p = mnGenMultiply();else if (levelId === 4) p = mnGenDivide();else if (levelId === 5) p = mnGenCompare();else p = mnGenChange();
+    out.push(p);
+  }
+  return out;
+}
+// Builds all 10 sets × 6 levels of Money Tinik problems at once.
+function mnGenerateAllSets() {
+  const sets = {};
+  for (let setId = 1; setId <= MONEY_TINIK_SET_COUNT; setId++) {
+    const byLevel = {};
+    MONEY_TINIK_LEVELS.forEach(l => {
+      byLevel[l.id] = mnGenerateProblems(l.id);
+    });
+    sets[setId] = byLevel;
+  }
+  return sets;
+}
+const STORAGE_KEY_MONEY_TINIK_PROBLEMS = "gs4_money_tinik_problems_v1";
+function loadMoneyTinikProblems() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_MONEY_TINIK_PROBLEMS);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return null;
+}
+function saveMoneyTinikProblems(m) {
+  try {
+    localStorage.setItem(STORAGE_KEY_MONEY_TINIK_PROBLEMS, JSON.stringify(m));
+  } catch (e) {}
+  queueCloudSync();
+}
+
+/* =========================================================
+   FILIPINO SPELLING TINIK — same shape as Spelling Tinik (word
+   bank + random sampling), but for Filipino vocabulary. Ten sets,
+   3 fixed levels, 3 words each, drawn at random from a 10-word bank
+   per level. Levels mirror the English Spelling Tinik word list at
+   the same difficulty (mostly direct translations), so the two
+   drills stay comparable in difficulty. Clues give the English
+   meaning; the answer is the Filipino word.
+   ========================================================= */
+const FIL_SPELLING_TINIK_SET_COUNT = 10;
+const FIL_SPELLING_TINIK_LEVELS = [{
+  id: 1,
+  title: "Easy Words",
+  short: "everyday words",
+  icon: "🔤",
+  bank: [{
+    word: "bilog",
+    clue: 'Filipino word for "circle"'
+  }, {
+    word: "kahel",
+    clue: 'Filipino word for "orange"'
+  }, {
+    word: "kusina",
+    clue: 'Filipino word for "kitchen"'
+  }, {
+    word: "hardin",
+    clue: 'Filipino word for "garden"'
+  }, {
+    word: "bintana",
+    clue: 'Filipino word for "window"'
+  }, {
+    word: "lapis",
+    clue: 'Filipino word for "pencil"'
+  }, {
+    word: "dilaw",
+    clue: 'Filipino word for "yellow"'
+  }, {
+    word: "taglagas",
+    clue: 'Filipino word for "autumn"'
+  }, {
+    word: "dyaket",
+    clue: 'Filipino word for "jacket"'
+  }, {
+    word: "bote",
+    clue: 'Filipino word for "bottle"'
+  }]
+}, {
+  id: 2,
+  title: "Medium Words",
+  short: "common two-syllable words",
+  icon: "✏️",
+  bank: [{
+    word: "espesyal",
+    clue: 'Filipino word for "special"'
+  }, {
+    word: "larawan",
+    clue: 'Filipino word for "picture"'
+  }, {
+    word: "sagot",
+    clue: 'Filipino word for "answer"'
+  }, {
+    word: "bigla",
+    clue: 'Filipino word for "sudden"'
+  }, {
+    word: "bumili",
+    clue: 'Filipino word for "to buy/purchase"'
+  }, {
+    word: "biyahe",
+    clue: 'Filipino word for "journey/trip"'
+  }, {
+    word: "pakete",
+    clue: 'Filipino word for "package"'
+  }, {
+    word: "hulihin",
+    clue: 'Filipino word for "to catch/capture"'
+  }, {
+    word: "mali",
+    clue: 'Filipino word for "mistake/wrong"'
+  }, {
+    word: "tandaan",
+    clue: 'Filipino word for "remember"'
+  }]
+}, {
+  id: 3,
+  title: "Challenge Words",
+  short: "common Grade 4 Filipino words",
+  icon: "📝",
+  bank: [{
+    word: "hapon",
+    clue: 'Filipino word for "afternoon"'
+  }, {
+    word: "ospital",
+    clue: 'Filipino word for "hospital"'
+  }, {
+    word: "mahalaga",
+    clue: 'Filipino word for "important"'
+  }, {
+    word: "elepante",
+    clue: 'Filipino word for "elephant"'
+  }, {
+    word: "tsokolate",
+    clue: 'Filipino word for "chocolate"'
+  }, {
+    word: "payong",
+    clue: 'Filipino word for "umbrella"'
+  }, {
+    word: "ituloy",
+    clue: 'Filipino word for "continue"'
+  }, {
+    word: "bundok",
+    clue: 'Filipino word for "mountain"'
+  }, {
+    word: "kaarawan",
+    clue: 'Filipino word for "birthday"'
+  }, {
+    word: "bakasyon",
+    clue: 'Filipino word for "holiday/vacation"'
+  }]
+}];
+// Builds a fresh set of 3 problems for a given Filipino Spelling Tinik level id (1-3).
+function fsGenerateProblems(levelId) {
+  const level = FIL_SPELLING_TINIK_LEVELS.find(l => l.id === levelId);
+  const picks = sgSampleWithoutReplacement(level.bank, 3);
+  return picks.map(w => ({
+    text: w.clue,
+    answer: w.word
+  }));
+}
+// Builds all 10 sets × 3 levels of Filipino Spelling Tinik problems at once.
+function fsGenerateAllSets() {
+  const sets = {};
+  for (let setId = 1; setId <= FIL_SPELLING_TINIK_SET_COUNT; setId++) {
+    const byLevel = {};
+    FIL_SPELLING_TINIK_LEVELS.forEach(l => {
+      byLevel[l.id] = fsGenerateProblems(l.id);
+    });
+    sets[setId] = byLevel;
+  }
+  return sets;
+}
+const STORAGE_KEY_FIL_SPELLING_TINIK_PROBLEMS = "gs4_fil_spelling_tinik_problems_v1";
+function loadFilSpellingTinikProblems() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_FIL_SPELLING_TINIK_PROBLEMS);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return null;
+}
+function saveFilSpellingTinikProblems(m) {
+  try {
+    localStorage.setItem(STORAGE_KEY_FIL_SPELLING_TINIK_PROBLEMS, JSON.stringify(m));
+  } catch (e) {}
+  queueCloudSync();
+}
+
 /* =========================================================
    GALAXY BLASTER — standalone Typing Arcade mini-game (Galaxy
    Blaster mode only), embedded as a full self-contained HTML
@@ -12618,7 +13052,9 @@ function QuestionsScreen({
   goMathTinik,
   goTimeTinik,
   goFractionTinik,
-  goSpellingTinik
+  goSpellingTinik,
+  goMoneyTinik,
+  goFilipinoSpellingTinik
 }) {
   const items = [{
     key: "mathtinik",
@@ -12639,11 +13075,23 @@ function QuestionsScreen({
     desc: "10 sets \u00d7 10 levels of simplifying, comparing, converting & the 4 operations on fractions",
     onClick: goFractionTinik
   }, {
+    key: "moneytinik",
+    icon: "🪙",
+    title: "Money",
+    desc: "10 sets \u00d7 6 levels of adding, subtracting, multiplying, dividing & comparing peso amounts (with centavos)",
+    onClick: goMoneyTinik
+  }, {
     key: "spellingtinik",
     icon: "🔤",
     title: "Spelling",
-    desc: "3 levels \u00d7 3 words \u2014 easy to a little more challenging",
+    desc: "10 sets \u00d7 3 levels of spelling words \u2014 easy to a little more challenging",
     onClick: goSpellingTinik
+  }, {
+    key: "filipinospellingtinik",
+    icon: "🇵🇭",
+    title: "Filipino Spelling",
+    desc: "10 sets \u00d7 3 levels of Filipino vocabulary \u2014 easy to a little more challenging",
+    onClick: goFilipinoSpellingTinik
   }];
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "backbar"
@@ -12719,7 +13167,10 @@ function TinikScreen({
   levels,
   problems,
   regenerateProblems,
-  goBack
+  goBack,
+  problemsPerLevel = 5,
+  regenerateNoun = "numbers",
+  entryNoun = "problems"
 }) {
   const [view, setView] = useState("sets"); // 'sets' | 'sheet'
   const [activeSet, setActiveSet] = useState(null);
@@ -12733,7 +13184,7 @@ function TinikScreen({
     setView("sets");
   }
   function handleGenerate() {
-    if (!window.confirm(`Generate new numbers for all ${setCount} sets? This replaces the current worksheet numbers for every set.`)) return;
+    if (!window.confirm(`Generate new ${regenerateNoun} for all ${setCount} sets? This replaces the current worksheet ${regenerateNoun} for every set.`)) return;
     Sound.nav();
     regenerateProblems();
   }
@@ -12799,7 +13250,7 @@ function TinikScreen({
         marginBottom: 16
       },
       onClick: handleGenerate
-    }, `🔄 Generate New Numbers (all ${setCount} sets)`), /*#__PURE__*/React.createElement("div", {
+    }, `🔄 Generate New ${regenerateNoun.charAt(0).toUpperCase() + regenerateNoun.slice(1)} (all ${setCount} sets)`), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "grid",
         gridTemplateColumns: "repeat(5, 1fr)",
@@ -12849,75 +13300,8 @@ function TinikScreen({
       style: {
         margin: "0 0 16px"
       }
-    }, `${levels.length} levels \xD7 5 problems each \u2014 answers shown alongside each problem.`), levelBlocks);
+    }, `${levels.length} levels \xD7 ${problemsPerLevel} ${entryNoun} each \u2014 answers shown alongside each problem.`), levelBlocks);
   }
-  return /*#__PURE__*/React.createElement(React.Fragment, null, headerBar, body);
-}
-
-// Spelling practice sheet — 3 fixed levels of 3 words each (see SPELLING_LEVELS).
-// Simpler than TinikScreen: no numbered sets and no "generate new numbers",
-// since these are curated words, not randomly-generated number facts.
-function SpellingTinikScreen({
-  goBack
-}) {
-  function printSheet() {
-    Sound.tap();
-    window.print();
-  }
-  const levelBlocks = SPELLING_LEVELS.map(l => {
-    const rows = l.words.map((w, i) => /*#__PURE__*/React.createElement("div", {
-      key: i,
-      className: "mt-problem-row"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "mt-problem-num"
-    }, i + 1, "."), /*#__PURE__*/React.createElement("span", null, "Spell: ", w.clue, " ="), /*#__PURE__*/React.createElement("span", {
-      className: "mt-problem-answer"
-    }, w.word)));
-    return /*#__PURE__*/React.createElement("div", {
-      key: l.id,
-      className: "mt-level-block"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "mt-level-head"
-    }, /*#__PURE__*/React.createElement("span", null, l.icon), /*#__PURE__*/React.createElement("span", null, "Level ", l.id, ": ", l.title), /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontWeight: 500,
-        fontSize: 12,
-        color: "var(--ink-soft, #666)"
-      }
-    }, "(", l.short, ")")), rows);
-  });
-  const headerBar = /*#__PURE__*/React.createElement("div", {
-    className: "backbar no-print"
-  }, /*#__PURE__*/React.createElement("button", {
-    className: "backbtn",
-    onClick: goBack
-  }, "←"), /*#__PURE__*/React.createElement("div", {
-    className: "icon-badge-sm",
-    style: {
-      background: "#EDE8F5"
-    }
-  }, "🔤"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "qnum"
-  }, "Spelling"), /*#__PURE__*/React.createElement("h1", {
-    style: {
-      margin: 0,
-      fontSize: "21px"
-    }
-  }, "Spelling Practice")));
-  const body = /*#__PURE__*/React.createElement("div", {
-    className: "mt-print-area"
-  }, /*#__PURE__*/React.createElement("button", {
-    className: "btn btn-ghost no-print",
-    style: {
-      marginBottom: 14
-    },
-    onClick: printSheet
-  }, "🖨️ Print This Sheet"), /*#__PURE__*/React.createElement("p", {
-    className: "sub",
-    style: {
-      margin: "0 0 16px"
-    }
-  }, "3 levels \u00d7 3 words each \u2014 read the clue, spell the word out loud or on paper, then check the answer."), levelBlocks);
   return /*#__PURE__*/React.createElement(React.Fragment, null, headerBar, body);
 }
 
@@ -13342,17 +13726,34 @@ function App() {
   const [notes, setNotes] = useState(loadNotes());
   const [activity, setActivity] = useState(loadActivity());
   const [generalKnown, setGeneralKnown] = useState(loadGeneralKnown());
+  // Tinik problem sets are loaded from storage if present, but NOT generated
+  // here — generating all 6 topics' worksheets on every app boot (most of
+  // which the student may never open this session) was pure wasted startup
+  // work. Each topic's problems stay null until the matching goXTinik()
+  // navigation function generates them on first visit (see below).
   const [mathTinikProblems, setMathTinikProblems] = useState(() => {
     const loaded = loadMathTinikProblems();
-    return loaded && Object.keys(loaded).length ? loaded : mtGenerateAllSets();
+    return loaded && Object.keys(loaded).length ? loaded : null;
   });
   const [timeTinikProblems, setTimeTinikProblems] = useState(() => {
     const loaded = loadTimeTinikProblems();
-    return loaded && Object.keys(loaded).length ? loaded : ttGenerateAllSets();
+    return loaded && Object.keys(loaded).length ? loaded : null;
   });
   const [fractionTinikProblems, setFractionTinikProblems] = useState(() => {
     const loaded = loadFractionTinikProblems();
-    return loaded && Object.keys(loaded).length ? loaded : ftGenerateAllSets();
+    return loaded && Object.keys(loaded).length ? loaded : null;
+  });
+  const [spellingTinikProblems, setSpellingTinikProblems] = useState(() => {
+    const loaded = loadSpellingTinikProblems();
+    return loaded && Object.keys(loaded).length ? loaded : null;
+  });
+  const [moneyTinikProblems, setMoneyTinikProblems] = useState(() => {
+    const loaded = loadMoneyTinikProblems();
+    return loaded && Object.keys(loaded).length ? loaded : null;
+  });
+  const [filSpellingTinikProblems, setFilSpellingTinikProblems] = useState(() => {
+    const loaded = loadFilSpellingTinikProblems();
+    return loaded && Object.keys(loaded).length ? loaded : null;
   });
   const [grades, setGrades] = useState(loadGrades());
   const [gradeConfig, setGradeConfig] = useState(loadGradeConfig());
@@ -13398,14 +13799,23 @@ function App() {
     saveGeneralKnown(generalKnown);
   }, [generalKnown]);
   useEffect(() => {
-    saveMathTinikProblems(mathTinikProblems);
+    if (mathTinikProblems) saveMathTinikProblems(mathTinikProblems);
   }, [mathTinikProblems]);
   useEffect(() => {
-    saveTimeTinikProblems(timeTinikProblems);
+    if (timeTinikProblems) saveTimeTinikProblems(timeTinikProblems);
   }, [timeTinikProblems]);
   useEffect(() => {
-    saveFractionTinikProblems(fractionTinikProblems);
+    if (fractionTinikProblems) saveFractionTinikProblems(fractionTinikProblems);
   }, [fractionTinikProblems]);
+  useEffect(() => {
+    if (spellingTinikProblems) saveSpellingTinikProblems(spellingTinikProblems);
+  }, [spellingTinikProblems]);
+  useEffect(() => {
+    if (moneyTinikProblems) saveMoneyTinikProblems(moneyTinikProblems);
+  }, [moneyTinikProblems]);
+  useEffect(() => {
+    if (filSpellingTinikProblems) saveFilSpellingTinikProblems(filSpellingTinikProblems);
+  }, [filSpellingTinikProblems]);
   useEffect(() => {
     saveGrades(grades);
   }, [grades]);
@@ -13441,6 +13851,18 @@ function App() {
       });
       setFractionTinikProblems(prev => {
         const loaded = loadFractionTinikProblems();
+        return loaded && Object.keys(loaded).length ? loaded : prev;
+      });
+      setSpellingTinikProblems(prev => {
+        const loaded = loadSpellingTinikProblems();
+        return loaded && Object.keys(loaded).length ? loaded : prev;
+      });
+      setMoneyTinikProblems(prev => {
+        const loaded = loadMoneyTinikProblems();
+        return loaded && Object.keys(loaded).length ? loaded : prev;
+      });
+      setFilSpellingTinikProblems(prev => {
+        const loaded = loadFilSpellingTinikProblems();
         return loaded && Object.keys(loaded).length ? loaded : prev;
       });
       setGrades(loadGrades());
@@ -13489,6 +13911,9 @@ function App() {
         mathTinikProblems,
         timeTinikProblems,
         fractionTinikProblems,
+        spellingTinikProblems,
+        moneyTinikProblems,
+        filSpellingTinikProblems,
         grades
       },
       // Kept as a separate top-level section (not inside `data`) since it's
@@ -13533,6 +13958,9 @@ function App() {
         if (d.mathTinikProblems) setMathTinikProblems(d.mathTinikProblems);
         if (d.timeTinikProblems) setTimeTinikProblems(d.timeTinikProblems);
         if (d.fractionTinikProblems) setFractionTinikProblems(d.fractionTinikProblems);
+        if (d.spellingTinikProblems) setSpellingTinikProblems(d.spellingTinikProblems);
+        if (d.moneyTinikProblems) setMoneyTinikProblems(d.moneyTinikProblems);
+        if (d.filSpellingTinikProblems) setFilSpellingTinikProblems(d.filSpellingTinikProblems);
         if (d.grades) setGrades(d.grades);
         // Persist immediately so a refresh doesn't race the effects.
         if (d.progress) saveProgress(d.progress);
@@ -13548,6 +13976,9 @@ function App() {
         if (d.mathTinikProblems) saveMathTinikProblems(d.mathTinikProblems);
         if (d.timeTinikProblems) saveTimeTinikProblems(d.timeTinikProblems);
         if (d.fractionTinikProblems) saveFractionTinikProblems(d.fractionTinikProblems);
+        if (d.spellingTinikProblems) saveSpellingTinikProblems(d.spellingTinikProblems);
+        if (d.moneyTinikProblems) saveMoneyTinikProblems(d.moneyTinikProblems);
+        if (d.filSpellingTinikProblems) saveFilSpellingTinikProblems(d.filSpellingTinikProblems);
         if (d.grades) saveGrades(d.grades);
         // Restore the IndexedDB offline audio cache, if the backup has one.
         if (audioEntries && audioEntries.length) {
@@ -13925,6 +14356,7 @@ function App() {
   }
   function goMathTinik() {
     Sound.nav();
+    setMathTinikProblems(prev => prev || mtGenerateAllSets());
     setNav({
       screen: "mathtinik"
     });
@@ -13935,6 +14367,7 @@ function App() {
   }
   function goTimeTinik() {
     Sound.nav();
+    setTimeTinikProblems(prev => prev || ttGenerateAllSets());
     setNav({
       screen: "timetinik"
     });
@@ -13945,6 +14378,7 @@ function App() {
   }
   function goFractionTinik() {
     Sound.nav();
+    setFractionTinikProblems(prev => prev || ftGenerateAllSets());
     setNav({
       screen: "fractiontinik"
     });
@@ -13955,10 +14389,36 @@ function App() {
   }
   function goSpellingTinik() {
     Sound.nav();
+    setSpellingTinikProblems(prev => prev || sgGenerateAllSets());
     setNav({
       screen: "spellingtinik"
     });
     setQuizSession(null);
+  }
+  function regenerateSpellingTinik() {
+    setSpellingTinikProblems(sgGenerateAllSets());
+  }
+  function goMoneyTinik() {
+    Sound.nav();
+    setMoneyTinikProblems(prev => prev || mnGenerateAllSets());
+    setNav({
+      screen: "moneytinik"
+    });
+    setQuizSession(null);
+  }
+  function regenerateMoneyTinik() {
+    setMoneyTinikProblems(mnGenerateAllSets());
+  }
+  function goFilipinoSpellingTinik() {
+    Sound.nav();
+    setFilSpellingTinikProblems(prev => prev || fsGenerateAllSets());
+    setNav({
+      screen: "filipinospellingtinik"
+    });
+    setQuizSession(null);
+  }
+  function regenerateFilipinoSpellingTinik() {
+    setFilSpellingTinikProblems(fsGenerateAllSets());
   }
   function toggleGeneralWord(catId, word) {
     Sound.nav();
@@ -14212,7 +14672,9 @@ function App() {
       goMathTinik,
       goTimeTinik,
       goFractionTinik,
-      goSpellingTinik
+      goSpellingTinik,
+      goMoneyTinik,
+      goFilipinoSpellingTinik
     });
   } else if (nav.screen === "mathtinik") {
     content = /*#__PURE__*/React.createElement(TinikScreen, {
@@ -14245,8 +14707,40 @@ function App() {
       goBack: goQuestions
     });
   } else if (nav.screen === "spellingtinik") {
-    content = /*#__PURE__*/React.createElement(SpellingTinikScreen, {
+    content = /*#__PURE__*/React.createElement(TinikScreen, {
+      title: "Spelling",
+      icon: "🔤",
+      setCount: SPELLING_TINIK_SET_COUNT,
+      levels: SPELLING_TINIK_LEVELS,
+      problems: spellingTinikProblems,
+      regenerateProblems: regenerateSpellingTinik,
+      goBack: goQuestions,
+      problemsPerLevel: 3,
+      regenerateNoun: "words",
+      entryNoun: "words"
+    });
+  } else if (nav.screen === "moneytinik") {
+    content = /*#__PURE__*/React.createElement(TinikScreen, {
+      title: "Money",
+      icon: "🪙",
+      setCount: MONEY_TINIK_SET_COUNT,
+      levels: MONEY_TINIK_LEVELS,
+      problems: moneyTinikProblems,
+      regenerateProblems: regenerateMoneyTinik,
       goBack: goQuestions
+    });
+  } else if (nav.screen === "filipinospellingtinik") {
+    content = /*#__PURE__*/React.createElement(TinikScreen, {
+      title: "Filipino Spelling",
+      icon: "🇵🇭",
+      setCount: FIL_SPELLING_TINIK_SET_COUNT,
+      levels: FIL_SPELLING_TINIK_LEVELS,
+      problems: filSpellingTinikProblems,
+      regenerateProblems: regenerateFilipinoSpellingTinik,
+      goBack: goQuestions,
+      problemsPerLevel: 3,
+      regenerateNoun: "words",
+      entryNoun: "words"
     });
   } else if (nav.screen === "notes") {
     content = /*#__PURE__*/React.createElement(NotesScreen, {
