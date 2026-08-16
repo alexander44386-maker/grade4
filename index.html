@@ -29,7 +29,13 @@
     --night-deep: #5E72B4;
     --gold: #F4D482;
     --good: #6BCB9D;
+    --good-text: #0A8F68;
     --bad: #F6969F;
+    /* Backing pair for "incorrect answer" chips/boxes — was hardcoded
+       (#FDE3E6 bg / #C43D4B text) everywhere, so it stayed a fixed pale-pink
+       tile even in dark mode instead of matching the surrounding theme. */
+    --bad-soft: #FDE3E6;
+    --bad-text: #C43D4B;
     --subj-general: #AEA5C5;
     --subj-g4-science: #84D1BA;
     --subj-g4-hele: #F5C98C;
@@ -80,7 +86,17 @@
     --night-deep: #19348E;
     --gold: #EFC24C;
     --good: #22B588;
+    /* "correct answer" text was hardcoded to a dark green (#0A8F68) that
+       reads fine on the light-mode pale mint background but collapses to
+       near-unreadable (~3.4:1 contrast) once the background flips to a
+       near-black green in dark mode. --good-text lets that color adapt. */
+    --good-text: #4CDDA0;
     --bad: #F26976;
+    /* Reuses #FF9FB4, the same salmon already used for "wrong answer" text
+       on the dark reward results card, so incorrect-answer styling matches
+       the rest of the dark theme instead of staying a fixed light-mode pink. */
+    --bad-soft: #3A1620;
+    --bad-text: #FF9FB4;
     --subj-general: #6B5B95;
     --subj-g4-science: #1FAB81;
     --subj-g4-hele: #ED9C2E;
@@ -465,10 +481,10 @@
     font-family:'Fredoka';font-weight:700;font-size:11px;padding:4px 10px;border-radius:20px;
     display:inline-flex;align-items:center;gap:4px;
   }
-  .pill.done{background:var(--q2-soft);color:#0A8F68;}
+  .pill.done{background:var(--q2-soft);color:var(--good-text);}
   .pill.todo{background:var(--paper-dark);color:var(--ink-soft);}
-  .pill.score-good{background:var(--q2-soft);color:#0A8F68;}
-  .pill.score-bad{background:#FDE3E6;color:#C43D4B;}
+  .pill.score-good{background:var(--q2-soft);color:var(--good-text);}
+  .pill.score-bad{background:var(--bad-soft);color:var(--bad-text);}
   .chev{font-size:20px;color:var(--ink-soft);flex:0 0 auto;}
 
   .longquiz-card{
@@ -530,7 +546,7 @@
     background:none;border:none;color:var(--bad);font-weight:800;font-size:12.5px;
     font-family:'Fredoka';padding:4px 8px;border-radius:8px;
   }
-  @media (hover:hover){ .note-remove-btn:hover{background:#FDE3E6;} }
+  @media (hover:hover){ .note-remove-btn:hover{background:var(--bad-soft);} }
   .rt-toolbar{
     display:flex;align-items:center;flex-wrap:wrap;gap:4px;
     padding:8px 10px;background:var(--card);border-bottom:2px solid var(--line);
@@ -687,8 +703,8 @@
     font-size:15px;font-weight:700;color:var(--ink);transition:transform .1s ease, border-color .12s ease;
   }
   @media (hover:hover){ .quiz-opt:hover:not(:disabled){border-color:var(--night);transform:translateY(-2px);} }
-  .quiz-opt.correct{background:var(--q2-soft);border-color:var(--good);color:#0A8F68;}
-  .quiz-opt.incorrect{background:#FDE3E6;border-color:var(--bad);color:#C43D4B;}
+  .quiz-opt.correct{background:var(--q2-soft);border-color:var(--good);color:var(--good-text);}
+  .quiz-opt.incorrect{background:var(--bad-soft);border-color:var(--bad);color:var(--bad-text);}
   .quiz-opt.dimmed{opacity:.5;}
   .quiz-opt:disabled{cursor:default;}
 
@@ -703,16 +719,16 @@
   .emoji-opt-face{font-size:44px;line-height:1;}
   .emoji-opt-label{font-family:'Fredoka';font-weight:700;font-size:14px;color:var(--ink);}
   .emoji-opt.correct{background:var(--q2-soft);border-color:var(--good);}
-  .emoji-opt.correct .emoji-opt-label{color:#0A8F68;}
-  .emoji-opt.incorrect{background:#FDE3E6;border-color:var(--bad);}
-  .emoji-opt.incorrect .emoji-opt-label{color:#C43D4B;}
+  .emoji-opt.correct .emoji-opt-label{color:var(--good-text);}
+  .emoji-opt.incorrect{background:var(--bad-soft);border-color:var(--bad);}
+  .emoji-opt.incorrect .emoji-opt-label{color:var(--bad-text);}
   .emoji-opt.dimmed{opacity:.5;}
   .emoji-opt:disabled{cursor:default;}
   .feedback-box{
     margin-top:8px;padding:14px 16px;border-radius:var(--radius-sm);font-size:14px;line-height:1.55;font-weight:600;
   }
-  .feedback-box.good{background:var(--q2-soft);color:#0A6B4E;}
-  .feedback-box.bad{background:#FDE3E6;color:#9A2C36;}
+  .feedback-box.good{background:var(--q2-soft);color:var(--good-text);}
+  .feedback-box.bad{background:var(--bad-soft);color:var(--bad-text);}
   .quiz-footer{display:flex;justify-content:flex-end;margin-top:16px;}
 
   /* ---------- RESULTS ---------- */
@@ -1033,7 +1049,7 @@
   .bank-opt{
     font-size:12.5px;padding:5px 11px;border-radius:10px;background:var(--paper-dark);color:var(--ink-soft);font-weight:700;
   }
-  .bank-opt-correct{background:var(--q2-soft);color:#0A8F68;font-weight:800;}
+  .bank-opt-correct{background:var(--q2-soft);color:var(--good-text);font-weight:800;}
   .bank-item-actions{display:flex;gap:8px;}
   .bank-item-type{display:inline-block;font-family:'Fredoka';font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--night);background:var(--q3-soft);border-radius:999px;padding:3px 9px;margin-bottom:8px;}
   .bank-item-editing{background:var(--q1-soft, #FFF7E8);border-color:var(--night);}
@@ -1083,7 +1099,7 @@
   }
   .quiz-fill-input:focus{outline:none;border-color:var(--night);}
   .quiz-fill-input.correct{border-color:var(--good);background:var(--q2-soft);}
-  .quiz-fill-input.incorrect{border-color:var(--bad);background:#FDE3E6;}
+  .quiz-fill-input.incorrect{border-color:var(--bad);background:var(--bad-soft);}
   .quiz-opt-remove{flex:none;background:none;border:none;color:var(--bad);font-weight:800;font-size:16px;box-shadow:none;padding:4px 8px;}
   .quiz-opt-add{margin-bottom:12px;}
 
@@ -1103,8 +1119,8 @@
     cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
   }
   .match-right-item:active{cursor:grabbing;}
-  .match-right-item.correct{background:var(--q2-soft);border-color:var(--good);color:#0A8F68;}
-  .match-right-item.incorrect{background:#FDE3E6;border-color:var(--bad);color:#C43D4B;}
+  .match-right-item.correct{background:var(--q2-soft);border-color:var(--good);color:var(--good-text);}
+  .match-right-item.incorrect{background:var(--bad-soft);border-color:var(--bad);color:var(--bad-text);}
   .match-right-item.dragging{opacity:.4;border-style:dashed;border-color:var(--night);cursor:grabbing;}
   .match-right-label{flex:1;}
   .match-right-handle{
@@ -1141,8 +1157,8 @@
   .dd-category-title{font-family:'Fredoka';font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);margin-bottom:8px;}
   .dd-empty{font-size:12px;color:var(--ink-soft);font-style:italic;padding:6px 0;}
   .dd-chip-placed{display:inline-block;margin:0 6px 6px 0;cursor:pointer;}
-  .dd-chip-placed.correct{background:var(--q2-soft);border-color:var(--good);color:#0A8F68;}
-  .dd-chip-placed.incorrect{background:#FDE3E6;border-color:var(--bad);color:#C43D4B;}
+  .dd-chip-placed.correct{background:var(--q2-soft);border-color:var(--good);color:var(--good-text);}
+  .dd-chip-placed.incorrect{background:var(--bad-soft);border-color:var(--bad);color:var(--bad-text);}
   .dd-ghost{
     position:fixed;top:0;left:0;pointer-events:none;z-index:999;
     transform:translate(-50%,-130%);
@@ -1157,8 +1173,8 @@
     border-radius:var(--radius-sm);padding:11px 12px;font-size:13.5px;font-weight:700;color:var(--ink);
     transition:transform .12s ease, border-color .12s ease, opacity .12s ease, box-shadow .12s ease;
   }
-  .order-item.correct{background:var(--q2-soft);border-color:var(--good);color:#0A8F68;}
-  .order-item.incorrect{background:#FDE3E6;border-color:var(--bad);color:#C43D4B;}
+  .order-item.correct{background:var(--q2-soft);border-color:var(--good);color:var(--good-text);}
+  .order-item.incorrect{background:var(--bad-soft);border-color:var(--bad);color:var(--bad-text);}
   .order-item.dragging{opacity:.4;border-style:dashed;border-color:var(--night);}
   .order-item.drag-over{border-color:var(--night);box-shadow:0 0 0 3px var(--q3-soft);transform:scale(1.01);}
   .order-num{
@@ -1193,9 +1209,9 @@
   }
   .label-pin-text{padding:0 6px;white-space:nowrap;}
   .label-pin.filled{background:var(--q3-soft);}
-  .label-pin.correct{border-color:var(--good);background:var(--q2-soft);color:#0A8F68;}
+  .label-pin.correct{border-color:var(--good);background:var(--q2-soft);color:var(--good-text);}
   .label-pin.correct .label-pin-num{background:var(--good);}
-  .label-pin.incorrect{border-color:var(--bad);background:#FDE3E6;color:#C43D4B;}
+  .label-pin.incorrect{border-color:var(--bad);background:var(--bad-soft);color:var(--bad-text);}
   .label-pin.incorrect .label-pin-num{background:var(--bad);}
   .label-pin:disabled{cursor:default;}
   .label-wordbank{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
@@ -1214,8 +1230,8 @@
     background:var(--q3-soft);
   }
   .pattern-blank:focus{outline:none;border-color:var(--night);}
-  .pattern-blank.correct{border-color:var(--good);background:var(--q2-soft);color:#0A8F68;}
-  .pattern-blank.incorrect{border-color:var(--bad);background:#FDE3E6;color:#C43D4B;}
+  .pattern-blank.correct{border-color:var(--good);background:var(--q2-soft);color:var(--good-text);}
+  .pattern-blank.incorrect{border-color:var(--bad);background:var(--bad-soft);color:var(--bad-text);}
 
   /* ---------- REPORT CARD (GRADES) ---------- */
   .rc-table{background:var(--card);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-md);margin-bottom:22px;color:var(--ink);}
@@ -1348,8 +1364,16 @@ const LS_PREFIX = "gs4_"; // every localStorage key this app uses starts with th
 // "ta-" (no grade prefix) is kept for backward compatibility with any
 // saves made before the game had grade-scoped keys.
 const LS_PREFIXES = [LS_PREFIX, "g4-ta-", "ta-"];
+// A couple of legacy keys predate the gs4_ prefix convention and can't be
+// renamed without losing whatever's already saved under the old name, so
+// they're synced by exact match instead of prefix. Everything the app saves
+// should end up in Firebase except the offline audio cache (see the
+// IndexedDB note below) and the Gemini API key, which is deliberately kept
+// device-only since this Firebase DB has open, unauthenticated read/write —
+// syncing an API key to it would expose it to anyone with the DB URL.
+const EXTRA_SYNCED_KEYS = ["grade4-story-voice-lang", "grade4-story-narration-mode"];
 function isSyncedKey(k) {
-  return !!k && LS_PREFIXES.some(p => k.indexOf(p) === 0);
+  return !!k && (LS_PREFIXES.some(p => k.indexOf(p) === 0) || EXTRA_SYNCED_KEYS.includes(k));
 }
 
 // Bundles every synced localStorage key (gs4_ and ta-) into one JSON blob for Firebase.
@@ -1374,7 +1398,18 @@ let cloudSyncTimer = null;
 // gs4-cloud-synced would reload React state from it, silently reverting the
 // user's just-made edit (it "blinks" back to how it was).
 let lastLocalEditAt = 0;
+// Guards against a boot-time race: React's mount effects re-save every piece
+// of state right after first render (saveProgress, saveBank, etc.), which
+// used to call queueCloudSync() just like a real user edit. That set
+// lastLocalEditAt to "now" before the initial loadFromCloud() pull even
+// finished, tripping its staleness guard on every single boot — so the pull
+// from Firebase was silently discarded, and this device's own (possibly
+// older) snapshot got pushed up and clobbered whatever another device had
+// just synced. Blocking queueCloudSync() until the initial pull has resolved
+// (see bootHydrationDone below) keeps mount effects from counting as "edits."
+let bootHydrationDone = false;
 function queueCloudSync() {
+  if (!bootHydrationDone) return;
   lastLocalEditAt = Date.now();
   // Debounce so rapid edits (typing, toggles) don't fire a request per keystroke.
   clearTimeout(cloudSyncTimer);
@@ -5270,15 +5305,19 @@ const STORY_NARRATOR_KEY = "__narrator__";
 const STORY_VOICE_LANG_KEY = "grade4-story-voice-lang";
 function loadStoryVoiceLangPref() {
   try {
-    return localStorage.getItem(STORY_VOICE_LANG_KEY) || "";
+    const raw = localStorage.getItem(STORY_VOICE_LANG_KEY);
+    return raw ? JSON.parse(raw) : "";
   } catch (e) {
     return "";
   }
 }
 function saveStoryVoiceLangPref(v) {
   try {
-    localStorage.setItem(STORY_VOICE_LANG_KEY, v || "");
+    // Stored as JSON (not a raw string) so buildLocalSnapshot's JSON.parse
+    // can read it back the same way it reads every other synced key.
+    localStorage.setItem(STORY_VOICE_LANG_KEY, JSON.stringify(v || ""));
   } catch (e) {}
+  queueCloudSync();
 }
 // Some browsers/OSes tag the Filipino voice with the older Tagalog code
 // ("tl") instead of "fil" (or vice versa) — treat those as the same
@@ -5498,6 +5537,12 @@ function playStory(text, {
 // own key name that the sync code will never see or touch — it still
 // persists in localStorage on this device, just outside the sync net.
 const GEMINI_KEY_STORAGE = "local_only_gemini_tts_key";
+// This constant was referenced below (getItem/setItem) but never actually
+// declared, so every read/write silently threw inside its try/catch — the
+// narration mode choice (browser voice vs. Gemini) never persisted at all,
+// synced or not. Declaring it here fixes that, and it's listed in
+// EXTRA_SYNCED_KEYS above so it now syncs across devices too.
+const STORY_NARRATION_MODE_KEY = "grade4-story-narration-mode";
 function loadGeminiApiKey() {
   try {
     return localStorage.getItem(GEMINI_KEY_STORAGE) || "";
@@ -8386,7 +8431,8 @@ function StoryCard({
   const [selectedLang, setSelectedLang] = useState(() => loadStoryVoiceLangPref());
   const [narrationMode, setNarrationModeState] = useState(() => {
     try {
-      return localStorage.getItem(STORY_NARRATION_MODE_KEY) || "browser";
+      const raw = localStorage.getItem(STORY_NARRATION_MODE_KEY);
+      return raw ? JSON.parse(raw) : "browser";
     } catch (e) {
       return "browser";
     }
@@ -8579,8 +8625,9 @@ function StoryCard({
   function handleModeChange(mode) {
     setNarrationModeState(mode);
     try {
-      localStorage.setItem(STORY_NARRATION_MODE_KEY, mode);
+      localStorage.setItem(STORY_NARRATION_MODE_KEY, JSON.stringify(mode));
     } catch (e) {}
+    queueCloudSync();
     setStatusMsg("");
     if (playing) stopPlayback();
     if (mode === "gemini" && !geminiKey) setShowKeyInput(true);
@@ -14885,6 +14932,10 @@ function App() {
 ReactDOM.createRoot(document.getElementById("root")).render(/*#__PURE__*/React.createElement(App, null));
 loadFromCloud().then(cloudSynced => {
   if (cloudSynced) window.dispatchEvent(new Event("gs4-cloud-synced"));
+}).finally(() => {
+  // Only now do mount-triggered saves (and any real edits) get allowed to
+  // push to Firebase — see the comment above bootHydrationDone's declaration.
+  bootHydrationDone = true;
 });
 </script>
 </body>
