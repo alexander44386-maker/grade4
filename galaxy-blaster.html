@@ -693,11 +693,18 @@
     box-shadow:0 0 8px rgba(163,230,53,0.8), 0 0 0 3px rgba(255,255,255,0.4) inset;
   }
 
+  /* True squash-and-stretch spawn: the invader enters stretched tall/thin
+     (like it's dropping in fast), squashes wide/flat on "landing", then
+     rebounds through a couple of shrinking oscillations before settling.
+     Independent X/Y scaling (vs. the old uniform scale) is what sells the
+     toy-like weight — a classic animation-principle touch for young kids. */
   @keyframes pop-in{
-    0%{ transform: scale(0.25) rotate(-8deg); opacity:0; }
-    65%{ transform: scale(1.18) rotate(4deg); opacity:1; }
-    85%{ transform: scale(0.94) rotate(-2deg); }
-    100%{ transform: scale(1) rotate(0deg); opacity:1; }
+    0%{ transform: scale(0.4, 1.5) rotate(-8deg); opacity:0; }
+    35%{ transform: scale(0.75, 1.2) rotate(-4deg); opacity:1; }
+    55%{ transform: scale(1.22, 0.8) rotate(3deg); }
+    75%{ transform: scale(0.92, 1.08) rotate(-1deg); }
+    90%{ transform: scale(1.04, 0.98) rotate(0.5deg); }
+    100%{ transform: scale(1, 1) rotate(0deg); opacity:1; }
   }
   @keyframes entity-wiggle{
     0%,100%{ transform: translateX(0) rotate(-3deg) scale(1); }
@@ -748,12 +755,60 @@
     0%{ width:6px; height:6px; opacity:0.9; }
     100%{ width:70px; height:70px; opacity:0; }
   }
+  /* ---------- Muzzle flash: a quick hot pop at the ship's barrel the
+     instant a shot fires, plus a short directional flare oriented along
+     the beam. Gives the shot a sense of origin/weight instead of the
+     beam just appearing out of thin air. ---------- */
+  .muzzle-flash{
+    position:absolute;
+    pointer-events:none;
+    border-radius:50%;
+    mix-blend-mode:screen;
+    filter: drop-shadow(0 0 10px var(--world-glow, #fff));
+    animation: muzzle-flash-pop 0.14s ease-out forwards;
+  }
+  @keyframes muzzle-flash-pop{
+    0%{ transform:translate(-50%,-50%) scale(0.3); opacity:1; }
+    35%{ transform:translate(-50%,-50%) scale(1.15); opacity:1; }
+    100%{ transform:translate(-50%,-50%) scale(0.6); opacity:0; }
+  }
+  .muzzle-flare{
+    position:absolute;
+    pointer-events:none;
+    border-radius:2px;
+    transform-origin:0% 50%;
+    mix-blend-mode:screen;
+    animation: muzzle-flare-pop 0.12s ease-out forwards;
+  }
+  @keyframes muzzle-flare-pop{
+    0%{ transform:scaleX(0.2) scaleY(1); opacity:1; }
+    100%{ transform:scaleX(1) scaleY(0.4); opacity:0; }
+  }
+  /* ---------- Impact flash: a bright hot-core frame that pops at the
+     moment of contact, a beat before the explosion-ring/confetti expand
+     outward — sells that the shot actually hit something with force. ---------- */
+  .impact-flash{
+    position:absolute;
+    pointer-events:none;
+    border-radius:50%;
+    mix-blend-mode:screen;
+    filter: drop-shadow(0 0 12px var(--world-glow, #fff));
+    animation: impact-flash-pop 0.22s cubic-bezier(.17,.89,.32,1.1) forwards;
+  }
+  @keyframes impact-flash-pop{
+    0%{ transform:translate(-50%,-50%) scale(0.2); opacity:1; }
+    40%{ transform:translate(-50%,-50%) scale(1.5); opacity:1; }
+    100%{ transform:translate(-50%,-50%) scale(2.1); opacity:0; }
+  }
   .laser-beam{
     position:absolute;
     width:5px;
     border-radius:3px;
     pointer-events:none;
-    filter:drop-shadow(0 0 8px currentColor);
+    /* Two glow layers: the beam's own color (tight, currentColor) plus a
+       wider halo in the world's ambient glow token — ties every ship's
+       laser back to the world it's flying through. */
+    filter:drop-shadow(0 0 8px currentColor) drop-shadow(0 0 16px var(--world-glow, currentColor));
     animation: laser-fade 0.15s ease-out forwards;
   }
   @keyframes laser-fade{
@@ -904,6 +959,54 @@
   }
   #view-space .level-popup{ background:rgba(6,10,32,0.65); }
   #view-space .level-popup-card{ background:#141C40; box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 4px 0 #ffffff11 inset; }
+  /* Per-world celebration card accent: a tinted wash + glowing border in
+     the world's color, so "level complete!" feels tied to the world you
+     were just in instead of the same navy card everywhere. */
+  #view-space .level-popup-card.world-blackhole{
+    background: radial-gradient(circle at 50% 20%, rgba(124,58,237,0.28), transparent 60%), #150C2A;
+    box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(167,139,250,0.45), 0 0 28px rgba(124,58,237,0.4);
+  }
+  #view-space .level-popup-card.world-blackhole .level-popup-title{ color:#C4B5FD; text-shadow:0 0 16px rgba(167,139,250,0.7); }
+  #view-space .level-popup-card.world-frozencomet{
+    background: radial-gradient(circle at 50% 20%, rgba(46,159,214,0.28), transparent 60%), #0A2432;
+    box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(123,232,255,0.45), 0 0 28px rgba(46,159,214,0.4);
+  }
+  #view-space .level-popup-card.world-frozencomet .level-popup-title{ color:#7BE8FF; text-shadow:0 0 16px rgba(123,232,255,0.7); }
+  #view-space .level-popup-card.world-moltencore{
+    background: radial-gradient(circle at 50% 20%, rgba(217,41,28,0.28), transparent 60%), #240800;
+    box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(255,159,69,0.45), 0 0 28px rgba(217,41,28,0.4);
+  }
+  #view-space .level-popup-card.world-moltencore .level-popup-title{ color:#FF9F45; text-shadow:0 0 16px rgba(255,159,69,0.7); }
+  #view-space .level-popup-card.world-deepocean{
+    background: radial-gradient(circle at 50% 20%, rgba(28,109,143,0.28), transparent 60%), #052430;
+    box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(77,232,255,0.45), 0 0 28px rgba(28,109,143,0.4);
+  }
+  #view-space .level-popup-card.world-deepocean .level-popup-title{ color:#4DE8FF; text-shadow:0 0 16px rgba(77,232,255,0.7); }
+  #view-space .level-popup-card.world-desertwastes{
+    background: radial-gradient(circle at 50% 20%, rgba(196,138,68,0.28), transparent 60%), #241a06;
+    box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(255,203,119,0.45), 0 0 28px rgba(196,138,68,0.4);
+  }
+  #view-space .level-popup-card.world-desertwastes .level-popup-title{ color:#FFCB77; text-shadow:0 0 16px rgba(255,203,119,0.7); }
+  #view-space .level-popup-card.world-stormnebula{
+    background: radial-gradient(circle at 50% 20%, rgba(139,92,246,0.28), transparent 60%), #150A2E;
+    box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(244,224,77,0.4), 0 0 28px rgba(139,92,246,0.4);
+  }
+  #view-space .level-popup-card.world-stormnebula .level-popup-title{ color:#F4E04D; text-shadow:0 0 16px rgba(244,224,77,0.6); }
+  #view-space .level-popup-card.world-plutoparadise{
+    background: radial-gradient(circle at 50% 20%, rgba(255,143,214,0.24), transparent 60%), #0C1B2E;
+    box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(124,255,196,0.45), 0 0 28px rgba(255,143,214,0.35);
+  }
+  #view-space .level-popup-card.world-plutoparadise .level-popup-title{ color:#7CFFC4; text-shadow:0 0 16px rgba(124,255,196,0.7); }
+  #view-space .level-popup-card.world-toxicswamp{
+    background: radial-gradient(circle at 50% 20%, rgba(107,122,47,0.3), transparent 60%), #181C08;
+    box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(195,216,37,0.45), 0 0 28px rgba(107,122,47,0.4);
+  }
+  #view-space .level-popup-card.world-toxicswamp .level-popup-title{ color:#C3D825; text-shadow:0 0 16px rgba(195,216,37,0.6); }
+  #view-space .level-popup-card.world-crystalcaverns{
+    background: radial-gradient(circle at 50% 20%, rgba(156,77,204,0.28), transparent 60%), #1E0A2A;
+    box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(255,184,240,0.45), 0 0 28px rgba(156,77,204,0.4);
+  }
+  #view-space .level-popup-card.world-crystalcaverns .level-popup-title{ color:#FFB8F0; text-shadow:0 0 16px rgba(255,184,240,0.7); }
   #view-space .level-popup-title{ color:#4DE8FF; text-shadow:0 0 16px rgba(77,232,255,0.6); }
   #view-space .level-popup-sub{ color:#AFC4E8; }
 
@@ -2195,6 +2298,12 @@
   }
   #game-space{
     --star-color:#fff;
+    /* Shared glow token: every world's laser/explosion/impact effects pick
+       up an ambient halo in this color so they read as belonging to the
+       current world's palette, on top of whatever color each individual
+       effect uses. Defaults to the star color, which is already themed
+       per world below — no per-world duplication needed. */
+    --world-glow: var(--star-color);
     --space-bg: linear-gradient(180deg, #0B1740 0%, #060A20 55%, #03040F 100%);
     background-image:
       radial-gradient(1.6px 1.6px at 10% 20%, var(--star-color), transparent),
@@ -2227,6 +2336,172 @@
   /* ---------- Per-world ambient atmosphere: a tinted colour wash plus
      themed floating particles behind the invaders, so each world feels
      different to just be in, not just look different up close. ---------- */
+  /* ---------- Parallax depth layers: sit behind the ambience tint/
+     particles, giving each world an actual sense of depth instead of a
+     flat starfield with particles floating on top. Two layers drift at
+     different speeds (far = slow, near = faster) via a looping transform
+     so it's seamless and cheap (no JS per-frame cost). Per-world imagery
+     is defined below via .pfar-<world>/.pnear-<world> — worlds without
+     an entry simply render an empty (invisible) layer, so this is safe
+     to roll out world-by-world without breaking anything. ---------- */
+  .world-parallax{
+    position:absolute; inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:0;
+  }
+  .world-parallax-layer{
+    position:absolute;
+    top:-20%; left:-20%; right:-20%; bottom:-20%;
+    background-repeat:repeat;
+  }
+  .world-parallax-layer.layer-far{ animation: parallax-drift-far 100s linear infinite; opacity:0.55; }
+  .world-parallax-layer.layer-near{ animation: parallax-drift-near 46s linear infinite; opacity:0.4; }
+  @keyframes parallax-drift-far{
+    0%{ transform:translate(0,0); }
+    100%{ transform:translate(-180px,260px); }
+  }
+  @keyframes parallax-drift-near{
+    0%{ transform:translate(0,0); }
+    100%{ transform:translate(140px,360px); }
+  }
+  /* Black Hole world: far layer = faint drifting violet nebula wisps;
+     near layer = bigger, sparser debris chunks with a purple rim-light,
+     like rubble caught in the hole's pull. */
+  .world-parallax-layer.pfar-blackhole{
+    background-image:
+      radial-gradient(60px 40px at 20% 30%, rgba(167,139,250,0.20), transparent 70%),
+      radial-gradient(90px 50px at 70% 60%, rgba(124,58,237,0.16), transparent 70%),
+      radial-gradient(50px 70px at 45% 85%, rgba(196,181,253,0.14), transparent 70%);
+    background-size:340px 340px;
+  }
+  .world-parallax-layer.pnear-blackhole{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(30,10,50,0.85) 0 6px, rgba(167,139,250,0.5) 6px 7px, transparent 8px),
+      radial-gradient(circle at 50% 50%, rgba(20,6,36,0.8) 0 4px, rgba(196,181,253,0.5) 4px 5px, transparent 6px);
+    background-size:260px 220px, 170px 300px;
+    background-position:30px 40px, 190px 160px;
+  }
+  /* Frozen Comet: far = drifting icy mist wisps, near = bigger ice/snow chunks. */
+  .world-parallax-layer.pfar-frozencomet{
+    background-image:
+      radial-gradient(70px 40px at 25% 25%, rgba(186,230,253,0.20), transparent 70%),
+      radial-gradient(90px 55px at 65% 65%, rgba(123,232,255,0.16), transparent 70%),
+      radial-gradient(55px 65px at 45% 90%, rgba(220,245,255,0.14), transparent 70%);
+    background-size:340px 340px;
+  }
+  .world-parallax-layer.pnear-frozencomet{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(220,248,255,0.55) 0 5px, rgba(123,232,255,0.4) 5px 6px, transparent 8px),
+      radial-gradient(circle at 50% 50%, rgba(200,240,255,0.5) 0 3px, rgba(186,230,253,0.4) 3px 4px, transparent 6px);
+    background-size:250px 230px, 160px 290px;
+    background-position:40px 30px, 180px 150px;
+  }
+  /* Molten Core: far = hazy ember wisps, near = drifting magma-rock chunks. */
+  .world-parallax-layer.pfar-moltencore{
+    background-image:
+      radial-gradient(65px 40px at 25% 30%, rgba(255,159,69,0.20), transparent 70%),
+      radial-gradient(90px 50px at 70% 60%, rgba(217,41,28,0.16), transparent 70%),
+      radial-gradient(50px 65px at 45% 88%, rgba(255,179,122,0.15), transparent 70%);
+    background-size:340px 340px;
+  }
+  .world-parallax-layer.pnear-moltencore{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(60,14,4,0.85) 0 6px, rgba(255,159,69,0.55) 6px 7px, transparent 8px),
+      radial-gradient(circle at 50% 50%, rgba(40,10,2,0.8) 0 4px, rgba(217,41,28,0.5) 4px 5px, transparent 6px);
+    background-size:260px 220px, 170px 300px;
+    background-position:30px 40px, 190px 160px;
+  }
+  /* Deep Ocean: far = bioluminescent glow wisps, near = drifting bubble chunks. */
+  .world-parallax-layer.pfar-deepocean{
+    background-image:
+      radial-gradient(65px 40px at 25% 30%, rgba(77,232,255,0.18), transparent 70%),
+      radial-gradient(90px 50px at 70% 65%, rgba(28,109,143,0.16), transparent 70%),
+      radial-gradient(50px 65px at 45% 88%, rgba(125,232,255,0.13), transparent 70%);
+    background-size:340px 340px;
+  }
+  .world-parallax-layer.pnear-deepocean{
+    background-image:
+      radial-gradient(circle at 50% 50%, transparent 0 5px, rgba(77,232,255,0.5) 5px 7px, transparent 8px),
+      radial-gradient(circle at 50% 50%, transparent 0 3px, rgba(125,232,255,0.45) 3px 5px, transparent 6px);
+    background-size:250px 230px, 160px 290px;
+    background-position:40px 30px, 180px 150px;
+  }
+  /* Desert Wastes: far = dusty haze wisps, near = drifting rock/dune chunks. */
+  .world-parallax-layer.pfar-desertwastes{
+    background-image:
+      radial-gradient(70px 42px at 25% 28%, rgba(255,203,119,0.20), transparent 70%),
+      radial-gradient(90px 50px at 68% 62%, rgba(196,138,68,0.16), transparent 70%),
+      radial-gradient(55px 65px at 45% 88%, rgba(255,231,168,0.14), transparent 70%);
+    background-size:340px 340px;
+  }
+  .world-parallax-layer.pnear-desertwastes{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(50,32,8,0.8) 0 6px, rgba(255,203,119,0.5) 6px 7px, transparent 8px),
+      radial-gradient(circle at 50% 50%, rgba(35,22,6,0.75) 0 4px, rgba(196,138,68,0.45) 4px 5px, transparent 6px);
+    background-size:260px 220px, 170px 300px;
+    background-position:30px 40px, 190px 160px;
+  }
+  /* Storm Nebula: far = violet storm-cloud wisps, near = electric debris chunks. */
+  .world-parallax-layer.pfar-stormnebula{
+    background-image:
+      radial-gradient(65px 42px at 25% 28%, rgba(139,92,246,0.20), transparent 70%),
+      radial-gradient(95px 50px at 68% 60%, rgba(244,224,77,0.14), transparent 70%),
+      radial-gradient(55px 65px at 45% 88%, rgba(232,217,255,0.15), transparent 70%);
+    background-size:340px 340px;
+  }
+  .world-parallax-layer.pnear-stormnebula{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(24,10,58,0.85) 0 6px, rgba(139,92,246,0.55) 6px 7px, transparent 8px),
+      radial-gradient(circle at 50% 50%, rgba(18,8,40,0.8) 0 4px, rgba(244,224,77,0.45) 4px 5px, transparent 6px);
+    background-size:260px 220px, 170px 300px;
+    background-position:30px 40px, 190px 160px;
+  }
+  /* Pluto Paradise: far = aurora wisps (mint/pink), near = ice-crystal chunks. */
+  .world-parallax-layer.pfar-plutoparadise{
+    background-image:
+      radial-gradient(65px 42px at 25% 28%, rgba(124,255,196,0.18), transparent 70%),
+      radial-gradient(90px 50px at 68% 60%, rgba(255,143,214,0.16), transparent 70%),
+      radial-gradient(55px 65px at 45% 88%, rgba(184,255,224,0.14), transparent 70%);
+    background-size:340px 340px;
+  }
+  .world-parallax-layer.pnear-plutoparadise{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(255,255,255,0.5) 0 5px, rgba(124,255,196,0.5) 5px 6px, transparent 8px),
+      radial-gradient(circle at 50% 50%, rgba(255,240,250,0.5) 0 3px, rgba(255,143,214,0.45) 3px 4px, transparent 6px);
+    background-size:250px 230px, 160px 290px;
+    background-position:40px 30px, 180px 150px;
+  }
+  /* Toxic Swamp: far = murky fog wisps, near = bog debris/spore chunks. */
+  .world-parallax-layer.pfar-toxicswamp{
+    background-image:
+      radial-gradient(65px 42px at 25% 30%, rgba(195,216,37,0.18), transparent 70%),
+      radial-gradient(90px 50px at 68% 62%, rgba(107,122,47,0.16), transparent 70%),
+      radial-gradient(55px 65px at 45% 88%, rgba(212,242,122,0.14), transparent 70%);
+    background-size:340px 340px;
+  }
+  .world-parallax-layer.pnear-toxicswamp{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(24,28,6,0.8) 0 6px, rgba(195,216,37,0.5) 6px 7px, transparent 8px),
+      radial-gradient(circle at 50% 50%, rgba(18,22,4,0.75) 0 4px, rgba(107,122,47,0.45) 4px 5px, transparent 6px);
+    background-size:260px 220px, 170px 300px;
+    background-position:30px 40px, 190px 160px;
+  }
+  /* Crystal Caverns: far = glowing crystal-dust wisps, near = gem-shard chunks. */
+  .world-parallax-layer.pfar-crystalcaverns{
+    background-image:
+      radial-gradient(65px 42px at 25% 28%, rgba(255,184,240,0.20), transparent 70%),
+      radial-gradient(90px 50px at 68% 60%, rgba(156,77,204,0.16), transparent 70%),
+      radial-gradient(55px 65px at 45% 88%, rgba(255,214,245,0.14), transparent 70%);
+    background-size:340px 340px;
+  }
+  .world-parallax-layer.pnear-crystalcaverns{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(255,255,255,0.5) 0 5px, rgba(255,184,240,0.5) 5px 6px, transparent 8px),
+      radial-gradient(circle at 50% 50%, rgba(245,220,255,0.5) 0 3px, rgba(156,77,204,0.45) 3px 4px, transparent 6px);
+    background-size:250px 230px, 160px 290px;
+    background-position:40px 30px, 180px 150px;
+  }
   .world-ambience-tint{
     position:absolute; inset:0;
     pointer-events:none;
@@ -3353,6 +3628,62 @@ const STORAGE_SCOPE = (new URLSearchParams(location.search).get('grade') || '').
 const STORAGE_PREFIX = STORAGE_SCOPE ? ('g' + STORAGE_SCOPE + '-') : '';
 function skey(name){ return STORAGE_PREFIX + name; }
 
+// ============================================================
+// Shared "reward" sound effects for the handful of moments (coin
+// pickups, level-up, boss defeat) whose code lives in top-level
+// functions outside the main game closure — those don't have access
+// to that closure's local audioCtx/pTone, so they get their own small
+// synth context here instead. Same oscillator-envelope approach as
+// the in-closure pTone, just usable from anywhere in the file.
+// ============================================================
+let fxAudioCtx = null;
+function ensureFxAudio(){
+  if(!fxAudioCtx){
+    try{ fxAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
+  }
+}
+function fxTone(freq, type, t0, dur, vol, opts){
+  if(!fxAudioCtx) return;
+  opts = opts || {};
+  const o = fxAudioCtx.createOscillator();
+  const g = fxAudioCtx.createGain();
+  o.type = type;
+  if(opts.detune) o.detune.setValueAtTime(opts.detune, t0);
+  o.frequency.setValueAtTime(freq, t0);
+  if(opts.toFreq) o.frequency.exponentialRampToValueAtTime(Math.max(20, opts.toFreq), t0+dur);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.linearRampToValueAtTime(vol, t0+Math.min(0.03, dur*0.3));
+  g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  o.connect(g); g.connect(fxAudioCtx.destination);
+  o.start(t0); o.stop(t0+dur+0.03);
+}
+// Bright two-note "cha-ching" — used for combo-tier coin bonuses, shiny
+// pickups, and the end-of-game coin payout.
+function playCoinChime(){
+  ensureFxAudio();
+  if(!fxAudioCtx) return;
+  const t0 = fxAudioCtx.currentTime;
+  fxTone(1046, 'sine', t0, 0.09, 0.09);
+  fxTone(1568, 'sine', t0+0.06, 0.14, 0.08);
+}
+// Quick 4-note ascending arpeggio — plays alongside the level-complete
+// celebration card.
+function playLevelUpFanfare(){
+  ensureFxAudio();
+  if(!fxAudioCtx) return;
+  const t0 = fxAudioCtx.currentTime;
+  [523, 659, 784, 1046].forEach((f,i)=> fxTone(f, 'triangle', t0+i*0.09, 0.16, 0.1));
+}
+// Punchy low hit + a triumphant rising run — plays the instant a boss
+// is defeated, distinct from the regular per-letter zap.
+function playBossDefeatSting(){
+  ensureFxAudio();
+  if(!fxAudioCtx) return;
+  const t0 = fxAudioCtx.currentTime;
+  fxTone(120, 'square', t0, 0.22, 0.14, { toFreq:70 });
+  [392, 523, 659, 784].forEach((f,i)=> fxTone(f, 'triangle', t0+0.1+i*0.09, 0.2, 0.11));
+}
+
 function getCoins(){
   try { return parseInt(localStorage.getItem(skey('ta-coins'))||'0', 10) || 0; } catch(e){ return 0; }
 }
@@ -3436,16 +3767,49 @@ function buildCelebrationContent(stats){
   return { titleHTML, bodyHTML };
 }
 
-function showLevelPopup(gameEl, levelNumber, stats, callback){
+function showLevelPopup(gameEl, levelNumber, stats, callback, worldKey){
   const overlay = document.createElement('div');
   overlay.className = 'level-popup';
   const card = document.createElement('div');
-  card.className = 'level-popup-card';
+  // Worlds with a defined celebration accent (see .level-popup-card.world-<world>
+  // CSS) get a card tinted to match, plus a quick burst of world-colored
+  // confetti behind it — so the "you did it!" moment feels like it belongs
+  // to the world you were just playing, not a generic dark card. Worlds
+  // without an entry fall back to the existing plain styling untouched.
+  const worldClass = (worldKey && CELEBRATION_WORLD_ACCENT[worldKey]) ? ' world-' + worldKey : '';
+  card.className = 'level-popup-card' + worldClass;
   const { titleHTML, bodyHTML } = buildCelebrationContent(stats);
   const captainName = getCaptainName();
   card.innerHTML = titleHTML + `<div class="celebration-sub">Nice flying, ${captainName}! Level ${levelNumber-1} complete!</div>` + bodyHTML;
   overlay.appendChild(card);
   gameEl.appendChild(overlay);
+  playLevelUpFanfare();
+  if(worldClass){
+    const accent = CELEBRATION_WORLD_ACCENT[worldKey];
+    const rect = gameEl.getBoundingClientRect();
+    const cx = rect.width/2, cy = rect.height/2 - 30;
+    const shapes = ['shape-circle','shape-star','shape-diamond'];
+    for(let i=0;i<14;i++){
+      const p = document.createElement('div');
+      p.className = 'confetti-piece ' + shapes[Math.floor(Math.random()*shapes.length)];
+      const sz = 5 + Math.random()*6;
+      p.style.width = sz+'px'; p.style.height = sz+'px';
+      p.style.left = cx+'px'; p.style.top = cy+'px';
+      p.style.background = accent;
+      p.style.boxShadow = `0 0 8px ${accent}`;
+      const angle = Math.random()*Math.PI*2;
+      const dist = 60 + Math.random()*90;
+      const fx = Math.cos(angle)*dist;
+      const fy = Math.sin(angle)*dist - 30;
+      p.style.setProperty('--fx', fx+'px');
+      p.style.setProperty('--fy', fy+'px');
+      p.style.setProperty('--spin', (Math.random()<0.5?-1:1)*(280+Math.random()*260)+'deg');
+      p.style.setProperty('--fly', `translate(${fx}px, ${fy}px)`);
+      p.style.zIndex = '14';
+      gameEl.appendChild(p);
+      setTimeout(()=>p.remove(), 780);
+    }
+  }
   setTimeout(()=>{
     overlay.classList.add('leaving');
     setTimeout(()=>{
@@ -3454,6 +3818,20 @@ function showLevelPopup(gameEl, levelNumber, stats, callback){
     }, 300);
   }, 2400);
 }
+// Per-world celebration accent color — used for the level-popup-card's
+// world-tinted variant and its confetti burst. All 9 non-milkyway worlds
+// are covered now; milkyway keeps the original plain card.
+const CELEBRATION_WORLD_ACCENT = {
+  blackhole: '#A78BFA',
+  frozencomet: '#7BE8FF',
+  moltencore: '#FF9F45',
+  deepocean: '#4DE8FF',
+  desertwastes: '#FFCB77',
+  stormnebula: '#F4E04D',
+  plutoparadise: '#FF8FD6',
+  toxicswamp: '#C3D825',
+  crystalcaverns: '#FFB8F0',
+};
 
 // ============================================================
 // End-of-game coin bonus: awarded once, when a play session actually
@@ -3478,6 +3856,7 @@ function showEndOfGameCoins(gameEl, difficultyKey, levelReached, callback){
   const coins = calcEndOfGameCoins(difficultyKey, levelReached);
   if(coins <= 0){ if(callback) callback(); return; }
   addCoins(coins);
+  playCoinChime();
   updateCoinBadge();
   const diffLabel = DIFFICULTIES[difficultyKey] ? DIFFICULTIES[difficultyKey].label : difficultyKey;
   const captainName = getCaptainName();
@@ -3688,7 +4067,11 @@ const BOSS_THEMES = {
       { name:'Nocturne',   taunt:'Nocturne strikes at midnight — and at your mistakes, {captain}!' },
       { name:'Grimlock',   taunt:"Grimlock locks away spellers who can't keep up, {captain}!" },
     ],
-    overlayBg:'radial-gradient(circle at 50% 40%, rgba(76,29,149,0.68), rgba(8,4,20,0.9))', hpGradient:'linear-gradient(90deg, #A78BFA, #7C3AED)', glow:'rgba(167,139,250,0.8)'
+    // Slightly more transparent than the other worlds' overlays on purpose:
+    // Black Hole now has a parallax layer running behind the boss fight
+    // (see WORLD_PARALLAX), so letting a bit of it show through the scrim
+    // keeps the world identity present even during the boss encounter.
+    overlayBg:'radial-gradient(circle at 50% 40%, rgba(76,29,149,0.6), rgba(8,4,20,0.78))', hpGradient:'linear-gradient(90deg, #A78BFA, #7C3AED)', glow:'rgba(167,139,250,0.8)'
   },
   frozencomet: {
     emojis:['🥶','❄️','🧊','⛄','🐻‍❄️','🦭','🌨️'],
@@ -3701,7 +4084,7 @@ const BOSS_THEMES = {
       { name:'Slushtail',   taunt:'Slushtail slips past your slow keystrokes, {captain}!' },
       { name:'Blizzardeer', taunt:'Blizzardeer buries spellers in snow, {captain}!' },
     ],
-    overlayBg:'radial-gradient(circle at 50% 40%, rgba(46,159,214,0.55), rgba(6,20,32,0.88))', hpGradient:'linear-gradient(90deg, #7BE8FF, #2E9FD6)', glow:'rgba(123,232,255,0.8)'
+    overlayBg:'radial-gradient(circle at 50% 40%, rgba(46,159,214,0.46), rgba(6,20,32,0.75))', hpGradient:'linear-gradient(90deg, #7BE8FF, #2E9FD6)', glow:'rgba(123,232,255,0.8)'
   },
   moltencore: {
     emojis:['🌋','👹','🦂','🐛','🕷️','😈','💥'],
@@ -3714,7 +4097,7 @@ const BOSS_THEMES = {
       { name:'Brimstone',   taunt:'Brimstone rains fire on hesitant typers, {captain}!' },
       { name:'Detonix',     taunt:'Detonix counts down to your defeat, {captain}!' },
     ],
-    overlayBg:'radial-gradient(circle at 50% 40%, rgba(217,41,28,0.62), rgba(30,4,0,0.9))', hpGradient:'linear-gradient(90deg, #FF9F45, #D9291C)', glow:'rgba(255,159,69,0.8)'
+    overlayBg:'radial-gradient(circle at 50% 40%, rgba(217,41,28,0.52), rgba(30,4,0,0.78))', hpGradient:'linear-gradient(90deg, #FF9F45, #D9291C)', glow:'rgba(255,159,69,0.8)'
   },
   deepocean: {
     emojis:['🐙','🦑','🦈','🐡','🦀','🐠','🌊'],
@@ -3727,7 +4110,7 @@ const BOSS_THEMES = {
       { name:'Glimmerfin',  taunt:'Glimmerfin dazzles you into typos, {captain}!' },
       { name:'Tidebreaker', taunt:'Tidebreaker crashes down on slow spellers, {captain}!' },
     ],
-    overlayBg:'radial-gradient(circle at 50% 40%, rgba(28,109,143,0.6), rgba(4,20,26,0.9))', hpGradient:'linear-gradient(90deg, #4DE8FF, #1C6D8F)', glow:'rgba(77,232,255,0.8)'
+    overlayBg:'radial-gradient(circle at 50% 40%, rgba(28,109,143,0.5), rgba(4,20,26,0.78))', hpGradient:'linear-gradient(90deg, #4DE8FF, #1C6D8F)', glow:'rgba(77,232,255,0.8)'
   },
   desertwastes: {
     emojis:['🦂','🐫','🦎','🐍','🗿','☠️','🌵'],
@@ -3740,7 +4123,7 @@ const BOSS_THEMES = {
       { name:'Boneshifter',  taunt:'Boneshifter rattles your nerves, {captain}!' },
       { name:'Spikefist',    taunt:'Spikefist punches through weak spelling, {captain}!' },
     ],
-    overlayBg:'radial-gradient(circle at 50% 40%, rgba(196,138,68,0.55), rgba(30,18,4,0.9))', hpGradient:'linear-gradient(90deg, #FFCB77, #C48A44)', glow:'rgba(255,203,119,0.8)'
+    overlayBg:'radial-gradient(circle at 50% 40%, rgba(196,138,68,0.46), rgba(30,18,4,0.78))', hpGradient:'linear-gradient(90deg, #FFCB77, #C48A44)', glow:'rgba(255,203,119,0.8)'
   },
   stormnebula: {
     emojis:['⚡','🌩️','👾','🌀','🦇','💫','🔮'],
@@ -3753,7 +4136,7 @@ const BOSS_THEMES = {
       { name:'Fulmenor',    taunt:'Fulmenor outraces every keystroke, {captain}!' },
       { name:'Chargewraith',taunt:'Chargewraith zaps hesitation on sight, {captain}!' },
     ],
-    overlayBg:'radial-gradient(circle at 50% 40%, rgba(139,92,246,0.55), rgba(10,6,30,0.9))', hpGradient:'linear-gradient(90deg, #F4E04D, #8B5CF6)', glow:'rgba(244,224,77,0.8)'
+    overlayBg:'radial-gradient(circle at 50% 40%, rgba(139,92,246,0.46), rgba(10,6,30,0.78))', hpGradient:'linear-gradient(90deg, #F4E04D, #8B5CF6)', glow:'rgba(244,224,77,0.8)'
   },
   plutoparadise: {
     emojis:['🪐','💗','❄️','✨','🌌','💫','🩵'],
@@ -3766,7 +4149,7 @@ const BOSS_THEMES = {
       { name:'Starbloom',   taunt:'Starbloom blooms brighter with every miss, {captain}!' },
       { name:'Heartlight',  taunt:'Heartlight beats faster than your keystrokes, {captain}!' },
     ],
-    overlayBg:'radial-gradient(circle at 50% 40%, rgba(124,255,196,0.5), rgba(20,10,40,0.9))', hpGradient:'linear-gradient(90deg, #FF8FD6, #7CFFC4)', glow:'rgba(255,143,214,0.8)'
+    overlayBg:'radial-gradient(circle at 50% 40%, rgba(124,255,196,0.42), rgba(20,10,40,0.78))', hpGradient:'linear-gradient(90deg, #FF8FD6, #7CFFC4)', glow:'rgba(255,143,214,0.8)'
   },
   toxicswamp: {
     emojis:['☠️','🐊','🦟','🧪','🐍','🦟','💀'],
@@ -3779,7 +4162,7 @@ const BOSS_THEMES = {
       { name:'Gaswhisper',  taunt:'Gaswhisper clouds your vision and your spelling, {captain}!' },
       { name:'Croakshade',  taunt:'Croakshade lurks where hesitation festers, {captain}!' },
     ],
-    overlayBg:'radial-gradient(circle at 50% 40%, rgba(107,122,47,0.6), rgba(20,24,4,0.9))', hpGradient:'linear-gradient(90deg, #C3D825, #6B7A2F)', glow:'rgba(195,216,37,0.8)'
+    overlayBg:'radial-gradient(circle at 50% 40%, rgba(107,122,47,0.5), rgba(20,24,4,0.78))', hpGradient:'linear-gradient(90deg, #C3D825, #6B7A2F)', glow:'rgba(195,216,37,0.8)'
   },
   crystalcaverns: {
     emojis:['💎','🔮','✨','👑','🦂','🌟','🕸️'],
@@ -3792,7 +4175,7 @@ const BOSS_THEMES = {
       { name:'Crystallix',    taunt:'Crystallix turns hesitation to stone, {captain}!' },
       { name:'Opalisk',       taunt:'Opalisk dazzles slow spellers into stillness, {captain}!' },
     ],
-    overlayBg:'radial-gradient(circle at 50% 40%, rgba(199,125,255,0.55), rgba(20,4,30,0.9))', hpGradient:'linear-gradient(90deg, #FFB8F0, #9C4DCC)', glow:'rgba(255,184,240,0.8)'
+    overlayBg:'radial-gradient(circle at 50% 40%, rgba(199,125,255,0.46), rgba(20,4,30,0.78))', hpGradient:'linear-gradient(90deg, #FFB8F0, #9C4DCC)', glow:'rgba(255,184,240,0.8)'
   },
 };
 
@@ -3924,6 +4307,7 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
       bossFigure.classList.add('boss-defeated');
       introEl.textContent = 'BOSS DEFEATED!';
       screenShake(gameEl, 'heavy');
+      playBossDefeatSting();
       speak('Boss defeated!');
       setTimeout(()=>{
         overlay.classList.add('leaving');
@@ -4523,17 +4907,32 @@ const pauseSpace = (function(){
     toxicswamp:   { cls:'amb-rise', look:'amb-goo',    count:10 },
     crystalcaverns: { cls:'amb-rise', look:'amb-crystal', count:12 },
   };
+  // Worlds with parallax layer art defined (see .pfar-<world>/.pnear-<world>
+  // CSS). All 9 non-milkyway worlds now have art; milkyway keeps its plain
+  // neutral starfield as the baseline "home" world.
+  const WORLD_PARALLAX = ['blackhole', 'frozencomet', 'moltencore', 'deepocean', 'desertwastes', 'stormnebula', 'plutoparadise', 'toxicswamp', 'crystalcaverns'];
   function clearWorldAmbience(){
     const oldTint = document.getElementById('world-ambience-tint-sp');
     if(oldTint) oldTint.remove();
     const oldParticles = document.getElementById('world-ambience-particles-sp');
     if(oldParticles) oldParticles.remove();
+    const oldParallax = document.getElementById('world-parallax-sp');
+    if(oldParallax) oldParallax.remove();
     stopWorldAmbientAudio();
   }
   function applyWorldAmbience(world){
     clearWorldAmbience();
     startWorldAmbientAudio(world);
     if(!game) return;
+    if(WORLD_PARALLAX.includes(world)){
+      const parallax = document.createElement('div');
+      parallax.id = 'world-parallax-sp';
+      parallax.className = 'world-parallax';
+      parallax.innerHTML =
+        '<div class="world-parallax-layer layer-far pfar-' + world + '"></div>' +
+        '<div class="world-parallax-layer layer-near pnear-' + world + '"></div>';
+      game.insertBefore(parallax, game.firstChild);
+    }
     const tint = document.createElement('div');
     tint.id = 'world-ambience-tint-sp';
     tint.className = 'world-ambience-tint env-' + world;
@@ -5387,8 +5786,17 @@ const pauseSpace = (function(){
   }
 
   function burstExplosion(x,y,color){
+    // Impact flash first: a bright hot-core pop right at contact, a beat
+    // before the ring/confetti expand outward, so the hit reads as a
+    // moment of force rather than the ring just growing from nothing.
+    const impact = document.createElement('div');
+    impact.className = 'impact-flash';
+    impact.style.cssText = `left:${x}px;top:${y}px;width:20px;height:20px;background:radial-gradient(circle,#fff,${color} 50%,transparent);box-shadow:0 0 18px #fff,0 0 30px ${color};`;
+    game.appendChild(impact);
+    setTimeout(()=>impact.remove(), 230);
+
     const ring = document.createElement('div');
-    ring.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:6px;height:6px;border-radius:50%;pointer-events:none;box-shadow:0 0 0 2px ${color};transform:translate(-50%,-50%);animation:explosion-ring 0.4s ease-out forwards;`;
+    ring.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:6px;height:6px;border-radius:50%;pointer-events:none;box-shadow:0 0 0 2px ${color},0 0 14px 3px var(--world-glow, ${color});transform:translate(-50%,-50%);animation:explosion-ring 0.4s ease-out forwards;`;
     game.appendChild(ring);
     setTimeout(()=>ring.remove(), 420);
     const shapes = ['shape-circle','shape-star','shape-diamond'];
@@ -5464,10 +5872,20 @@ const pauseSpace = (function(){
     game.appendChild(beam);
     setTimeout(()=>beam.remove(), 160);
 
+    // Muzzle flash: a hot circular pop at the barrel tip...
     const flash = document.createElement('div');
-    flash.style.cssText = `position:absolute;left:${originX}px;top:${originY}px;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle,#fff,${color},transparent);transform:translate(-50%,-50%);pointer-events:none;animation:laser-fade 0.18s ease-out forwards;box-shadow:0 0 14px ${color};`;
+    flash.className = 'muzzle-flash';
+    flash.style.cssText += `left:${originX}px;top:${originY}px;width:16px;height:16px;background:radial-gradient(circle,#fff,${color} 55%,transparent);box-shadow:0 0 16px ${color},0 0 28px ${color};`;
     game.appendChild(flash);
-    setTimeout(()=>flash.remove(), 200);
+    setTimeout(()=>flash.remove(), 150);
+    // ...plus a short flare oriented back along the beam direction, so
+    // the flash reads as "coming from the barrel" rather than a static dot.
+    const flareAngle = Math.atan2(dx, -dy) * (180/Math.PI);
+    const flare = document.createElement('div');
+    flare.className = 'muzzle-flare';
+    flare.style.cssText = `left:${originX}px;top:${originY}px;width:18px;height:4px;background:linear-gradient(90deg,#fff,${color},transparent);box-shadow:0 0 10px ${color};transform:rotate(${flareAngle}deg);`;
+    game.appendChild(flare);
+    setTimeout(()=>flare.remove(), 130);
 
     if(isBlazeShip){
       // Trailing embers along the beam path
@@ -6486,6 +6904,7 @@ const pauseSpace = (function(){
         const bonusCoins = newTier * 2;
         if(bonusCoins > 0){
           addCoins(bonusCoins);
+          playCoinChime();
           updateCoinBadge();
           showToast('⭐ Combo x' + multiplier + '! +' + bonusCoins + ' Coins');
           punchScore();
@@ -6495,6 +6914,7 @@ const pauseSpace = (function(){
 
       if(target.shiny){
         addCoins(SHINY_COIN_BONUS);
+        playCoinChime();
         updateCoinBadge();
         showToast('✨ SHINY! +' + SHINY_COIN_BONUS + ' Coins!');
         punchScore();
@@ -6528,13 +6948,17 @@ const pauseSpace = (function(){
             paused = false;
             scheduleSpawn();
           }
-        });
+        }, currentWorld);
       }
       highlightTargets();
     } else {
       // Typing a wrong letter breaks the streak-of-10 needed to charge a
       // ship power, so mistypes actually cost the player something instead
-      // of being free to spam.
+      // of being free to spam. A soft, low "miss" blip gives audible
+      // feedback too — quiet and short on purpose so it reads as "try
+      // again" rather than a punishing buzzer.
+      const missT0 = audioCtx ? audioCtx.currentTime : 0;
+      pTone(180, 'sine', missT0, 0.11, 0.05, { toFreq:120 });
       missesThisLevel += 1;
       flashKeyPress(ch);
       if(streak > 0){
