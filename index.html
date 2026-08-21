@@ -6703,6 +6703,8 @@ function QuizRunner({
 }) {
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
+  const [optOrder, setOptOrder] = useState([]); // shuffled indices into q.options (mcq / tf / tama)
+  const [ddBankOrder, setDdBankOrder] = useState([]); // shuffled indices into q.items (dragdrop word bank)
   const [fillText, setFillText] = useState("");
   const [fillChecked, setFillChecked] = useState(false);
   const [answers, setAnswers] = useState([]);
@@ -6765,6 +6767,7 @@ function QuizRunner({
   useEffect(() => {
     if (answers[idx] !== undefined) return; // already-answered question — never rebuild/clear its state once committed
     setSelected(null);
+    setOptOrder(shuffledIndices((q.options || []).length));
     setFillText("");
     setFillChecked(false);
   }, [idx]);
@@ -6782,6 +6785,7 @@ function QuizRunner({
       setDdActiveItem(null);
       setDdChecked(false);
       setDragOverCat(null);
+      setDdBankOrder(shuffledIndices((q.items || []).length));
     } else if (isOrder) {
       setOrderList(shuffledIndices((q.items || []).length));
       setOrderChecked(false);
@@ -7294,17 +7298,17 @@ function QuizRunner({
     className: "quiz-q"
   }, q.q), record ? /*#__PURE__*/React.createElement(AnswerReviewBody, {
     a: record
-  }) : /*#__PURE__*/React.createElement(React.Fragment, null, !isFill && !isMatch && !isDragDrop && !isOrder && !isLabel && !isPattern && !isEmoji && q.options.map((opt, i) => {
+  }) : /*#__PURE__*/React.createElement(React.Fragment, null, !isFill && !isMatch && !isDragDrop && !isOrder && !isLabel && !isPattern && !isEmoji && (optOrder.length ? optOrder : q.options.map((_, i) => i)).map(oi => {
     let cls = "quiz-opt";
     if (selected !== null) {
-      if (i === q.correct) cls += " correct";else if (i === selected) cls += " incorrect";else cls += " dimmed";
+      if (oi === q.correct) cls += " correct";else if (oi === selected) cls += " incorrect";else cls += " dimmed";
     }
     return /*#__PURE__*/React.createElement("button", {
-      key: i,
+      key: oi,
       className: cls,
       disabled: selected !== null,
-      onClick: () => handleSelect(i)
-    }, opt);
+      onClick: () => handleSelect(oi)
+    }, q.options[oi]);
   }), isEmoji && /*#__PURE__*/React.createElement("div", {
     className: "emoji-opt-row"
   }, [0, 1].map(i => {
@@ -7427,8 +7431,9 @@ function QuizRunner({
     onClick: () => {
       if (ddActiveItem !== null && ddAssign[ddActiveItem] !== undefined) unassignItem(ddActiveItem);
     }
-  }, (q.items || []).map((it, ii) => {
-    if (ddAssign[ii] !== undefined) return null;
+  }, (ddBankOrder.length ? ddBankOrder : (q.items || []).map((_, i) => i)).map(ii => {
+    const it = (q.items || [])[ii];
+    if (!it || ddAssign[ii] !== undefined) return null;
     return /*#__PURE__*/React.createElement("div", {
       key: ii,
       className: "dd-chip" + (ddActiveItem === ii ? " active" : "") + (ddDragging && ddDragging.ii === ii ? " dragging" : ""),
@@ -9456,6 +9461,34 @@ const GENERATE_TYPE_LABELS = {
   order: "Ordering"
 };
 const GENERATE_TYPE_ORDER = ["mcq", "tf", "emoji", "tama", "fill", "match", "dragdrop", "order"];
+// Short labels for every question type (used in the chapter-list "Qs in bank" breakdown pill).
+const QUESTION_TYPE_SHORT_LABELS = {
+  mcq: "MC",
+  tf: "T/F",
+  emoji: "Happy/Sad",
+  tama: "Tama/Mali",
+  fill: "Fill",
+  match: "Match",
+  matchimg: "Img Match",
+  dragdrop: "Drag&Drop",
+  order: "Order",
+  label: "Label",
+  pattern: "Pattern"
+};
+// Builds a compact "N Qs — 3 MC, 2 Fill, 1 Match" style string for a lesson's question bank.
+function questionTypeBreakdown(questions) {
+  const counts = {};
+  (questions || []).forEach(q => {
+    const t = q.type || "mcq";
+    counts[t] = (counts[t] || 0) + 1;
+  });
+  const order = [...GENERATE_TYPE_ORDER, "matchimg", "label", "pattern"];
+  const parts = order.filter(t => counts[t]).map(t => counts[t] + " " + (QUESTION_TYPE_SHORT_LABELS[t] || t));
+  Object.keys(counts).forEach(t => {
+    if (!order.includes(t)) parts.push(counts[t] + " " + (QUESTION_TYPE_SHORT_LABELS[t] || t));
+  });
+  return parts.join(", ");
+}
 // Recommended question-count range per type (per single generate call), based
 // on where Gemini Flash quality/JSON-validity starts to degrade. When more
 // than one type is selected, the mixed-batch range is used instead — a
@@ -11835,8 +11868,6 @@ function QuarterScreen({
       }, "\u2728 My Topic"), getLessonVideos(l).some(u => youtubeEmbedId(u)) && /*#__PURE__*/React.createElement("span", {
         className: "pill done"
       }, "\uD83C\uDFAC Video"), /*#__PURE__*/React.createElement("span", {
-        className: "pill " + (learned ? "done" : "todo")
-      }, learned ? "📖 Learned" : "📖 Not started"), /*#__PURE__*/React.createElement("span", {
         role: "button",
         title: "Generate quiz questions with AI (Gemini) from this topic's notes",
         className: "pill todo",
@@ -11845,11 +11876,11 @@ function QuarterScreen({
           opacity: generatingIds[l.id] ? 0.6 : 1
         },
         onClick: e => openGenerateSetup(l, e)
-      }, generatingIds[l.id] ? "⏳ Generating…" : "✨ Generate"), best ? /*#__PURE__*/React.createElement("span", {
-        className: "pill " + (best.correct / best.total >= 0.7 ? "score-good" : "score-bad")
-      }, "\uD83D\uDCDD ", best.correct, "/", best.total) : /*#__PURE__*/React.createElement("span", {
+      }, generatingIds[l.id] ? "⏳ Generating…" : "✨ Generate"), qCount ? /*#__PURE__*/React.createElement("span", {
         className: "pill todo"
-      }, "\uD83D\uDCDD ", qCount ? qCount + " Qs in bank" : "No questions yet"))), l0.isCustom && /*#__PURE__*/React.createElement("span", {
+      }, "\uD83D\uDCDD ", qCount, " Qs \u2014 ", questionTypeBreakdown(getQuestions(l.id))) : /*#__PURE__*/React.createElement("span", {
+        className: "pill todo"
+      }, "\uD83D\uDCDD No questions yet"))), l0.isCustom && /*#__PURE__*/React.createElement("span", {
         role: "button",
         title: "Delete this topic",
         className: "note-remove-btn",
