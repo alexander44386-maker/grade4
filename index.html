@@ -6759,6 +6759,7 @@ function QuizRunner({
   const isLabel = qType === "label";
   const isPattern = qType === "pattern";
   const isEmoji = qType === "emoji";
+  const isBinaryChoice = qType === "tf" || qType === "emoji" || qType === "tama";
   const acceptable = isFill ? String(q.answer || "").split("|").map(a => a.trim()).filter(Boolean) : [];
   const fillIsCorrect = isFill && matchesFillAnswer(fillText, acceptable);
 
@@ -6767,7 +6768,7 @@ function QuizRunner({
   useEffect(() => {
     if (answers[idx] !== undefined) return; // already-answered question — never rebuild/clear its state once committed
     setSelected(null);
-    setOptOrder(shuffledIndices((q.options || []).length));
+    setOptOrder(isBinaryChoice ? (q.options || []).map((_, i) => i) : shuffledIndices((q.options || []).length));
     setFillText("");
     setFillChecked(false);
   }, [idx]);
@@ -10009,6 +10010,19 @@ function QuestionBankManager({
     onChange(questions.filter(q => normTopic(q.topic) !== topic));
     setSelected(new Set());
   }
+  function handleRenameTopic(topic) {
+    const count = questions.filter(q => normTopic(q.topic) === topic).length;
+    if (count === 0) return;
+    const newName = prompt("Rename topic \"" + topic + "\" to:", topic);
+    if (newName === null) return;
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === topic) return;
+    if (topics.includes(trimmed) || (!trimmed && noTopicCount > 0)) {
+      if (!confirm("\"" + trimmed + "\" already exists as a topic. Merge \"" + topic + "\" into it?")) return;
+    }
+    onChange(questions.map(q => normTopic(q.topic) === topic ? { ...q, topic: trimmed } : q));
+    setSelected(new Set());
+  }
   function handleDeleteType(type) {
     const label = (QUESTION_TYPES.find(t => t.id === type) || {}).label || type;
     const count = questions.filter(q => (q.type || "mcq") === type).length;
@@ -10467,6 +10481,9 @@ function QuestionBankManager({
         gap: 8
       }
     }, /*#__PURE__*/React.createElement("button", {
+      className: "btn btn-ghost btn-sm",
+      onClick: () => handleRenameTopic(t)
+    }, "\u270F\uFE0F Rename"), /*#__PURE__*/React.createElement("button", {
       className: "btn btn-ghost btn-sm",
       onClick: () => handleDownloadTopic(t)
     }, "\u2B07\uFE0F Download"), /*#__PURE__*/React.createElement("button", {
