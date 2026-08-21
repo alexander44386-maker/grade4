@@ -800,9 +800,65 @@
     40%{ transform:translate(-50%,-50%) scale(1.5); opacity:1; }
     100%{ transform:translate(-50%,-50%) scale(2.1); opacity:0; }
   }
+  /* ---------- Meteor Bomb payoff: a full-screen hot flash plus an
+     expanding ring shockwave from center. Only used for this one
+     legendary-tier power, so it should read as clearly bigger than any
+     regular hit/combo effect. ---------- */
+  .meteor-bomb-flash{
+    position:absolute; inset:0;
+    pointer-events:none;
+    z-index:12;
+    background:radial-gradient(circle, rgba(255,255,255,0.92), rgba(255,148,60,0.5) 40%, transparent 75%);
+    animation: meteor-flash-fade 0.4s ease-out forwards;
+  }
+  @keyframes meteor-flash-fade{
+    0%{ opacity:1; }
+    100%{ opacity:0; }
+  }
+  .meteor-bomb-shockwave{
+    position:absolute;
+    width:10px; height:10px;
+    border-radius:50%;
+    border:4px solid rgba(255,159,69,0.85);
+    box-shadow:0 0 30px 10px rgba(255,94,58,0.5);
+    pointer-events:none;
+    z-index:11;
+    transform:translate(-50%,-50%);
+    animation: meteor-shockwave-expand 0.6s cubic-bezier(.17,.89,.32,1.1) forwards;
+  }
+  @keyframes meteor-shockwave-expand{
+    0%{ width:10px; height:10px; opacity:1; }
+    100%{ width:900px; height:900px; opacity:0; }
+  }
+  /* Power badge ready-pop: a bounce+brighten the instant a charge banks,
+     so the moment is felt even if the toast/voice line gets missed. */
+  .power-badge-ready-pop{
+    animation: power-badge-ready-pop 0.5s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes power-badge-ready-pop{
+    0%{ transform:scale(0.6); filter:brightness(1); }
+    50%{ transform:scale(1.35); filter:brightness(1.6); }
+    100%{ transform:scale(1); filter:brightness(1); }
+  }
+  /* ---------- Laser tip pulse: a bright pop that lands at the target
+     end of the beam a beat after firing, so the shot reads as landing
+     with a taper/pulse rather than the beam being a flat static bar. ---------- */
+  .laser-tip-pulse{
+    position:absolute;
+    pointer-events:none;
+    border-radius:50%;
+    mix-blend-mode:screen;
+    animation: laser-tip-pulse-pop 0.22s ease-out forwards;
+  }
+  @keyframes laser-tip-pulse-pop{
+    0%{ transform:translate(-50%,-50%) scale(0.3); opacity:0; }
+    35%{ transform:translate(-50%,-50%) scale(1); opacity:1; }
+    100%{ transform:translate(-50%,-50%) scale(1.8); opacity:0; }
+  }
   .laser-beam{
     position:absolute;
     width:5px;
+    clip-path: polygon(32% 0%, 68% 0%, 100% 100%, 0% 100%);
     border-radius:3px;
     pointer-events:none;
     /* Two glow layers: the beam's own color (tight, currentColor) plus a
@@ -1123,8 +1179,26 @@
     60%{ transform:scale(1.3) rotate(20deg); opacity:1; }
     100%{ transform:scale(0) rotate(60deg); opacity:0; }
   }
-  .boss-hpbar{
+  .boss-hud-panel{
     width:min(70vw,320px);
+    background:linear-gradient(160deg, rgba(30,36,86,0.55), rgba(20,25,64,0.7));
+    border:1px solid rgba(255,255,255,0.14);
+    border-radius:14px;
+    padding:12px 16px 14px;
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+  }
+  .boss-hud-panel::before{
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, #FF6F5A, #FFD166, #FF6F5A);
+  }
+  .boss-hpbar{
+    width:100%;
     height:18px;
     background:#00000055;
     border-radius:10px;
@@ -1184,7 +1258,11 @@
   }
   .boss-timer.boss-timer-low{
     color:#FF6B6B;
-    animation: shake 0.3s ease infinite;
+    animation: boss-timer-low-pulse 0.8s ease-in-out infinite;
+  }
+  @keyframes boss-timer-low-pulse{
+    0%,100%{ opacity:1; }
+    50%{ opacity:0.45; }
   }
 
   /* ---------- Boss name + pre-fight taunt speech bubble ----------
@@ -1587,13 +1665,6 @@
   .captain-name-save:active{ transform:translateY(2px); box-shadow:0 2px 0 #2378A8; }
 
   .world-row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
-  .world-btn{ position:relative; }
-  .world-btn::before{
-    content:''; display:inline-block; width:9px;height:9px;border-radius:50%;
-    margin-right:5px; vertical-align:middle;
-    background:linear-gradient(135deg, var(--sw1,#B8A6FF), var(--sw2,#9C86FF));
-    box-shadow:0 0 4px var(--sw2,#9C86FF);
-  }
   .world-btn[data-world="blackhole"]{ --sw1:#C4B5FD; --sw2:#7C3AED; }
   .world-btn[data-world="frozencomet"]{ --sw1:#BAE6FD; --sw2:#2E9FD6; }
   .world-btn[data-world="moltencore"]{ --sw1:#FFB37A; --sw2:#D9291C; }
@@ -1606,28 +1677,82 @@
   .world-btn[data-world="milkyway"]{ --sw1:#BFE8FF; --sw2:#4DE8FF; }
   .world-btn-disabled{ opacity:0.45; cursor:not-allowed; filter:grayscale(0.4); }
   .world-btn-disabled:hover{ transform:none; }
-  .world-locked{ opacity:0.7; }
-  /* World buttons stack their label above the lock tag (instead of the
-     default inline button flow, which crammed the "🔒 200" pill beside
-     the world name on one line) so the cost pill always sits centered
-     below the name. */
+  /* ---------- World-select cards: each button previews its world's own
+     palette (a mini starfield over its gradient) instead of a flat pill
+     with a tiny color dot, so the picker itself hints at what's inside. ---------- */
   .world-btn{
+    position:relative;
+    width:96px; height:74px;
+    overflow:hidden;
     display:flex;
     flex-direction:column;
-    align-items:center;
-    gap:4px;
+    justify-content:flex-end;
+    align-items:flex-start;
+    gap:0;
+    padding:8px;
+    font-size:11.5px;
+    line-height:1.2;
+    white-space:normal;
+    text-align:left;
+    background-image:
+      linear-gradient(0deg, rgba(0,0,0,0.55), transparent 55%),
+      radial-gradient(1.5px 1.5px at 20% 30%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 70% 20%, #fff, transparent),
+      radial-gradient(1px 1px at 50% 60%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 85% 70%, #fff, transparent),
+      radial-gradient(1px 1px at 30% 80%, #fff, transparent),
+      linear-gradient(150deg, var(--sw1,#B8A6FF), var(--sw2,#9C86FF));
+    background-repeat:no-repeat;
+    color:#fff !important;
+    text-shadow:0 1px 3px rgba(0,0,0,0.6);
+  }
+  #view-space .world-btn.selected,
+  .world-btn.selected{
+    background-image:
+      linear-gradient(0deg, rgba(0,0,0,0.55), transparent 55%),
+      radial-gradient(1.5px 1.5px at 20% 30%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 70% 20%, #fff, transparent),
+      radial-gradient(1px 1px at 50% 60%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 85% 70%, #fff, transparent),
+      radial-gradient(1px 1px at 30% 80%, #fff, transparent),
+      linear-gradient(150deg, var(--sw1,#B8A6FF), var(--sw2,#9C86FF));
+    border-color:#5CE1FF;
+    box-shadow:0 0 0 2px rgba(92,225,255,0.45);
+    color:#fff;
+    transform:none;
+  }
+  /* Locked: desaturated/darkened preview (still visible, just teasing)
+     plus a slow diagonal shimmer sweep instead of flat gray-out. */
+  .world-btn.world-locked{
+    opacity:1;
+    filter:saturate(0.5) brightness(0.55);
+  }
+  .world-btn.world-locked::after{
+    content:'';
+    position:absolute; top:0; left:-60%;
+    width:40%; height:100%;
+    background:linear-gradient(100deg, transparent, rgba(255,255,255,0.35), transparent);
+    animation: world-shimmer-sweep 2.6s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes world-shimmer-sweep{
+    0%{ left:-60%; }
+    45%{ left:120%; }
+    100%{ left:120%; }
   }
   .world-lock-tag{
+    position:absolute;
+    top:6px; right:6px;
+    z-index:2;
     display:inline-block;
-    font-size:10px;
+    font-size:9px;
     font-weight:800;
-    margin-left:0;
-    padding:1px 6px;
+    padding:2px 6px;
     border-radius:8px;
-    background:rgba(0,0,0,0.15);
+    background:rgba(0,0,0,0.5);
+    color:#FFD166;
     letter-spacing:0.3px;
   }
-  #view-space .world-lock-tag{ background:rgba(0,0,0,0.35); }
 
   /* ---------- Power shop (independent power purchase, separate from ships) ---------- */
   .power-row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
@@ -2357,6 +2482,10 @@
   }
   .world-parallax-layer.layer-far{ animation: parallax-drift-far 100s linear infinite; opacity:0.55; }
   .world-parallax-layer.layer-near{ animation: parallax-drift-near 46s linear infinite; opacity:0.4; }
+  /* Third depth layer: bigger, sparser chunks drifting fastest of the
+     three, so the world reads with real foreground/mid/back depth
+     instead of just two speeds of the same-size debris. */
+  .world-parallax-layer.layer-close{ animation: parallax-drift-close 26s linear infinite; opacity:0.5; }
   @keyframes parallax-drift-far{
     0%{ transform:translate(0,0); }
     100%{ transform:translate(-180px,260px); }
@@ -2364,6 +2493,10 @@
   @keyframes parallax-drift-near{
     0%{ transform:translate(0,0); }
     100%{ transform:translate(140px,360px); }
+  }
+  @keyframes parallax-drift-close{
+    0%{ transform:translate(0,0); }
+    100%{ transform:translate(-260px,480px); }
   }
   /* Black Hole world: far layer = faint drifting violet nebula wisps;
      near layer = bigger, sparser debris chunks with a purple rim-light,
@@ -2382,6 +2515,12 @@
     background-size:260px 220px, 170px 300px;
     background-position:30px 40px, 190px 160px;
   }
+  .world-parallax-layer.pclose-blackhole{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(15,4,26,0.9) 0 11px, rgba(196,181,253,0.6) 11px 13px, transparent 15px);
+    background-size:420px 460px;
+    background-position:120px 80px;
+  }
   /* Frozen Comet: far = drifting icy mist wisps, near = bigger ice/snow chunks. */
   .world-parallax-layer.pfar-frozencomet{
     background-image:
@@ -2396,6 +2535,12 @@
       radial-gradient(circle at 50% 50%, rgba(200,240,255,0.5) 0 3px, rgba(186,230,253,0.4) 3px 4px, transparent 6px);
     background-size:250px 230px, 160px 290px;
     background-position:40px 30px, 180px 150px;
+  }
+  .world-parallax-layer.pclose-frozencomet{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(210,246,255,0.65) 0 12px, rgba(123,232,255,0.55) 12px 14px, transparent 16px);
+    background-size:430px 470px;
+    background-position:100px 90px;
   }
   /* Molten Core: far = hazy ember wisps, near = drifting magma-rock chunks. */
   .world-parallax-layer.pfar-moltencore{
@@ -2412,6 +2557,12 @@
     background-size:260px 220px, 170px 300px;
     background-position:30px 40px, 190px 160px;
   }
+  .world-parallax-layer.pclose-moltencore{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(45,10,2,0.9) 0 11px, rgba(255,159,69,0.65) 11px 13px, transparent 15px);
+    background-size:410px 450px;
+    background-position:140px 70px;
+  }
   /* Deep Ocean: far = bioluminescent glow wisps, near = drifting bubble chunks. */
   .world-parallax-layer.pfar-deepocean{
     background-image:
@@ -2426,6 +2577,12 @@
       radial-gradient(circle at 50% 50%, transparent 0 3px, rgba(125,232,255,0.45) 3px 5px, transparent 6px);
     background-size:250px 230px, 160px 290px;
     background-position:40px 30px, 180px 150px;
+  }
+  .world-parallax-layer.pclose-deepocean{
+    background-image:
+      radial-gradient(circle at 50% 50%, transparent 0 11px, rgba(77,232,255,0.6) 11px 14px, transparent 16px);
+    background-size:420px 460px;
+    background-position:110px 100px;
   }
   /* Desert Wastes: far = dusty haze wisps, near = drifting rock/dune chunks. */
   .world-parallax-layer.pfar-desertwastes{
@@ -2442,6 +2599,12 @@
     background-size:260px 220px, 170px 300px;
     background-position:30px 40px, 190px 160px;
   }
+  .world-parallax-layer.pclose-desertwastes{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(40,26,6,0.85) 0 12px, rgba(255,203,119,0.6) 12px 14px, transparent 16px);
+    background-size:430px 460px;
+    background-position:90px 110px;
+  }
   /* Storm Nebula: far = violet storm-cloud wisps, near = electric debris chunks. */
   .world-parallax-layer.pfar-stormnebula{
     background-image:
@@ -2456,6 +2619,12 @@
       radial-gradient(circle at 50% 50%, rgba(18,8,40,0.8) 0 4px, rgba(244,224,77,0.45) 4px 5px, transparent 6px);
     background-size:260px 220px, 170px 300px;
     background-position:30px 40px, 190px 160px;
+  }
+  .world-parallax-layer.pclose-stormnebula{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(16,6,40,0.9) 0 11px, rgba(139,92,246,0.65) 11px 13px, transparent 15px);
+    background-size:410px 450px;
+    background-position:130px 90px;
   }
   /* Pluto Paradise: far = aurora wisps (mint/pink), near = ice-crystal chunks. */
   .world-parallax-layer.pfar-plutoparadise{
@@ -2472,6 +2641,12 @@
     background-size:250px 230px, 160px 290px;
     background-position:40px 30px, 180px 150px;
   }
+  .world-parallax-layer.pclose-plutoparadise{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(255,255,255,0.6) 0 11px, rgba(255,143,214,0.55) 11px 14px, transparent 16px);
+    background-size:420px 460px;
+    background-position:100px 100px;
+  }
   /* Toxic Swamp: far = murky fog wisps, near = bog debris/spore chunks. */
   .world-parallax-layer.pfar-toxicswamp{
     background-image:
@@ -2487,6 +2662,12 @@
     background-size:260px 220px, 170px 300px;
     background-position:30px 40px, 190px 160px;
   }
+  .world-parallax-layer.pclose-toxicswamp{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(18,22,4,0.88) 0 12px, rgba(195,216,37,0.6) 12px 14px, transparent 16px);
+    background-size:430px 470px;
+    background-position:120px 80px;
+  }
   /* Crystal Caverns: far = glowing crystal-dust wisps, near = gem-shard chunks. */
   .world-parallax-layer.pfar-crystalcaverns{
     background-image:
@@ -2501,6 +2682,12 @@
       radial-gradient(circle at 50% 50%, rgba(245,220,255,0.5) 0 3px, rgba(156,77,204,0.45) 3px 4px, transparent 6px);
     background-size:250px 230px, 160px 290px;
     background-position:40px 30px, 180px 150px;
+  }
+  .world-parallax-layer.pclose-crystalcaverns{
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(255,255,255,0.6) 0 11px, rgba(156,77,204,0.6) 11px 14px, transparent 16px);
+    background-size:420px 460px;
+    background-position:100px 90px;
   }
   .world-ambience-tint{
     position:absolute; inset:0;
@@ -2607,6 +2794,21 @@
     display:flex;
     align-items:center;
     justify-content:center;
+  }
+  .cannon .barrel.recoil{
+    animation: barrel-recoil 0.16s ease-out;
+  }
+  @keyframes barrel-recoil{
+    0%{ transform: translateX(-50%) rotate(var(--ship-rot,0deg)) translateY(3px) scale(0.94); }
+    60%{ transform: translateX(-50%) rotate(var(--ship-rot,0deg)) translateY(-1px) scale(1.03); }
+    100%{ transform: translateX(-50%) rotate(var(--ship-rot,0deg)) translateY(0) scale(1); }
+  }
+  .cannon .base.recoil{
+    animation: base-recoil 0.16s ease-out;
+  }
+  @keyframes base-recoil{
+    0%{ transform: translateY(2px); }
+    100%{ transform: translateY(0); }
   }
   .cannon{
     animation: ship-idle-bob 1.8s ease-in-out infinite;
@@ -4252,9 +4454,11 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
     '<div class="boss-name">' + bossInfo.name + '</div>' +
     '<div class="boss-figure">' + bossEmoji + '</div>' +
     '<div class="boss-taunt-bubble">' + tauntText + '</div>' +
-    '<div class="boss-hpbar"><div class="boss-hpfill"></div></div>' +
+    '<div class="boss-hud-panel">' +
+      '<div class="boss-hpbar"><div class="boss-hpfill"></div></div>' +
+      '<div class="boss-timer"></div>' +
+    '</div>' +
     '<div class="boss-word"></div>' +
-    '<div class="boss-timer"></div>' +
     '<div class="boss-hint">Type the word to defeat it!</div>';
   gameEl.appendChild(overlay);
 
@@ -4490,17 +4694,19 @@ const pauseSpace = (function(){
     cannonBarrel.style.fontSize = '30px';
     cannonBarrel.style.lineHeight = '1';
     cannonBarrel.style.boxShadow = 'none';
-    cannonBarrel.style.filter = `drop-shadow(0 0 8px ${def.color})`;
+    cannonBarrel.style.filter = `drop-shadow(0 0 4px ${def.color}aa)`;
+    cannonBarrel.style.setProperty('--ship-rot', def.rotate + 'deg');
     cannonBarrel.style.transform = `translateX(-50%) rotate(${def.rotate}deg)`;
     // 100/200/300/400/500-coin ships get a distinct glowing launch pad (see
     // .tier-rare/.tier-epic/.tier-legendary/.tier-ultra/.tier-mythic CSS);
-    // everything else just gets the plain color-tinted glow it always had.
+    // everything else just gets a light color-tinted glow, kept subtle so
+    // the tier glows above still read as a step up in shine.
     cannonBase.classList.remove('tier-rare','tier-epic','tier-legendary','tier-ultra','tier-mythic');
     if(def.tier === 'rare' || def.tier === 'epic' || def.tier === 'legendary' || def.tier === 'ultra' || def.tier === 'mythic'){
       cannonBase.classList.add('tier-' + def.tier);
       cannonBase.style.boxShadow = '';
     } else {
-      cannonBase.style.boxShadow = `0 0 10px ${def.color}88`;
+      cannonBase.style.boxShadow = `0 0 6px ${def.color}55`;
     }
     cannonBarrel.classList.toggle('legendary-ship', !!def.legendary);
     cannonBarrel.classList.toggle('mythic-ship', !!def.mythic);
@@ -4930,7 +5136,8 @@ const pauseSpace = (function(){
       parallax.className = 'world-parallax';
       parallax.innerHTML =
         '<div class="world-parallax-layer layer-far pfar-' + world + '"></div>' +
-        '<div class="world-parallax-layer layer-near pnear-' + world + '"></div>';
+        '<div class="world-parallax-layer layer-near pnear-' + world + '"></div>' +
+        '<div class="world-parallax-layer layer-close pclose-' + world + '"></div>';
       game.insertBefore(parallax, game.firstChild);
     }
     const tint = document.createElement('div');
@@ -5548,9 +5755,9 @@ const pauseSpace = (function(){
     const def = CHAR_DEFS[selectedChar];
     var color = def ? def.color : '#4DE8FF';
     var tier = getComboTierIndex(streak);
-    var blur = 8 + tier*6;
-    cannonBarrel.style.filter = 'drop-shadow(0 0 ' + blur + 'px ' + color + ')';
-    cannonBase.style.boxShadow = '0 0 ' + (10+tier*6) + 'px ' + color + (tier>=2?'cc':'88');
+    var blur = 4 + tier*6;
+    cannonBarrel.style.filter = 'drop-shadow(0 0 ' + blur + 'px ' + color + (tier===0?'aa':'') + ')';
+    cannonBase.style.boxShadow = '0 0 ' + (6+tier*6) + 'px ' + color + (tier>=2?'cc':'55');
   }
   function spawnShipTrail(){
     if(!cannonEl || !cannonBarrel) return;
@@ -5786,6 +5993,11 @@ const pauseSpace = (function(){
   }
 
   function burstExplosion(x,y,color){
+    // Light shake on every hit gives the impact a bit of weight; kept
+    // subtle (reuses the existing light-intensity shake) so it doesn't
+    // fight the heavier shake already used for boss hits/defeats.
+    screenShake(game, 'light');
+
     // Impact flash first: a bright hot-core pop right at contact, a beat
     // before the ring/confetti expand outward, so the hit reads as a
     // moment of force rather than the ring just growing from nothing.
@@ -5801,28 +6013,44 @@ const pauseSpace = (function(){
     setTimeout(()=>ring.remove(), 420);
     const shapes = ['shape-circle','shape-star','shape-diamond'];
     for(let i=0;i<16;i++){
-      const p = document.createElement('div');
-      p.className = 'confetti-piece ' + shapes[Math.floor(Math.random()*shapes.length)];
-      const sz = 5 + Math.random()*6;
-      p.style.width = sz+'px'; p.style.height = sz+'px';
-      p.style.left = x+'px';
-      p.style.top = y+'px';
-      p.style.background = color;
-      p.style.boxShadow = `0 0 8px ${color}`;
-      const angle = Math.random()*Math.PI*2;
-      const dist = 40 + Math.random()*55;
-      const fx = Math.cos(angle)*dist;
-      const fy = Math.sin(angle)*dist - 20;
-      p.style.setProperty('--fx', fx+'px');
-      p.style.setProperty('--fy', fy+'px');
-      p.style.setProperty('--spin', (Math.random()<0.5?-1:1)*(280+Math.random()*260)+'deg');
-      p.style.setProperty('--fly', `translate(${fx}px, ${fy}px)`);
-      game.appendChild(p);
-      setTimeout(()=>p.remove(), 780);
+      // Stagger each piece's spawn by a few ms so the burst reads as a
+      // scatter rather than all 16 pieces launching in perfect unison.
+      const spawnDelay = Math.random()*90;
+      setTimeout(()=>{
+        const p = document.createElement('div');
+        p.className = 'confetti-piece ' + shapes[Math.floor(Math.random()*shapes.length)];
+        const sz = 5 + Math.random()*6;
+        p.style.width = sz+'px'; p.style.height = sz+'px';
+        p.style.left = x+'px';
+        p.style.top = y+'px';
+        p.style.background = color;
+        p.style.boxShadow = `0 0 8px ${color}`;
+        const angle = Math.random()*Math.PI*2;
+        const dist = 40 + Math.random()*55;
+        const fx = Math.cos(angle)*dist;
+        const fy = Math.sin(angle)*dist - 20;
+        p.style.setProperty('--fx', fx+'px');
+        p.style.setProperty('--fy', fy+'px');
+        p.style.setProperty('--spin', (Math.random()<0.5?-1:1)*(280+Math.random()*260)+'deg');
+        p.style.setProperty('--fly', `translate(${fx}px, ${fy}px)`);
+        game.appendChild(p);
+        setTimeout(()=>p.remove(), 780);
+      }, spawnDelay);
     }
   }
 
   function fireLaser(targetX, targetY, color){
+    // Recoil kick: a quick squash/kickback on the barrel + base so firing
+    // has physical weight instead of the cannon sitting perfectly still
+    // while lasers/explosions do all the work.
+    if(cannonBarrel){
+      cannonBarrel.classList.remove('recoil'); void cannonBarrel.offsetWidth;
+      cannonBarrel.classList.add('recoil');
+    }
+    if(cannonBase){
+      cannonBase.classList.remove('recoil'); void cannonBase.offsetWidth;
+      cannonBase.classList.add('recoil');
+    }
     const beam = document.createElement('div');
     beam.className = 'laser-beam';
     // Origin = the tip of whichever ship is currently selected, read
@@ -5871,6 +6099,15 @@ const pauseSpace = (function(){
 
     game.appendChild(beam);
     setTimeout(()=>beam.remove(), 160);
+
+    // Tip pulse: a bright pop at the beam's landing point (the target),
+    // arriving a beat after the muzzle flash so the shot reads as
+    // traveling and landing rather than the beam just appearing whole.
+    const tipPulse = document.createElement('div');
+    tipPulse.className = 'laser-tip-pulse';
+    tipPulse.style.cssText = `left:${targetX}px;top:${targetY}px;width:14px;height:14px;background:radial-gradient(circle,#fff,${color} 60%,transparent);box-shadow:0 0 14px ${color};`;
+    game.appendChild(tipPulse);
+    setTimeout(()=>tipPulse.remove(), 240);
 
     // Muzzle flash: a hot circular pop at the barrel tip...
     const flash = document.createElement('div');
@@ -6083,6 +6320,14 @@ const pauseSpace = (function(){
     if(!power) return;
     powerCharges += 1;
     updatePowerBadge();
+    // A quick bounce+glow pop on the badge itself the instant a charge is
+    // ready, distinct from the plain opacity fade-in it had before — the
+    // toast/speak alone were easy to miss mid-gameplay.
+    if(powerBadgeEl){
+      powerBadgeEl.classList.remove('power-badge-ready-pop');
+      void powerBadgeEl.offsetWidth;
+      powerBadgeEl.classList.add('power-badge-ready-pop');
+    }
     showToast('⚡ Power Ready! Press SPACE');
     speak('Power ready!');
   }
@@ -6158,9 +6403,14 @@ const pauseSpace = (function(){
       game.appendChild(streakBadgeEl);
     }
     const prog = streak % 10;
+    const pct = (prog/10)*100;
     const meta = POWER_META[power];
     streakBadgeEl.textContent = (meta ? meta.emoji + ' ' : '') + prog + '/10';
-    streakBadgeEl.style.background = meta ? `linear-gradient(135deg, ${hexToRgba(meta.c2,0.55)}, rgba(20,28,64,0.7))` : 'rgba(20,28,64,0.65)';
+    // Fill-bar progress instead of text-only: a hard-stop two-color
+    // gradient reading as a horizontal progress bar inside the same pill,
+    // filling toward the power's own accent color as streak builds.
+    const fillColor = meta ? meta.c2 : '#FFD23F';
+    streakBadgeEl.style.background = `linear-gradient(90deg, ${hexToRgba(fillColor,0.85)} 0%, ${hexToRgba(fillColor,0.85)} ${pct}%, rgba(20,28,64,0.7) ${pct}%, rgba(20,28,64,0.7) 100%)`;
     streakBadgeEl.style.opacity = (running && !paused) ? '1' : '0';
   }
 
@@ -6221,6 +6471,21 @@ const pauseSpace = (function(){
     });
   }
 
+  // Slow Field's own per-invader visual: unlike Freeze (which pauses
+  // everything outright with an icy glow), invaders keep moving here —
+  // so instead the wiggle animation itself is visibly slowed down (by
+  // stretching its animation-duration by the same factor the speed was
+  // cut by) alongside a desaturated teal glow, so "still moving, just
+  // sluggish" actually reads on screen instead of only being felt.
+  function slowInvadersVisual(on, glow){
+    const slowWiggle = (1.6/SLOW_FACTOR).toFixed(2) + 's';
+    invaders.forEach(c=>{
+      c.el.style.filter = on ? `drop-shadow(0 0 10px ${glow}) saturate(0.7)` : '';
+      c.el.style.outline = on ? `2px solid ${glow}` : '';
+      c.el.style.animationDuration = on ? ('0.3s, ' + slowWiggle) : '';
+    });
+  }
+
   const FREEZE_MS = 5000;
   function triggerFreezePower(){
     if(freezeActive) return;
@@ -6252,6 +6517,7 @@ const pauseSpace = (function(){
       c._preSlowSpeed = c.speed;
       c.speed = c.speed * SLOW_FACTOR;
     });
+    slowInvadersVisual(true, '#4DE0B0');
     showPowerOverlay('radial-gradient(circle, rgba(46,217,195,0.20), rgba(28,168,143,0.28))');
     showToast('🐌 Slow Field!');
     speak('Slow Field!');
@@ -6264,6 +6530,7 @@ const pauseSpace = (function(){
           delete c._preSlowSpeed;
         }
       });
+      slowInvadersVisual(false);
       hidePowerOverlay();
     }, dur);
   }
@@ -6303,6 +6570,22 @@ const pauseSpace = (function(){
   function triggerExplodePower(){
     showToast('💥 Meteor Bomb!');
     speak('Meteor Bomb!');
+    // Legendary-tier payoff: a full-screen supernova flash + an expanding
+    // shockwave ring from center, plus a heavy screen shake — on top of
+    // the normal per-invader pops below. Without this it looked identical
+    // to any other multi-pop moment despite being the rarest power.
+    const flash = document.createElement('div');
+    flash.className = 'meteor-bomb-flash';
+    game.appendChild(flash);
+    setTimeout(()=>flash.remove(), 400);
+    const rect = game.getBoundingClientRect();
+    const shock = document.createElement('div');
+    shock.className = 'meteor-bomb-shockwave';
+    shock.style.left = (rect.width/2)+'px';
+    shock.style.top = (rect.height/2)+'px';
+    game.appendChild(shock);
+    setTimeout(()=>shock.remove(), 600);
+    screenShake(game, 'heavy');
     explodeAllInvaders(8);
   }
 
@@ -6468,6 +6751,11 @@ const pauseSpace = (function(){
     beam.style.background = `linear-gradient(180deg, #fff, ${color} 40%, transparent)`;
     game.appendChild(beam);
     setTimeout(()=>beam.remove(), 160);
+    const tipPulse = document.createElement('div');
+    tipPulse.className = 'laser-tip-pulse';
+    tipPulse.style.cssText = `left:${targetX}px;top:${targetY}px;width:12px;height:12px;background:radial-gradient(circle,#fff,${color} 60%,transparent);box-shadow:0 0 12px ${color};`;
+    game.appendChild(tipPulse);
+    setTimeout(()=>tipPulse.remove(), 220);
     const flash = document.createElement('div');
     flash.style.cssText = `position:absolute;left:${originX}px;top:${originY}px;width:9px;height:9px;border-radius:50%;background:radial-gradient(circle,#fff,${color},transparent);transform:translate(-50%,-50%);pointer-events:none;animation:laser-fade 0.18s ease-out forwards;box-shadow:0 0 12px ${color};`;
     game.appendChild(flash);
@@ -6715,6 +7003,14 @@ const pauseSpace = (function(){
     game.appendChild(el);
 
     const worldMove = WORLD_MOVE_MOD[currentWorld] || WORLD_MOVE_MOD.milkyway;
+    // Invaders that spawn mid-Slow-Field come in already slowed (see
+    // speed calc below) — give them the slowed visual immediately too,
+    // instead of only the invaders that were on screen when it triggered.
+    if(slowActive){
+      el.style.filter = 'drop-shadow(0 0 10px #4DE0B0) saturate(0.7)';
+      el.style.outline = '2px solid #4DE0B0';
+      el.style.animationDuration = '0.3s, ' + (1.6/SLOW_FACTOR).toFixed(2) + 's';
+    }
     const useDrift = !isZigzag && worldMove.drift > 0;
     const c = {
       id: idCounter++,
@@ -6765,6 +7061,15 @@ const pauseSpace = (function(){
         if(timeWarpActive){
           // Time Warp: invaders retreat back up toward where they spawned
           // instead of falling, and can't land on the ground while it's active.
+          // Visually: a violet glow + a faint upward-trailing afterimage
+          // (via box-shadow smear) so "being sent back" actually reads,
+          // instead of just moving identically to normal fall in reverse.
+          if(!c._warpVisualOn){
+            c._warpVisualOn = true;
+            c.el.style.filter = 'drop-shadow(0 0 10px #C4B5FD) hue-rotate(-8deg)';
+            c.el.style.outline = '2px solid #A78BFA';
+            c.el.style.boxShadow = '0 18px 22px -6px rgba(167,139,250,0.55)';
+          }
           c.y = Math.max(-70, c.y - c.speed);
           c.el.style.top = c.y+'px';
           if(c.moveType === 'zigzag' || c.moveType === 'drift'){
@@ -6775,6 +7080,11 @@ const pauseSpace = (function(){
             c.el.style.left = nx+'px';
           }
           return;
+        } else if(c._warpVisualOn){
+          c._warpVisualOn = false;
+          c.el.style.filter = '';
+          c.el.style.outline = '';
+          c.el.style.boxShadow = '';
         }
         if(c.warpResumeAt){
           if(performance.now() < c.warpResumeAt) return; // held briefly so warped-back invaders fall first
@@ -7003,6 +7313,15 @@ const pauseSpace = (function(){
     if(hearts <= 0) return;
     hearts -= 1;
     renderHearts(hearts);
+    // Losing a heart previously had zero audio — a dull descending buzz
+    // makes the moment register instead of only being visible via the
+    // fading heart icon, which is easy to miss mid-gameplay.
+    ensureAudio();
+    if(audioCtx){
+      const t0 = audioCtx.currentTime;
+      pTone(180, 'sawtooth', t0, 0.28, 0.13, { toFreq:70 });
+      pTone(90, 'square', t0+0.05, 0.24, 0.09, { toFreq:45 });
+    }
     if(hearts <= 0){
       triggerGameOver();
     }
