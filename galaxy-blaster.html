@@ -720,8 +720,9 @@
   }
   .critter.pop, .invader.pop{ animation: pop 0.32s cubic-bezier(.36,.07,.19,.97) forwards; }
   @keyframes pop{
-    0%{ transform: scale(1) rotate(0deg); opacity:1; }
-    35%{ transform: scale(1.35, 0.75) rotate(-4deg); opacity:1; }
+    0%{ transform: scale(1) rotate(0deg); opacity:1; filter:brightness(1); }
+    12%{ transform: scale(1.15,1.15) rotate(0deg); opacity:1; filter:brightness(2.6) saturate(0); }
+    35%{ transform: scale(1.35, 0.75) rotate(-4deg); opacity:1; filter:brightness(1); }
     60%{ transform: scale(0.8, 1.25) rotate(6deg); opacity:0.9; }
     100%{ transform: scale(0) rotate(25deg); opacity:0; }
   }
@@ -861,11 +862,32 @@
     clip-path: polygon(32% 0%, 68% 0%, 100% 100%, 0% 100%);
     border-radius:3px;
     pointer-events:none;
+    transform-origin:50% 100%;
     /* Two glow layers: the beam's own color (tight, currentColor) plus a
        wider halo in the world's ambient glow token — ties every ship's
        laser back to the world it's flying through. */
     filter:drop-shadow(0 0 8px currentColor) drop-shadow(0 0 16px var(--world-glow, currentColor));
-    animation: laser-fade 0.15s ease-out forwards;
+    animation: laser-draw 0.07s ease-out both, laser-fade 0.15s ease-out forwards;
+  }
+  /* Draw-in: the beam snaps from the cannon outward instead of the full
+     bar just appearing already-formed, so firing reads as a fast shot
+     rather than a bar fading into view in place. */
+  @keyframes laser-draw{
+    0%{ transform:scaleY(0.05); opacity:0.6; }
+    100%{ transform:scaleY(1); opacity:1; }
+  }
+  /* Bright core: a thin near-white line down the center of every beam,
+     on top of the colored gradient, so shots read as energy with a hot
+     center rather than a flat tinted bar. */
+  .laser-beam::after{
+    content:'';
+    position:absolute;
+    top:6%; bottom:0; left:50%;
+    width:34%;
+    transform:translateX(-50%);
+    background:linear-gradient(180deg, #fff, rgba(255,255,255,0.75) 45%, transparent);
+    border-radius:2px;
+    mix-blend-mode:screen;
   }
   @keyframes laser-fade{
     0%{ opacity:1; }
@@ -1162,8 +1184,10 @@
     animation: boss-idle 1.6s ease-in-out infinite;
   }
   @keyframes boss-idle{
-    0%,100%{ transform:translateY(0) rotate(-2deg); }
-    50%{ transform:translateY(-8px) rotate(2deg); }
+    0%,100%{ transform:translateY(0) rotate(-2deg) scale(1); }
+    35%{ transform:translateY(-5px) rotate(1deg) scale(1.015); }
+    50%{ transform:translateY(-9px) rotate(2deg) scale(1.03); }
+    75%{ transform:translateY(-4px) rotate(0.5deg) scale(1.01); }
   }
   .boss-figure.boss-shake{ animation: shake 0.28s ease; }
   .boss-figure.boss-hit{ animation: boss-hit-flash 0.25s ease; }
@@ -1561,7 +1585,13 @@
     justify-content:center;
     padding:16px;
   }
-  .setup-panel-overlay.show{ display:flex; }
+  .setup-panel-overlay.show{ display:flex; animation: level-popup-fade 0.2s ease; }
+  .setup-panel-overlay.leaving{ animation: level-popup-fade-out 0.2s ease forwards; }
+  .setup-panel-overlay.leaving .setup-panel-card{ animation: setup-panel-card-out 0.2s ease forwards; }
+  @keyframes setup-panel-card-out{
+    0%{ transform:scale(1); opacity:1; }
+    100%{ transform:scale(0.94); opacity:0; }
+  }
   .setup-panel-card{
     background:#fff;
     border-radius:24px;
@@ -1825,6 +1855,10 @@
   .power-item[data-power="ghosttouch"] .power-preview-btn{ --pc2:#A78BFA; }
   .power-item[data-power="rainbowbeam"] .power-preview-btn{ --pc2:#4DE8FF; }
   .power-item[data-power="lifesupport"] .power-preview-btn{ --pc2:#2ECC71; }
+  .power-item[data-power="deepfreeze"] .power-preview-btn{ --pc2:#3FC6FF; }
+  .power-item[data-power="tornado"] .power-preview-btn{ --pc2:#8C7A5B; }
+  .power-item[data-power="tidalwave"] .power-preview-btn{ --pc2:#1478B8; }
+  .power-item[data-power="rocketbarrage"] .power-preview-btn{ --pc2:#FF6A1A; }
 
   .world-hint{
     font-family:'Quicksand', sans-serif;
@@ -2173,6 +2207,21 @@
   .shield-l.active{ opacity:1; text-decoration:underline; }
   .shield-l.done{ opacity:0.25; text-decoration:line-through; }
 
+  /* ---------- Word-invader "wordling" look (level 26+): a distinct
+     crackling-outline variant so the word-typing challenge reads as its
+     own visual tier, separate from the plain armored "elite" look used
+     from level 16 on. Swaps the shield ring for a magenta/violet pulse
+     and a lightning badge instead of the shield emoji. ---------- */
+  .invader.wordling{
+    box-shadow:0 0 16px currentColor, 0 0 0 3px rgba(255,138,246,0.85), inset 0 -6px 10px rgba(0,0,0,0.3);
+    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, wordling-pulse 1.1s ease-in-out infinite;
+  }
+  @keyframes wordling-pulse{
+    0%,100%{ filter:brightness(1) saturate(1.1); }
+    50%{ filter:brightness(1.3) saturate(1.4); }
+  }
+  .invader.wordling .shield-icon{ filter:drop-shadow(0 0 5px #FF8AF6); }
+
   .start-btn{
     font-family:'Baloo 2', sans-serif;
     font-weight:800;
@@ -2443,6 +2492,94 @@
     background-color:transparent;
     background-repeat:no-repeat;
     opacity:1;
+    filter: saturate(1) brightness(1);
+    transition: filter 0.4s ease;
+  }
+  /* ---------- Combo-tier scene escalation: as the streak climbs through
+     COMBO_TIERS, the whole play field gets more saturated/bright and a
+     colored vignette creeps in from the edges — the tension shows up
+     visually, not just in the streak counter. ---------- */
+  #game-space.combo-tier-1{ filter: saturate(1.12) brightness(1.02); }
+  #game-space.combo-tier-2{ filter: saturate(1.3) brightness(1.06); }
+  #game-space.combo-tier-3,
+  #game-space.combo-tier-4{ filter: saturate(1.55) brightness(1.12); }
+  .combo-vignette{
+    position:absolute; inset:0; pointer-events:none; z-index:0;
+    opacity:0; transition: opacity 0.4s ease, box-shadow 0.4s ease;
+  }
+  #game-space.combo-tier-2 .combo-vignette{ opacity:0.3; box-shadow: inset 0 0 70px 6px var(--world-glow, #7BE8FF); }
+  #game-space.combo-tier-3 .combo-vignette{ opacity:0.45; box-shadow: inset 0 0 90px 14px var(--world-glow, #FF8AF6); }
+  #game-space.combo-tier-4 .combo-vignette{ opacity:0.6; box-shadow: inset 0 0 110px 22px #FFD23F; animation: combo-vignette-pulse 1.1s ease-in-out infinite; }
+  @keyframes combo-vignette-pulse{ 0%,100%{ opacity:0.5; } 50%{ opacity:0.75; } }
+
+  /* ---------- Miss feedback: a quick red edge-flash across the field
+     plus a ship flinch, so losing a heart reads as an impact moment
+     instead of only the heart icon quietly fading out. ---------- */
+  .miss-flash{
+    position:absolute; inset:0; pointer-events:none; z-index:13;
+    background: radial-gradient(circle, transparent 55%, rgba(217,41,28,0.4) 100%);
+    animation: miss-flash-fade 0.45s ease-out forwards;
+  }
+  @keyframes miss-flash-fade{
+    0%{ opacity:1; }
+    100%{ opacity:0; }
+  }
+  .cannon.ship-flinch{ animation: ship-flinch 0.32s ease; }
+  @keyframes ship-flinch{
+    0%{ transform:translateX(-50%) translateY(0) rotate(0deg); }
+    25%{ transform:translateX(-50%) translateY(3px) rotate(-4deg); }
+    60%{ transform:translateX(-50%) translateY(1px) rotate(3deg); }
+    100%{ transform:translateX(-50%) translateY(0) rotate(0deg); }
+  }
+  /* Low-hearts critical state: a slow pulsing red vignette warns the
+     player when down to their last heart, sitting behind the invaders
+     like combo-vignette so it doesn't block gameplay. */
+  .low-heart-vignette{
+    position:absolute; inset:0; pointer-events:none; z-index:1;
+    opacity:0; transition:opacity 0.4s ease;
+  }
+  #game-space.hearts-critical .low-heart-vignette{
+    opacity:0.5;
+    box-shadow: inset 0 0 90px 16px rgba(217,41,28,0.55);
+    animation: low-heart-pulse 1.1s ease-in-out infinite;
+  }
+  @keyframes low-heart-pulse{
+    0%,100%{ opacity:0.35; }
+    50%{ opacity:0.7; }
+  }
+  /* Hit-stop: pauses every running CSS animation inside the element for
+     a brief beat right before a big payoff (Meteor Bomb, boss defeat),
+     so that moment reads as a freeze-frame impact instead of everything
+     continuing to drift/wiggle straight through the explosion. */
+  .hit-stop, .hit-stop *{
+    animation-play-state: paused !important;
+  }
+
+  /* ---------- Shatter shards: used for elite/wordling invader deaths so
+     those tiers read as "breaking apart" rather than the round confetti
+     scatter regular invaders use. ---------- */
+  .shatter-shard{
+    position:absolute; pointer-events:none; z-index:5;
+    width:9px; height:9px; opacity:0;
+  }
+  .shatter-shard.flying{ animation: shatter-fly 0.62s cubic-bezier(.3,.7,.4,1) forwards; }
+  @keyframes shatter-fly{
+    0%{ opacity:1; transform: translate(0,0) rotate(0deg) scale(1); }
+    100%{ opacity:0; transform: var(--shard-end) rotate(var(--shard-rot)) scale(0.25); }
+  }
+
+  /* ---------- Ship thrust flame: flares on every shot fired. ---------- */
+  .thrust-flame{
+    position:absolute; pointer-events:none; z-index:1;
+    width:9px; left:50%; bottom:-2px; margin-left:-4.5px;
+    background:linear-gradient(180deg,#FFE066,#FF9F1C 60%, transparent);
+    border-radius:0 0 6px 6px; filter:blur(0.5px);
+  }
+  .thrust-flame.burn{ animation: thrust-flame-burn 0.42s ease-out forwards; }
+  @keyframes thrust-flame-burn{
+    0%{ height:0; opacity:1; }
+    35%{ height:30px; opacity:1; }
+    100%{ height:48px; opacity:0; }
   }
   /* Per-world star tint AND base sky colour: milkyway keeps a neutral deep
      navy with white starlight; every other world gets both a recoloured
@@ -2688,6 +2825,166 @@
       radial-gradient(circle at 50% 50%, rgba(255,255,255,0.6) 0 11px, rgba(156,77,204,0.6) 11px 14px, transparent 16px);
     background-size:420px 460px;
     background-position:100px 90px;
+  }
+  /* ---------- Signature world centerpieces: one unmistakable focal
+     element per world (not just recoloured dust), so each world has a
+     silhouette you'd recognise with the sound off. Sits above the
+     parallax dust, below the ambience tint/particles/gameplay. ---------- */
+  .world-signature{
+    position:absolute;
+    pointer-events:none;
+    z-index:0;
+  }
+  /* Black Hole: a spinning accretion-disc vortex, upper-right, with a
+     dark event-horizon core and light bending around the rim. */
+  .world-signature.sig-blackhole{
+    top:6%; right:8%; width:min(34vw,220px); height:min(34vw,220px);
+    border-radius:50%;
+    background:
+      radial-gradient(circle at 50% 50%, #000000 0%, #000000 28%, transparent 30%),
+      conic-gradient(from 0deg, rgba(196,181,253,0.05), rgba(196,181,253,0.9), rgba(124,58,237,0.2), rgba(196,181,253,0.7), rgba(124,58,237,0.1), rgba(196,181,253,0.9));
+    box-shadow:0 0 60px 10px rgba(124,58,237,0.35), inset 0 0 40px 10px rgba(0,0,0,0.9);
+    animation: sig-spin 9s linear infinite;
+  }
+  .world-signature.sig-blackhole::after{
+    content:''; position:absolute; inset:-14%;
+    border-radius:50%;
+    background:radial-gradient(circle, transparent 55%, rgba(167,139,250,0.12) 60%, transparent 66%);
+    animation: sig-spin 5s linear infinite reverse;
+  }
+  /* Frozen Comet: a big icy comet with a long drifting tail, drawn
+     compact so it reads as a single object streaking through. */
+  .world-signature.sig-frozencomet{
+    top:10%; left:10%; width:min(20vw,120px); height:min(20vw,120px);
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, #F0FDFF 0%, #BAE6FD 45%, #2E9FD6 80%);
+    box-shadow:0 0 40px 8px rgba(123,232,255,0.5);
+    animation: sig-comet-drift 14s ease-in-out infinite;
+  }
+  .world-signature.sig-frozencomet::before{
+    content:''; position:absolute; top:50%; left:100%;
+    width:280px; height:34px; transform:translateY(-50%);
+    background:linear-gradient(90deg, rgba(186,230,253,0.55), transparent);
+    filter:blur(4px);
+  }
+  /* Molten Core: a glowing lava planet edge with slow-pulsing cracks,
+     bottom-anchored so it feels like a surface rather than a floating dot. */
+  .world-signature.sig-moltencore{
+    bottom:-18%; left:50%; transform:translateX(-50%);
+    width:120vw; height:min(46vw,300px); max-width:900px;
+    border-radius:50%;
+    background:radial-gradient(circle at 50% 0%, #FF9F45 0%, #D9291C 35%, #2E0900 70%);
+    box-shadow:0 -10px 70px 20px rgba(255,159,69,0.35);
+    animation: sig-magma-breathe 3.2s ease-in-out infinite;
+  }
+  /* Deep Ocean: shafts of caustic light filtering down from the surface. */
+  .world-signature.sig-deepocean{
+    top:0; left:0; right:0; height:70%;
+    background:
+      linear-gradient(105deg, transparent 20%, rgba(125,232,255,0.10) 24%, transparent 30%),
+      linear-gradient(100deg, transparent 45%, rgba(77,232,255,0.08) 50%, transparent 58%),
+      linear-gradient(110deg, transparent 68%, rgba(125,232,255,0.09) 73%, transparent 80%);
+    animation: sig-caustic-sway 6s ease-in-out infinite;
+  }
+  /* Desert Wastes: a hazy, low-hanging sun near the horizon with shimmer. */
+  .world-signature.sig-desertwastes{
+    top:14%; right:14%; width:min(22vw,130px); height:min(22vw,130px);
+    border-radius:50%;
+    background:radial-gradient(circle, #FFF3D6 0%, #FFCB77 45%, #C48A44 80%);
+    box-shadow:0 0 70px 22px rgba(255,203,119,0.4);
+    animation: sig-sun-shimmer 4s ease-in-out infinite;
+  }
+  /* Storm Nebula: jagged lightning bolts that flash irregularly. */
+  .world-signature.sig-stormnebula{
+    top:8%; left:14%; width:60%; height:55%;
+  }
+  .world-signature.sig-stormnebula .bolt{
+    position:absolute; width:3px; background:linear-gradient(180deg,#fff,#E8D9FF,transparent);
+    box-shadow:0 0 12px 3px #F4E04D, 0 0 24px 6px rgba(139,92,246,0.6);
+    opacity:0; border-radius:2px;
+  }
+  .world-signature.sig-stormnebula .bolt1{ top:5%; left:20%; height:120px; transform:rotate(8deg); animation: sig-bolt-flash 5.2s ease-in-out infinite; }
+  .world-signature.sig-stormnebula .bolt2{ top:20%; left:60%; height:90px; transform:rotate(-10deg); animation: sig-bolt-flash 5.2s ease-in-out 1.7s infinite; }
+  .world-signature.sig-stormnebula .bolt3{ top:0%; left:40%; height:150px; transform:rotate(3deg); animation: sig-bolt-flash 5.2s ease-in-out 3.4s infinite; }
+  /* Pluto Paradise: sweeping aurora ribbons across the upper sky. */
+  .world-signature.sig-plutoparadise{
+    top:0; left:-10%; right:-10%; height:50%;
+    background:
+      linear-gradient(100deg, transparent, rgba(124,255,196,0.22) 30%, rgba(255,143,214,0.18) 55%, transparent 80%);
+    filter:blur(2px);
+    animation: sig-aurora-wave 8s ease-in-out infinite;
+  }
+  /* Toxic Swamp: rising, popping gas bubbles from a murky bottom haze. */
+  .world-signature.sig-toxicswamp{
+    bottom:0; left:0; right:0; height:24%;
+    background:linear-gradient(180deg, transparent, rgba(107,122,47,0.35));
+  }
+  .world-signature.sig-toxicswamp .bub{
+    position:absolute; bottom:0; border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, rgba(212,242,122,0.9), rgba(195,216,37,0.3));
+    animation: sig-bubble-rise 4.5s ease-in infinite;
+  }
+  .world-signature.sig-toxicswamp .bub1{ left:15%; width:14px; height:14px; animation-delay:0s; }
+  .world-signature.sig-toxicswamp .bub2{ left:40%; width:9px; height:9px; animation-delay:1.4s; }
+  .world-signature.sig-toxicswamp .bub3{ left:65%; width:18px; height:18px; animation-delay:2.6s; }
+  .world-signature.sig-toxicswamp .bub4{ left:82%; width:11px; height:11px; animation-delay:0.7s; }
+  /* Crystal Caverns: large faceted gem clusters jutting in from the
+     edges, glinting on a slow cycle. */
+  .world-signature.sig-crystalcaverns{
+    inset:0;
+  }
+  .world-signature.sig-crystalcaverns::before{
+    content:''; position:absolute; top:0; left:0; width:26%; height:60%;
+    background:
+      linear-gradient(135deg, rgba(255,184,240,0.5), rgba(156,77,204,0.15) 60%, transparent 75%);
+    clip-path:polygon(0 0, 70% 0, 45% 55%, 0 40%);
+    filter:drop-shadow(0 0 18px rgba(255,184,240,0.4));
+    animation: sig-gem-pulse 3.6s ease-in-out infinite;
+  }
+  .world-signature.sig-crystalcaverns::after{
+    content:''; position:absolute; top:0; right:0; width:22%; height:70%;
+    background:linear-gradient(220deg, rgba(255,184,240,0.45), rgba(156,77,204,0.12) 60%, transparent 75%);
+    clip-path:polygon(100% 0, 20% 0, 60% 60%, 100% 45%);
+    filter:drop-shadow(0 0 18px rgba(255,184,240,0.35));
+    animation: sig-gem-pulse 3.6s ease-in-out 1.8s infinite;
+  }
+  @keyframes sig-spin{ 0%{ transform:rotate(0deg); } 100%{ transform:rotate(360deg); } }
+  @keyframes sig-comet-drift{
+    0%,100%{ transform:translate(0,0) rotate(0deg); }
+    50%{ transform:translate(18px,26px) rotate(4deg); }
+  }
+  @keyframes sig-magma-breathe{
+    0%,100%{ filter:brightness(1); box-shadow:0 -10px 70px 20px rgba(255,159,69,0.35); }
+    50%{ filter:brightness(1.18); box-shadow:0 -10px 90px 30px rgba(255,159,69,0.55); }
+  }
+  @keyframes sig-caustic-sway{
+    0%,100%{ transform:translateX(0) skewX(0deg); opacity:0.8; }
+    50%{ transform:translateX(24px) skewX(-3deg); opacity:1; }
+  }
+  @keyframes sig-sun-shimmer{
+    0%,100%{ transform:scale(1); filter:brightness(1); }
+    50%{ transform:scale(1.04); filter:brightness(1.12); }
+  }
+  @keyframes sig-bolt-flash{
+    0%,92%,100%{ opacity:0; }
+    93%{ opacity:1; }
+    94%{ opacity:0.2; }
+    95%{ opacity:0.9; }
+    97%{ opacity:0; }
+  }
+  @keyframes sig-aurora-wave{
+    0%,100%{ transform:translateX(0); opacity:0.85; }
+    50%{ transform:translateX(-30px); opacity:1; }
+  }
+  @keyframes sig-bubble-rise{
+    0%{ transform:translateY(0) scale(0.6); opacity:0; }
+    15%{ opacity:1; }
+    90%{ opacity:0.8; }
+    100%{ transform:translateY(-160px) scale(1.1); opacity:0; }
+  }
+  @keyframes sig-gem-pulse{
+    0%,100%{ filter:drop-shadow(0 0 18px rgba(255,184,240,0.35)) brightness(1); }
+    50%{ filter:drop-shadow(0 0 30px rgba(255,184,240,0.65)) brightness(1.25); }
   }
   .world-ambience-tint{
     position:absolute; inset:0;
@@ -3027,6 +3324,77 @@
     z-index:7;
     background:linear-gradient(180deg, transparent, rgba(255,77,109,0.55) 20%, rgba(255,196,77,0.55) 40%, rgba(92,255,143,0.55) 60%, rgba(77,232,255,0.55) 80%, transparent);
     box-shadow:0 0 24px 8px rgba(184,77,255,0.55);
+  }
+
+  /* ---------- Tornado Sweep power: a spinning dust funnel drifts left to
+     right in a wandering S-curve, popping anything it overlaps. Anchored
+     via negative margin so JS only has to set left/top to the contact
+     point at the base of the funnel. ---------- */
+  .tornado-funnel{
+    position:absolute;
+    width:60px; height:96px;
+    margin:-96px 0 0 -30px;
+    pointer-events:none;
+    z-index:7;
+    clip-path: polygon(38% 0%, 62% 0%, 100% 100%, 0% 100%);
+    background: repeating-linear-gradient(115deg, rgba(140,122,91,0.6) 0 8px, rgba(232,228,216,0.4) 8px 16px);
+    box-shadow: 0 0 24px 8px rgba(140,122,91,0.45);
+    animation: tornado-spin 0.45s linear infinite, tornado-wobble 1s ease-in-out infinite;
+    opacity:0.92;
+  }
+  @keyframes tornado-spin{
+    0%{ filter:brightness(1); }
+    50%{ filter:brightness(1.3); }
+    100%{ filter:brightness(1); }
+  }
+  @keyframes tornado-wobble{
+    0%,100%{ transform:scaleX(1) rotate(-3deg); }
+    50%{ transform:scaleX(1.15) rotate(3deg); }
+  }
+
+  /* ---------- Tidal Wave power: a curved wave front rolls bottom-to-top
+     (same direction as Rainbow Beam) but shaped like a cresting wave
+     instead of a flat line, and moves slower for a heavier "whoosh". ---------- */
+  .tidal-wave-sweep{
+    position:absolute;
+    left:0; right:0;
+    height:64px;
+    margin-top:-64px;
+    pointer-events:none;
+    z-index:7;
+    background: linear-gradient(180deg, rgba(20,120,184,0.04), rgba(20,120,184,0.35) 35%, rgba(63,198,255,0.55) 70%, rgba(184,232,255,0.7));
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    box-shadow: 0 -6px 26px 6px rgba(20,120,184,0.5);
+    animation: tidal-wave-roll 1.3s ease-in-out infinite;
+  }
+  @keyframes tidal-wave-roll{
+    0%,100%{ transform:skewX(-2deg) scaleY(1); }
+    50%{ transform:skewX(2deg) scaleY(1.06); }
+  }
+
+  /* ---------- Rocket Barrage power: small rockets launch from the cannon
+     toward each on-screen invader in a rapid staggered volley, each
+     exploding on arrival. Positioned via left/top transitions so each
+     rocket animates its own flight independently. ---------- */
+  .power-rocket{
+    position:absolute;
+    width:14px; height:26px;
+    border-radius:40% 40% 50% 50%;
+    background:linear-gradient(180deg, #FFD9A0, #FF6A1A 60%, #FF3A1A);
+    box-shadow:0 0 10px 3px rgba(255,106,26,0.65);
+    pointer-events:none;
+    z-index:9;
+    transition: left 0.42s cubic-bezier(.3,.6,.35,1), top 0.42s cubic-bezier(.3,.6,.35,1);
+  }
+  .power-rocket::after{
+    content:'';
+    position:absolute;
+    left:50%; top:100%;
+    width:6px; height:16px;
+    margin-left:-3px;
+    background:linear-gradient(180deg, rgba(255,196,77,0.85), transparent);
+    border-radius:0 0 6px 6px;
+    filter:blur(1px);
   }
 
   /* ---------- Ghost Touch power: glow on the A key while active. ---------- */
@@ -3436,7 +3804,9 @@
       </header>
 
       <div class="game-box" id="game-space">
-        <div class="cannon"><div class="base"></div><div class="barrel"></div></div>
+        <div class="combo-vignette" id="combo-vignette-sp"></div>
+        <div class="low-heart-vignette" id="low-heart-vignette-sp"></div>
+        <div class="cannon"><div class="base"></div><div class="barrel"></div><div class="thrust-flame" id="thrust-flame-sp"></div></div>
         <div class="intro" id="intro-sp">
           <div class="demo-row" id="demo-row-sp"></div>
           <h2 id="invaders-title-sp" title="Psst...">Blast the Alien Invaders!<span class="dev-mode-badge" id="dev-mode-badge-sp" title="Click to add coins">DADDY MODE</span></h2>
@@ -3649,6 +4019,22 @@
                 <button class="power-item" data-power="lifesupport" data-cost="500" data-name="Life Support">
                   <span class="power-item-emoji">💚</span>Life Support
                   <span class="power-item-lock">🔒 500</span>
+                </button>
+                <button class="power-item" data-power="deepfreeze" data-cost="400" data-name="Icy Shatter">
+                  <span class="power-item-emoji">🧊</span>Icy Shatter
+                  <span class="power-item-lock">🔒 400</span>
+                </button>
+                <button class="power-item" data-power="tornado" data-cost="500" data-name="Tornado Sweep">
+                  <span class="power-item-emoji">🌪️</span>Tornado Sweep
+                  <span class="power-item-lock">🔒 500</span>
+                </button>
+                <button class="power-item" data-power="tidalwave" data-cost="400" data-name="Tidal Wave">
+                  <span class="power-item-emoji">🌊</span>Tidal Wave
+                  <span class="power-item-lock">🔒 400</span>
+                </button>
+                <button class="power-item" data-power="rocketbarrage" data-cost="600" data-name="Rocket Barrage">
+                  <span class="power-item-emoji">🚀</span>Rocket Barrage
+                  <span class="power-item-lock">🔒 600</span>
                 </button>
               </div>
               <p class="world-hint">Powers your ships carry are unlocked free. Tap an owned power to equip it — only one can be equipped per game, triggered with SPACE.</p>
@@ -3934,10 +4320,29 @@ function unlockShip(key){
     try { localStorage.setItem(skey('ta-unlocked-ships'), JSON.stringify(owned)); } catch(e){}
   }
 }
+let displayedCoins = null;
 function updateCoinBadge(){
   const el = document.getElementById('coin-badge-total');
   if(!el) return;
-  el.textContent = getCoins();
+  const target = getCoins();
+  const from = (displayedCoins === null) ? target : displayedCoins;
+  displayedCoins = target;
+  if(from !== target){
+    // Count up/down toward the new total instead of snapping the digits,
+    // so a level-end coin haul (or a shop purchase) reads as accumulating
+    // rather than the number just jump-cutting to a new value.
+    const start = performance.now();
+    const dur = 450;
+    (function step(now){
+      const t = Math.min(1, (now-start)/dur);
+      const eased = 1 - Math.pow(1-t, 3);
+      el.textContent = Math.round(from + (target-from)*eased);
+      if(t < 1) requestAnimationFrame(step);
+      else el.textContent = target;
+    })(start);
+  } else {
+    el.textContent = target;
+  }
   const badge = document.getElementById('coin-badge');
   if(badge){
     badge.classList.remove('bump');
@@ -4116,6 +4521,21 @@ function screenShake(el, intensity){
   void el.offsetWidth;
   el.classList.add(cls);
   setTimeout(function(){ el.classList.remove(cls); }, 400);
+}
+
+// ============================================================
+// Shared hit-stop utility: freezes every running CSS animation inside
+// the given element for a brief beat (background drift, invader wiggle,
+// etc all pause in place) before a big payoff plays — a classic "impact
+// frame" trick that makes the moment right after feel like it lands
+// with real weight instead of everything just continuing to move
+// through the explosion. Used for the rarest/biggest kills only
+// (Meteor Bomb, boss defeats) so it stays a special beat, not noise.
+// ============================================================
+function hitStop(el, ms){
+  if(!el) return;
+  el.classList.add('hit-stop');
+  setTimeout(function(){ el.classList.remove('hit-stop'); }, ms || 80);
 }
 
 // ============================================================
@@ -4407,20 +4827,49 @@ function pickBossWord(unlockedLetters, targetLen){
 // (the same short-word list the level-3 boss already uses).
 // ============================================================
 const WORD_INVADER_WORDS_2 = ["at","in","on","up","no","go","hi","me","we","it","is","am","an","as","or","if","so","to","be","he","by","my","do","us"];
+// Tracks the previously-shown word invader word so we can avoid an exact
+// back-to-back repeat (see pickWordInvaderWord below).
+let _lastWordInvaderWord = null;
 function pickWordInvaderWord(unlockedLetters, len){
   const set = new Set(unlockedLetters);
   function fits(w){ return w.split('').every(c=>set.has(c)); }
   const pool = len <= 2 ? WORD_INVADER_WORDS_2 : (BOSS_WORDS[len] || BOSS_WORDS[3]);
   const candidates = pool.filter(fits);
-  if(candidates.length) return candidates[Math.floor(Math.random()*candidates.length)];
-  // Fallback if the chosen practice keys can't spell any real word in the
-  // list (e.g. a numbers-only key set) — keeps the level playable by just
-  // chaining random letters from the active set instead.
+
+  // Restrictive key sets (e.g. Home Row, which only spells "as" out of the
+  // whole 2-letter word list) can leave just one — or zero — real-word
+  // candidates. Rather than showing that single word on repeat for all 5
+  // levels, always top the pool up with synthetic letter-chains built from
+  // the active key set, so there's real variety no matter which keys were
+  // chosen.
   const letters = unlockedLetters.filter(c=>/^[a-z]$/.test(c));
   const pickFrom = letters.length ? letters : unlockedLetters;
-  let w = '';
-  for(let i=0;i<len;i++) w += pickFrom[Math.floor(Math.random()*pickFrom.length)];
-  return w;
+  function synthWord(){
+    let w = '';
+    for(let i=0;i<len;i++) w += pickFrom[Math.floor(Math.random()*pickFrom.length)];
+    return w;
+  }
+
+  let options = candidates.slice();
+  const synthNeeded = Math.max(0, 4 - options.length);
+  for(let i=0;i<synthNeeded;i++){
+    const w = synthWord();
+    if(!options.includes(w)) options.push(w);
+  }
+  if(!options.length) options.push(synthWord());
+
+  // Avoid showing the exact same word twice in a row when an alternative
+  // exists.
+  let choice = options[Math.floor(Math.random()*options.length)];
+  if(options.length > 1){
+    let tries = 0;
+    while(choice === _lastWordInvaderWord && tries < 5){
+      choice = options[Math.floor(Math.random()*options.length)];
+      tries++;
+    }
+  }
+  _lastWordInvaderWord = choice;
+  return choice;
 }
 
 // Shows the boss overlay inside gameEl and captures keystrokes until the word
@@ -4508,6 +4957,7 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
     if(timerId) clearInterval(timerId);
     document.removeEventListener('keydown', onKey);
     if(won){
+      hitStop(gameEl, 100);
       bossFigure.classList.add('boss-defeated');
       introEl.textContent = 'BOSS DEFEATED!';
       screenShake(gameEl, 'heavy');
@@ -5124,8 +5574,25 @@ const pauseSpace = (function(){
     if(oldParticles) oldParticles.remove();
     const oldParallax = document.getElementById('world-parallax-sp');
     if(oldParallax) oldParallax.remove();
+    const oldSignature = document.getElementById('world-signature-sp');
+    if(oldSignature) oldSignature.remove();
     stopWorldAmbientAudio();
   }
+  // Per-world signature centerpiece markup. Most worlds are a single
+  // element; a couple (storm bolts, swamp bubbles) need a few inner
+  // children, so this is a lookup of innerHTML fragments rather than a
+  // single fixed shape.
+  const WORLD_SIGNATURE_HTML = {
+    blackhole: '',
+    frozencomet: '',
+    moltencore: '',
+    deepocean: '',
+    desertwastes: '',
+    stormnebula: '<div class="bolt bolt1"></div><div class="bolt bolt2"></div><div class="bolt bolt3"></div>',
+    plutoparadise: '',
+    toxicswamp: '<div class="bub bub1"></div><div class="bub bub2"></div><div class="bub bub3"></div><div class="bub bub4"></div>',
+    crystalcaverns: '',
+  };
   function applyWorldAmbience(world){
     clearWorldAmbience();
     startWorldAmbientAudio(world);
@@ -5139,6 +5606,13 @@ const pauseSpace = (function(){
         '<div class="world-parallax-layer layer-near pnear-' + world + '"></div>' +
         '<div class="world-parallax-layer layer-close pclose-' + world + '"></div>';
       game.insertBefore(parallax, game.firstChild);
+    }
+    if(Object.prototype.hasOwnProperty.call(WORLD_SIGNATURE_HTML, world)){
+      const sig = document.createElement('div');
+      sig.id = 'world-signature-sp';
+      sig.className = 'world-signature sig-' + world;
+      sig.innerHTML = WORLD_SIGNATURE_HTML[world];
+      game.insertBefore(sig, game.firstChild);
     }
     const tint = document.createElement('div');
     tint.id = 'world-ambience-tint-sp';
@@ -5365,10 +5839,16 @@ const pauseSpace = (function(){
     Object.values(SETUP_PANELS).forEach(p=>p.section.classList.remove('active'));
     cfg.section.classList.add('active');
     setupOverlayEl.classList.add('show');
+    playUIClick();
+    hapticPulse(10);
     if(key === 'captain' && captainNameInput) captainNameInput.focus();
   }
   function closeSetupPanel(){
-    setupOverlayEl.classList.remove('show');
+    setupOverlayEl.classList.add('leaving');
+    playUIClick();
+    setTimeout(()=>{
+      setupOverlayEl.classList.remove('show','leaving');
+    }, 200);
   }
   setupMenuEl.querySelectorAll('.setup-btn').forEach(btn=>{
     btn.addEventListener('click', ()=> openSetupPanel(btn.dataset.panel));
@@ -5581,10 +6061,23 @@ const pauseSpace = (function(){
   // Lets a player hear a power's signature stinger and see a flash of
   // its accent color right in the shop, before spending 300-600 coins
   // on it — same identity (sound + tint) the power actually uses in-game.
+  // The flash renders on top of the Setup Panel modal itself (rather than
+  // the game overlay function used mid-round), since the shop sits above
+  // the game field and a game-field flash would be hidden behind it.
   function previewPower(power, name){
     const meta = POWER_META[power];
     playPowerStinger(power);
     showToast((meta ? meta.emoji : '⚡') + ' ' + (name||power) + (meta ? ' — ' + meta.desc : ''));
+    if(meta && setupOverlayEl){
+      const flash = document.createElement('div');
+      flash.style.cssText = `position:absolute;inset:0;border-radius:24px;pointer-events:none;z-index:50;background:radial-gradient(circle, ${hexToRgba(meta.c1,0.22)}, ${hexToRgba(meta.c2,0.32)});opacity:0;transition:opacity 0.25s ease;`;
+      setupOverlayEl.appendChild(flash);
+      requestAnimationFrame(()=>{ flash.style.opacity = '1'; });
+      setTimeout(()=>{
+        flash.style.opacity = '0';
+        setTimeout(()=>flash.remove(), 300);
+      }, 380);
+    }
   }
   if(POWER_ROW_EL){
     POWER_ROW_EL.querySelectorAll('.power-item').forEach(btn=>{
@@ -5758,6 +6251,25 @@ const pauseSpace = (function(){
     var blur = 4 + tier*6;
     cannonBarrel.style.filter = 'drop-shadow(0 0 ' + blur + 'px ' + color + (tier===0?'aa':'') + ')';
     cannonBase.style.boxShadow = '0 0 ' + (6+tier*6) + 'px ' + color + (tier>=2?'cc':'55');
+    // Scene-wide combo escalation: saturation/brightness and a colored
+    // vignette ramp up with the tier so tension shows in the whole play
+    // field, not just the ship and streak counter.
+    if(game){
+      game.classList.remove('combo-tier-1','combo-tier-2','combo-tier-3','combo-tier-4');
+      if(tier > 0) game.classList.add('combo-tier-' + tier);
+    }
+    // The world's ambient drone brightens slightly in step with the same
+    // tier, so the escalation is audible as well as visible.
+    if(ambientGain && audioCtx){
+      const cfg = WORLD_AMBIENT[currentWorld] || WORLD_AMBIENT.milkyway;
+      const targetVol = cfg.vol * (1 + tier*0.35);
+      try{
+        const t0 = audioCtx.currentTime;
+        ambientGain.gain.cancelScheduledValues(t0);
+        ambientGain.gain.setValueAtTime(ambientGain.gain.value, t0);
+        ambientGain.gain.linearRampToValueAtTime(targetVol, t0+0.3);
+      }catch(e){}
+    }
   }
   function spawnShipTrail(){
     if(!cannonEl || !cannonBarrel) return;
@@ -5774,6 +6286,61 @@ const pauseSpace = (function(){
     scoreVal.parentElement.classList.remove('score-punch');
     void scoreVal.parentElement.offsetWidth;
     scoreVal.parentElement.classList.add('score-punch');
+  }
+  // Reuses the same punch animation for the STREAK/LEVEL stat chips so
+  // every stat that changes gets the same tactile "counted" feedback that
+  // SCORE already had, instead of just updating text silently.
+  function punchStat(el){
+    if(!el || !el.parentElement) return;
+    el.parentElement.classList.remove('score-punch');
+    void el.parentElement.offsetWidth;
+    el.parentElement.classList.add('score-punch');
+  }
+
+  // ---- Haptics: short vibration pulses on hit/miss/level-up, feature
+  // detected so it's a no-op on desktop or unsupported browsers. Kept
+  // very short/light so it reads as a tap, not a buzz. ----
+  function hapticPulse(pattern){
+    try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
+  }
+
+  // ---- UI click sound: a short, soft tick for menu/button taps, reusing
+  // the same audioCtx as the in-game SFX so there's no separate audio
+  // system to manage. ----
+  function playUIClick(){
+    if(!audioCtx) return;
+    const t0 = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(720, t0);
+    o.frequency.exponentialRampToValueAtTime(480, t0+0.06);
+    g.gain.setValueAtTime(0.001, t0);
+    g.gain.exponentialRampToValueAtTime(0.09, t0+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+0.09);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t0); o.stop(t0+0.1);
+  }
+
+  // ---- Elite/wordling spawn stinger: a quick rising blip when a tougher
+  // invader (level 16+ armored, or level 26+ wordling) lands on screen, so
+  // their arrival is announced in sound the way their look already
+  // announces it visually. ----
+  function playEliteSpawnStinger(isWordling){
+    if(!audioCtx) return;
+    const t0 = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = isWordling ? 'sawtooth' : 'triangle';
+    const startFreq = isWordling ? 260 : 220;
+    const endFreq = isWordling ? 520 : 400;
+    o.frequency.setValueAtTime(startFreq, t0);
+    o.frequency.exponentialRampToValueAtTime(endFreq, t0+0.12);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.06, t0+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+0.16);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t0); o.stop(t0+0.18);
   }
 
   const rowsLayout = {
@@ -5924,6 +6491,10 @@ const pauseSpace = (function(){
     ghosttouch(t0){ pTone(440,'sine',t0,0.5,0.09,{toFreq:520}); pTone(660,'sine',t0+0.1,0.4,0.05,{toFreq:600}); },
     rainbowbeam(t0){ [523,659,784,988].forEach((f,i)=> pTone(f,'triangle',t0+i*0.07,0.16,0.1)); },
     lifesupport(t0){ pTone(392,'sine',t0,0.22,0.12); pTone(523,'sine',t0+0.08,0.3,0.12); },
+    deepfreeze(t0){ pTone(1400,'triangle',t0,0.2,0.12); pTone(1000,'triangle',t0+0.14,0.18,0.11); pTone(80,'square',t0+0.6,0.28,0.15,{toFreq:30}); },
+    tornado(t0){ pTone(180,'sawtooth',t0,0.6,0.11,{toFreq:420}); pTone(420,'sawtooth',t0+0.15,0.5,0.09,{toFreq:180}); },
+    tidalwave(t0){ pTone(140,'sine',t0,0.9,0.13,{toFreq:340}); pTone(340,'sine',t0+0.4,0.6,0.08,{toFreq:100}); },
+    rocketbarrage(t0){ [0,0.09,0.18,0.27].forEach((d,i)=> pTone(220+i*30,'sawtooth',t0+d,0.14,0.12,{toFreq:70})); },
   };
   function playPowerStinger(power){
     ensureAudio();
@@ -6039,6 +6610,32 @@ const pauseSpace = (function(){
     }
   }
 
+  // Armored elites (level 16+) and wordlings (level 26+) shatter into a
+  // handful of jagged, larger shards on top of the usual confetti burst —
+  // reads as "breaking apart" rather than the round scatter regular
+  // invaders use, so those tougher tiers feel distinct on the kill too.
+  function spawnShatterShards(x,y,color){
+    for(let i=0;i<8;i++){
+      const shard = document.createElement('div');
+      shard.className = 'shatter-shard';
+      const sz = 8 + Math.random()*7;
+      shard.style.width = sz+'px';
+      shard.style.height = sz+'px';
+      shard.style.left = x+'px';
+      shard.style.top = y+'px';
+      shard.style.background = color;
+      shard.style.boxShadow = `0 0 8px ${color}`;
+      shard.style.clipPath = 'polygon(50% 0%, 100% 40%, 75% 100%, 25% 100%, 0% 40%)';
+      const angle = (Math.PI*2*i/8) + (Math.random()*0.5 - 0.25);
+      const dist = 45 + Math.random()*55;
+      shard.style.setProperty('--shard-end', `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist - 10}px)`);
+      shard.style.setProperty('--shard-rot', (Math.random()<0.5?-1:1)*(240+Math.random()*280)+'deg');
+      game.appendChild(shard);
+      requestAnimationFrame(()=> shard.classList.add('flying'));
+      setTimeout(()=> shard.remove(), 660);
+    }
+  }
+
   function fireLaser(targetX, targetY, color){
     // Recoil kick: a quick squash/kickback on the barrel + base so firing
     // has physical weight instead of the cannon sitting perfectly still
@@ -6050,6 +6647,11 @@ const pauseSpace = (function(){
     if(cannonBase){
       cannonBase.classList.remove('recoil'); void cannonBase.offsetWidth;
       cannonBase.classList.add('recoil');
+    }
+    const thrustFlame = document.getElementById('thrust-flame-sp');
+    if(thrustFlame){
+      thrustFlame.classList.remove('burn'); void thrustFlame.offsetWidth;
+      thrustFlame.classList.add('burn');
     }
     const beam = document.createElement('div');
     beam.className = 'laser-beam';
@@ -6096,6 +6698,21 @@ const pauseSpace = (function(){
     if(isShadowShip) beam.classList.add('laser-shadow');
     if(isStormShip) beam.classList.add('laser-storm');
     if(isCosmicShip) beam.classList.add('laser-cosmic');
+
+    // Combo escalation: as streak climbs into higher combo tiers, every
+    // shot fired gets visibly more intense — brighter glow and (at the
+    // top tier) a thicker beam — layered on top of whichever ship skin
+    // is equipped via an inline !important override, so the rising
+    // multiplier is felt in the very next shot instead of only showing
+    // up in the score readout.
+    const comboTierNow = getComboTierIndex(streak);
+    if(comboTierNow >= 2){
+      const boost = 1 + comboTierNow*0.14;
+      beam.style.setProperty('filter', `brightness(${boost}) saturate(${1+comboTierNow*0.18}) drop-shadow(0 0 ${8+comboTierNow*4}px currentColor) drop-shadow(0 0 ${16+comboTierNow*6}px var(--world-glow, currentColor))`, 'important');
+      if(comboTierNow >= 3){
+        beam.style.setProperty('width', (6+comboTierNow*1.5)+'px', 'important');
+      }
+    }
 
     game.appendChild(beam);
     setTimeout(()=>beam.remove(), 160);
@@ -6349,6 +6966,10 @@ const pauseSpace = (function(){
     else if(power === 'ghosttouch') triggerGhostTouchPower();
     else if(power === 'rainbowbeam') triggerRainbowBeamPower();
     else if(power === 'lifesupport') triggerLifeSupportPower();
+    else if(power === 'deepfreeze') triggerDeepFreezePower();
+    else if(power === 'tornado') triggerTornadoPower();
+    else if(power === 'tidalwave') triggerTidalWavePower();
+    else if(power === 'rocketbarrage') triggerRocketBarragePower();
   }
 
   // Central per-power identity: emoji + 2-stop accent gradient (also used
@@ -6366,6 +6987,10 @@ const pauseSpace = (function(){
     ghosttouch:  { emoji:'👻', c1:'#EAF4FF', c2:'#A78BFA', desc:'Any key press pops the nearest invader' },
     rainbowbeam: { emoji:'🌈', c1:'#FF9EDB', c2:'#4DE8FF', desc:'A sweeping beam pops everything it touches' },
     lifesupport: { emoji:'💚', c1:'#A8FFC8', c2:'#2ECC71', desc:'Instantly grants an extra heart' },
+    deepfreeze:  { emoji:'🧊', c1:'#EAFBFF', c2:'#3FC6FF', desc:'Freezes every invader solid, then shatters them all at once' },
+    tornado:     { emoji:'🌪️', c1:'#E8E4D8', c2:'#8C7A5B', desc:'A wandering funnel sweeps the screen and pops what it touches' },
+    tidalwave:   { emoji:'🌊', c1:'#B8E8FF', c2:'#1478B8', desc:'A wave rolls up the screen, popping everything it crests past' },
+    rocketbarrage:{ emoji:'🚀', c1:'#FFD9A0', c2:'#FF6A1A', desc:'Rockets lock onto every invader on screen and blast them' },
   };
 
   // Small floating badge over the cannon showing banked charges, so the
@@ -6550,6 +7175,7 @@ const pauseSpace = (function(){
       const cx = rect.left - gameRect.left + rect.width/2;
       const cy = rect.top - gameRect.top + rect.height/2;
       burstExplosion(cx, cy, c.color);
+      if(c.elite || c.wordling) spawnShatterShards(cx, cy, c.color);
       c.el.classList.add('pop');
       setTimeout(()=>c.el.remove(), 280);
       score += bonusPerInvader + level*2;
@@ -6574,6 +7200,10 @@ const pauseSpace = (function(){
     // shockwave ring from center, plus a heavy screen shake — on top of
     // the normal per-invader pops below. Without this it looked identical
     // to any other multi-pop moment despite being the rarest power.
+    // A brief hit-stop right before the flash gives the moment an
+    // impact-frame beat instead of the explosion just blending into
+    // everything else that's already in motion.
+    hitStop(game, 90);
     const flash = document.createElement('div');
     flash.className = 'meteor-bomb-flash';
     game.appendChild(flash);
@@ -6775,6 +7405,7 @@ const pauseSpace = (function(){
       const cy = rect.top - gameRect.top + rect.height/2;
       fireMirrorLaser(mirrorShipEls[i % mirrorShipEls.length], cx, cy, c.color);
       burstExplosion(cx, cy, c.color);
+      if(c.elite || c.wordling) spawnShatterShards(cx, cy, c.color);
       c.el.classList.add('pop');
       setTimeout(()=>c.el.remove(), 280);
       score += 6 + level*2;
@@ -6898,11 +7529,149 @@ const pauseSpace = (function(){
   function gainHeart(){
     hearts += 1;
     renderHearts();
+    game.classList.toggle('hearts-critical', hearts === 1);
     showToast('💚 +1 Heart!');
     speak('Extra heart!');
   }
   function triggerLifeSupportPower(){
     gainHeart();
+  }
+
+  // ---- Icy Shatter: every invader flashes icy-blue and freezes
+  // solid for a short beat, then all shatter at once — reuses Freeze
+  // Blast's color language, but as an instant kill instead of a slow. ----
+  const DEEP_FREEZE_HOLD_MS = 650;
+  function triggerDeepFreezePower(){
+    showToast('🧊 Icy Shatter!');
+    speak('Icy shatter!');
+    freezeInvadersVisual(true, '#B8F0FF');
+    showPowerOverlay('radial-gradient(circle, rgba(184,240,255,0.22), rgba(63,198,255,0.30))');
+    setTimeout(()=>{
+      hidePowerOverlay();
+      hitStop(game, 80);
+      const gameRect = game.getBoundingClientRect();
+      invaders.forEach(c=>{
+        if(c.popping || c.missed) return;
+        const rect = c.el.getBoundingClientRect();
+        spawnShatterShards(rect.left-gameRect.left+rect.width/2, rect.top-gameRect.top+rect.height/2, '#8FE3FF');
+      });
+      explodeAllInvaders(8);
+    }, DEEP_FREEZE_HOLD_MS);
+  }
+
+  // ---- Tornado Sweep: a funnel drifts left-to-right over ~5.5s with a
+  // wandering S-curve (sine wobble) instead of a straight line, popping
+  // any invader it passes near. Horizontal instead of Rainbow Beam's
+  // vertical sweep. ----
+  const TORNADO_MS = 5500;
+  const TORNADO_RADIUS = 54;
+  function triggerTornadoPower(){
+    showToast('🌪️ Tornado Sweep!');
+    speak('Tornado!');
+    const funnel = document.createElement('div');
+    funnel.className = 'tornado-funnel';
+    game.appendChild(funnel);
+    const gameW = game.clientWidth;
+    const gameH = game.clientHeight;
+    const baseY = gameH * 0.5;
+    const amplitude = gameH * 0.3;
+    const startTime = performance.now();
+    const dur = powerDurationMs(TORNADO_MS, 'tornado');
+    const popped = new Set();
+    function step(now){
+      const t = Math.min(1, (now-startTime)/dur);
+      const x = t * (gameW + 100) - 50;
+      const y = baseY + Math.sin(t*Math.PI*3.2) * amplitude;
+      funnel.style.left = x+'px';
+      funnel.style.top = y+'px';
+      invaders.forEach(c=>{
+        if(c.popping || c.missed || popped.has(c.id)) return;
+        const dx = (c.x+24) - x, dy = (c.y+24) - y;
+        if(Math.sqrt(dx*dx+dy*dy) < TORNADO_RADIUS){
+          popped.add(c.id);
+          popInvaderGroup([c], 8);
+        }
+      });
+      if(t < 1){
+        requestAnimationFrame(step);
+      } else {
+        funnel.remove();
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ---- Tidal Wave: a curved wave front rises bottom-to-top like Rainbow
+  // Beam, but shaped as a wave crest instead of a flat line and moves
+  // slower for a heavier "whoosh" payoff. ----
+  const TIDAL_WAVE_MS = 6500;
+  function triggerTidalWavePower(){
+    showToast('🌊 Tidal Wave!');
+    speak('Tidal wave!');
+    const wave = document.createElement('div');
+    wave.className = 'tidal-wave-sweep';
+    game.appendChild(wave);
+    const groundY = game.clientHeight - 70;
+    const startTime = performance.now();
+    const dur = powerDurationMs(TIDAL_WAVE_MS, 'tidalwave');
+    const popped = new Set();
+    function step(now){
+      const t = Math.min(1, (now-startTime)/dur);
+      const waveY = (1-t) * (groundY+40) - 20;
+      wave.style.top = waveY+'px';
+      invaders.forEach(c=>{
+        if(c.popping || c.missed || popped.has(c.id)) return;
+        if(Math.abs(c.y - waveY) < 42){
+          popped.add(c.id);
+          popInvaderGroup([c], 8);
+        }
+      });
+      if(t < 1){
+        requestAnimationFrame(step);
+      } else {
+        wave.remove();
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ---- Rocket Barrage: a rocket launches from the cannon toward every
+  // invader currently on screen in a rapid staggered volley (not a slow
+  // sweep or single instant flash — each rocket flies its own short path
+  // and explodes on arrival), clearing the field in well under 2 seconds. ----
+  const ROCKET_BARRAGE_STAGGER_MS = 75;
+  const ROCKET_FLIGHT_MS = 420;
+  function triggerRocketBarragePower(){
+    showToast('🚀 Rocket Barrage!');
+    speak('Rocket barrage!');
+    const list = invaders.filter(c=> !c.popping && !c.missed);
+    if(!list.length) return;
+    const gameRect = game.getBoundingClientRect();
+    const originEl = cannonBarrel || cannonEl;
+    const originRect = originEl ? originEl.getBoundingClientRect() : gameRect;
+    const originX = originRect.left + originRect.width/2 - gameRect.left;
+    const originY = originRect.top - gameRect.top + originRect.height*0.18;
+    list.forEach((c,i)=>{
+      setTimeout(()=>{
+        if(c.popping || c.missed) return;
+        const targetX = c.x + 24, targetY = c.y + 24;
+        const rocket = document.createElement('div');
+        rocket.className = 'power-rocket';
+        rocket.style.left = (originX-7)+'px';
+        rocket.style.top = (originY-13)+'px';
+        const angleDeg = Math.atan2(targetX-originX, -(targetY-originY)) * (180/Math.PI);
+        rocket.style.transform = `rotate(${angleDeg}deg)`;
+        game.appendChild(rocket);
+        requestAnimationFrame(()=>{
+          rocket.style.left = (targetX-7)+'px';
+          rocket.style.top = (targetY-13)+'px';
+        });
+        setTimeout(()=>{
+          rocket.remove();
+          if(!c.popping && !c.missed) popInvaderGroup([c], 8);
+        }, ROCKET_FLIGHT_MS);
+      }, i*ROCKET_BARRAGE_STAGGER_MS);
+    });
   }
 
   // Per-world movement feel: a speed multiplier (layered on top of
@@ -6954,7 +7723,7 @@ const pauseSpace = (function(){
 
     const el = document.createElement('div');
     const worldShape = WORLD_SHAPE_CLASS[currentWorld] || '';
-    el.className = 'invader ' + type.key + '-type' + (isElite ? ' elite' : '') + (isShielded ? ' shielded' : '') + (isZigzag ? ' zigzag' : '') + (isShiny ? ' shiny-invader' : '') + (worldShape ? ' ' + worldShape : '');
+    el.className = 'invader ' + type.key + '-type' + (isElite ? ' elite' : '') + (isShielded ? ' shielded' : '') + (isWordLevel ? ' wordling' : '') + (isZigzag ? ' zigzag' : '') + (isShiny ? ' shiny-invader' : '') + (worldShape ? ' ' + worldShape : '');
     if(isShiny){
       el.style.color = '#7A4A00';
     } else {
@@ -6997,7 +7766,7 @@ const pauseSpace = (function(){
     if(isShielded){
       const shieldIcon = document.createElement('div');
       shieldIcon.className = 'shield-icon';
-      shieldIcon.textContent = '🛡️';
+      shieldIcon.textContent = isWordLevel ? '⚡' : '🛡️';
       el.appendChild(shieldIcon);
     }
     game.appendChild(el);
@@ -7025,9 +7794,16 @@ const pauseSpace = (function(){
       speed: cfg.speed * (0.85 + Math.random()*0.4) * diff.speedMult * worldMove.speedMult * (isZigzag ? 0.85 : 1) * (isShielded ? 0.8 : 1) * (slowActive ? SLOW_FACTOR : 1),
       color: isShiny ? '#FFD700' : type.color,
       typeKey: type.key,
-      shiny: isShiny
+      shiny: isShiny,
+      elite: isElite,
+      wordling: isWordLevel
     };
     invaders.push(c);
+    // Wordlings (level 26+) are the new invader kind for every spawn in
+    // that range, so stingering every single one would be noise rather
+    // than a signal — a ~1-in-4 chance keeps it feeling special without
+    // wearing the player down over 5 fast-spawning levels.
+    if(isWordLevel && Math.random() < 0.25) playEliteSpawnStinger(true);
     highlightTargets();
   }
 
@@ -7192,6 +7968,7 @@ const pauseSpace = (function(){
       moveCannonTo(cx);
       fireLaser(cx, cy, target.color);
       burstExplosion(cx, cy, target.color);
+      if(target.elite || target.wordling) spawnShatterShards(cx, cy, target.color);
       playZap(380 + level*25 + toneForType(target.typeKey) + Math.min(140, streak*4));
       target.el.classList.add('pop');
       setTimeout(()=>target.el.remove(), 280);
@@ -7206,6 +7983,8 @@ const pauseSpace = (function(){
       popsThisLevel += 1;
       scoreVal.textContent = score;
       streakVal.textContent = streak;
+      punchStat(streakVal);
+      hapticPulse(12);
       updateStreakBadge();
       updateShipGlow();
       speakSuccess(streak);
@@ -7242,6 +8021,8 @@ const pauseSpace = (function(){
         popsThisLevel = 0;
         missesThisLevel = 0;
         levelVal.textContent = level+1;
+        punchStat(levelVal);
+        hapticPulse([15,40,15]);
         if(bestVal) bestVal.textContent = saveBestLevel(level+1);
         refreshKeyboardLocks();
         clearTimeout(spawnTimer);
@@ -7269,6 +8050,7 @@ const pauseSpace = (function(){
       // again" rather than a punishing buzzer.
       const missT0 = audioCtx ? audioCtx.currentTime : 0;
       pTone(180, 'sine', missT0, 0.11, 0.05, { toFreq:120 });
+      hapticPulse(8);
       missesThisLevel += 1;
       flashKeyPress(ch);
       if(streak > 0){
@@ -7322,6 +8104,23 @@ const pauseSpace = (function(){
       pTone(180, 'sawtooth', t0, 0.28, 0.13, { toFreq:70 });
       pTone(90, 'square', t0+0.05, 0.24, 0.09, { toFreq:45 });
     }
+    // Visual impact: a quick red edge-flash across the field plus a
+    // flinch on the ship itself, so the moment reads as a hit rather
+    // than only the heart icon fading in the corner.
+    const flash = document.createElement('div');
+    flash.className = 'miss-flash';
+    game.appendChild(flash);
+    setTimeout(()=>flash.remove(), 460);
+    if(cannonEl){
+      cannonEl.classList.remove('ship-flinch');
+      void cannonEl.offsetWidth;
+      cannonEl.classList.add('ship-flinch');
+    }
+    screenShake(game, 'light');
+    // Last-heart warning: a slow pulsing red vignette stays on while at
+    // 1 heart, clearing itself automatically once hearts go back up
+    // (Life Support) or the round ends.
+    game.classList.toggle('hearts-critical', hearts === 1);
     if(hearts <= 0){
       triggerGameOver();
     }
@@ -7419,6 +8218,7 @@ const pauseSpace = (function(){
     updatePowerBadge();
     level = 0; score = 0; streak = 0; popsThisLevel = 0; missesThisLevel = 0;
     hearts = MAX_HEARTS;
+    game.classList.remove('hearts-critical');
     letterStats = {};
     resetCannonPosition();
     updateShipGlow();
@@ -7439,7 +8239,7 @@ const pauseSpace = (function(){
     loop();
   }
 
-  startBtn.addEventListener('click', startGame);
+  startBtn.addEventListener('click', ()=>{ playUIClick(); hapticPulse(12); startGame(); });
 
   cancelBtn.addEventListener('click', ()=>{
     if(!running) return;
