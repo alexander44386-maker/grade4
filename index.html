@@ -1253,6 +1253,7 @@
   .final-adj-btn{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);color:var(--ink-soft);font-weight:800;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
   .final-adj-btn:hover{border-color:var(--night);color:var(--night);}
   @media(min-width:560px){ .final-adj-btn{width:20px;height:20px;font-size:12px;} }
+  .final-adj-hint{font-size:10px;font-weight:800;font-family:'Space Mono';color:#fff;background:#F0A63A;border-radius:999px;padding:1px 7px;letter-spacing:.02em;display:inline-block;box-shadow:0 1px 3px rgba(0,0,0,0.25);cursor:help;}
   /* ---------- REPORT CARD SHARE (Facebook) ---------- */
   .rc-share-btn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#1877F2,#0C5DC7);color:#fff;border:none;border-radius:999px;padding:8px 16px;font-weight:800;font-size:12.5px;font-family:'Nunito';cursor:pointer;box-shadow:0 4px 0 #0C4DA0,0 6px 14px rgba(24,119,242,0.35);transition:transform .12s ease;white-space:nowrap;}
   .rc-share-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #0C4DA0;}
@@ -1272,23 +1273,23 @@
   .rc-share-submit:disabled{opacity:0.5;cursor:not-allowed;}
   .rc-share-card-wrap{position:relative;max-width:380px;width:100%;}
   .rc-share-close{position:absolute;top:-14px;right:-8px;width:34px;height:34px;border-radius:50%;background:#fff;color:var(--ink);border:none;font-weight:800;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.3);z-index:2;font-size:15px;}
-  .rc-share-card{background:linear-gradient(160deg,#19348E,#2B55D4 55%,#14245E);border-radius:28px;padding:30px 24px 24px;color:#fff;text-align:center;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.45);}
+  .rc-share-card{background:linear-gradient(160deg,#19348E,#2B55D4 55%,#14245E);border-radius:28px;padding:32px 22px 26px;color:#fff;text-align:center;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.45),inset 0 1px 0 rgba(255,255,255,0.1);}
   .rc-share-card::before{content:"";position:absolute;inset:0;background-image:radial-gradient(1.6px 1.6px at 12% 18%,#fff,transparent),radial-gradient(1.2px 1.2px at 30% 62%,#fff,transparent),radial-gradient(1.4px 1.4px at 68% 28%,#fff,transparent),radial-gradient(1.2px 1.2px at 85% 68%,#fff,transparent),radial-gradient(1.6px 1.6px at 48% 85%,#fff,transparent),radial-gradient(1.2px 1.2px at 90% 15%,#fff,transparent);opacity:0.55;pointer-events:none;}
   .rc-share-badge{font-size:32px;margin-bottom:2px;position:relative;}
   .rc-share-school{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;opacity:0.75;font-weight:700;position:relative;}
   .rc-share-name{font-size:25px;font-weight:800;margin-top:3px;position:relative;font-family:'Fredoka';}
   .rc-share-quarter{font-size:13px;opacity:0.85;margin-top:2px;font-weight:700;position:relative;}
   .rc-share-avg-wrap{margin:18px 0 6px;position:relative;}
-  .rc-share-avg{font-size:52px;font-weight:800;line-height:1;color:var(--gold);text-shadow:0 0 20px rgba(239,194,76,0.55);font-family:'Fredoka';}
-  .rc-share-avg-label{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;opacity:0.75;margin-top:2px;font-weight:700;}
-  .rc-share-honor{display:inline-block;margin-top:10px;padding:5px 14px;border-radius:999px;background:rgba(239,194,76,0.18);border:1px solid rgba(239,194,76,0.55);color:var(--gold);font-weight:800;font-size:12px;position:relative;}
-  .rc-share-divider{height:1px;background:rgba(255,255,255,0.18);margin:18px 0 14px;position:relative;}
-  .rc-share-list{display:grid;gap:8px;text-align:left;position:relative;}
-  .rc-share-row{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:700;}
-  .rc-share-row-subj{display:flex;align-items:center;gap:8px;color:#fff;opacity:0.95;}
-  .rc-share-row-grade{color:var(--gold);font-weight:800;font-family:'Space Mono';}
-  .rc-share-footer{margin-top:20px;font-size:10px;opacity:0.65;position:relative;}
-  .rc-share-footer b{color:var(--gold);}
+  .rc-share-avg{font-size:54px;font-weight:800;line-height:1;color:#FFD24C;text-shadow:0 2px 0 rgba(0,0,0,0.25),0 0 24px rgba(255,210,76,0.5);font-family:'Fredoka';}
+  .rc-share-avg-label{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;opacity:0.8;margin-top:4px;font-weight:700;color:#fff;}
+  .rc-share-honor{display:inline-block;margin-top:12px;padding:6px 16px;border-radius:999px;background:#FFD24C;border:none;color:#1B2C63;font-weight:800;font-size:12.5px;position:relative;box-shadow:0 3px 8px rgba(0,0,0,0.25);}
+  .rc-share-divider{height:1px;background:rgba(255,255,255,0.18);margin:20px 0 14px;position:relative;}
+  .rc-share-list{display:grid;gap:9px;text-align:left;position:relative;}
+  .rc-share-row{display:flex;align-items:center;justify-content:space-between;font-size:13.5px;font-weight:700;background:rgba(255,255,255,0.09);border-radius:12px;padding:9px 12px;}
+  .rc-share-row-subj{display:flex;align-items:center;gap:9px;color:#fff;opacity:1;}
+  .rc-share-row-grade{display:inline-block;min-width:30px;text-align:center;color:#1B2C63;background:#FFD24C;font-weight:800;font-family:'Space Mono';font-size:13px;padding:3px 10px;border-radius:999px;}
+  .rc-share-footer{margin-top:22px;font-size:10.5px;opacity:0.75;position:relative;color:#fff;}
+  .rc-share-footer b{color:#FFD24C;}
   .rc-share-actions-row{display:flex;gap:10px;margin-top:14px;}
   .rc-share-fb-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#1877F2,#0C5DC7);color:#fff;border:none;border-radius:999px;padding:13px;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 4px 0 #0C4DA0;font-family:'Nunito';}
   .rc-share-fb-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #0C4DA0;}
@@ -1426,8 +1427,14 @@ window.addEventListener("storage", e => {
 });
 async function pushToCloud() {
   try {
+    // PATCH (not PUT): Firebase's REST PATCH does a shallow merge of just the
+    // top-level keys in the body, leaving any other keys already stored under
+    // grade4_passport untouched. PUT would replace the whole node, so any key
+    // missing from this device's local snapshot (e.g. gs4_grades_v1, if this
+    // device hadn't pulled it down yet) would get silently deleted from the
+    // cloud for every device. PATCH can't erase what it doesn't mention.
     const res = await fetch(CLOUD_URL, {
-      method: "PUT",
+      method: "PATCH",
       headers: {
         "Content-Type": "application/json"
       },
@@ -10917,7 +10924,8 @@ function GradesScreen({
   setSubjectWeight,
   setHonorThreshold,
   resetGradeConfig,
-  clearGradeFinalOverride
+  clearGradeFinalOverride,
+  switchToDetailedMode
 }) {
   const openSubject = gradesOpenSubject,
     setOpenSubject = setGradesOpenSubject;
@@ -11235,15 +11243,18 @@ function GradesScreen({
       style: {
         color: s.color
       }
-    }, final != null ? final : "—"), final != null && /*#__PURE__*/React.createElement("div", {
+    }, final != null ? final : "—"), final != null && (subjGrades.adjust ? /*#__PURE__*/React.createElement("div", {
+      className: "final-adj-hint",
+      title: "This final grade was manually nudged " + (subjGrades.adjust > 0 ? "up" : "down") + " by " + Math.abs(subjGrades.adjust) + " point" + (Math.abs(subjGrades.adjust) === 1 ? "" : "s") + " from the auto-calculated grade."
+    }, subjGrades.adjust > 0 ? "+" + subjGrades.adjust : subjGrades.adjust) : null), final != null && /*#__PURE__*/React.createElement("div", {
       className: "final-adj"
     }, /*#__PURE__*/React.createElement("button", {
       className: "final-adj-btn",
-      title: "\u22121",
+      title: "Nudge final grade down by 1",
       onClick: e => nudge(e, s.id, -1)
     }, "\u2212"), /*#__PURE__*/React.createElement("button", {
       className: "final-adj-btn",
-      title: "+1",
+      title: "Nudge final grade up by 1",
       onClick: e => nudge(e, s.id, 1)
     }, "+"))));
   }), /*#__PURE__*/React.createElement("div", {
@@ -11329,14 +11340,20 @@ function GradesScreen({
         fontSize: "22px",
         color: s.color
       }
-    }, final != null ? final : "—"), isOpen && final != null ? /*#__PURE__*/React.createElement("div", {
+    }, final != null ? final : "—"), isOpen && final != null ? /*#__PURE__*/React.createElement(React.Fragment, null, subjGrades.adjust ? /*#__PURE__*/React.createElement("div", {
+      className: "final-adj-hint",
+      style: {
+        justifyContent: "flex-end"
+      },
+      title: "This final grade was manually nudged " + (subjGrades.adjust > 0 ? "up" : "down") + " by " + Math.abs(subjGrades.adjust) + " point" + (Math.abs(subjGrades.adjust) === 1 ? "" : "s") + " from the auto-calculated grade."
+    }, subjGrades.adjust > 0 ? "+" + subjGrades.adjust : subjGrades.adjust) : null, /*#__PURE__*/React.createElement("div", {
       className: "final-adj",
       style: {
         justifyContent: "flex-end"
       }
     }, /*#__PURE__*/React.createElement("button", {
       className: "final-adj-btn",
-      title: "\u22121",
+      title: "Nudge final grade down by 1",
       onClick: e => {
         e.stopPropagation();
         Sound.tap();
@@ -11344,15 +11361,15 @@ function GradesScreen({
       }
     }, "\u2212"), /*#__PURE__*/React.createElement("button", {
       className: "final-adj-btn",
-      title: "+1",
+      title: "Nudge final grade up by 1",
       onClick: e => {
         e.stopPropagation();
         Sound.tap();
         adjustSubjectFinal(s.id, 1);
       }
-    }, "+")) : /*#__PURE__*/React.createElement("div", {
+    }, "+"))) : (!isOpen && /*#__PURE__*/React.createElement("div", {
       className: "smeta"
-    }, isOpen ? "▲ hide" : "▼ edit"))), isOpen && /*#__PURE__*/React.createElement("div", {
+    }, "▼ edit")))), isOpen && /*#__PURE__*/React.createElement("div", {
       onClick: e => e.stopPropagation(),
       style: {
         marginTop: 16,
@@ -14865,7 +14882,8 @@ function App() {
       setSubjectWeight: setSubjectWeight,
       setHonorThreshold: setHonorThreshold,
       resetGradeConfig: resetGradeConfig,
-      clearGradeFinalOverride: clearGradeFinalOverride
+      clearGradeFinalOverride: clearGradeFinalOverride,
+      switchToDetailedMode: switchToDetailedMode
     });
   } else if (nav.screen === "subjects") {
     content = /*#__PURE__*/React.createElement(SubjectsScreen, {
