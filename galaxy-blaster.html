@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Baloo+2:wght@500;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-<style>
   :root{
     --sky-top:#BFE8FF;
     --sky-bottom:#EAF8FF;
@@ -4026,19 +4025,63 @@
     box-shadow:0 8px 18px rgba(0,0,0,0.3);
   }
 
-  @media (max-width:640px){
-    .sidebar{ width:72px; padding:12px 4px; }
+  /* Responsive scale — previously a single max-width:640px breakpoint
+     covered everything from phones through tablets, which meant the
+     game area and UI chrome sized about the same on a 7" tablet as a
+     mid-size Chromebook screen. These three max-width tiers (declared
+     largest to smallest so the more specific one wins in the cascade)
+     step the sizing down gradually instead of one big jump: laptops
+     get a mild trim, tablets land close to the old single breakpoint,
+     and phones get their own, more aggressive tier below that. */
+  @media (max-width:1200px){
+    .sidebar{ width:88px; padding:16px 6px; }
+    .sidebar.collapsed{ width:44px; }
+    .nav-btn .nav-icon{ font-size:26px; }
+    .nav-btn{ font-size:11px; padding:10px 3px; }
+    header{ padding:8px 14px; gap:7px; }
+    .stat{ padding:5px 9px; font-size:12px; }
+    .stat span.label{ font-size:9px; }
+    .key{ height:23px; font-size:10px; min-width:19px;}
+    .critter, .invader{ width:60px; height:60px; font-size:24px;}
+    .racer{ width:62px; height:42px; font-size:21px;}
+    .player-car{ width:58px; height:58px; left:56px; }
+    .car-body{ font-size:42px; }
+  }
+  @media (max-width:768px){
+    .sidebar{ width:76px; padding:13px 5px; }
     .sidebar.collapsed{ width:40px; }
-    .nav-btn .nav-icon{ font-size:22px; }
-    .nav-btn{ font-size:9px; padding:8px 2px; }
-    header{ padding:6px 10px; gap:5px; }
-    .stat{ padding:4px 8px; font-size:11px; gap:3px; }
-    .stat span.label{ font-size:8px; }
-    .key{ height:20px; font-size:8px; min-width:16px;}
-    .critter, .invader{ width:52px; height:52px; font-size:20px;}
-    .racer{ width:54px; height:36px; font-size:17px;}
-    .player-car{ width:48px; height:48px; left:40px; }
-    .car-body{ font-size:34px; }
+    .nav-btn .nav-icon{ font-size:24px; }
+    .nav-btn{ font-size:10px; padding:9px 3px; }
+    header{ padding:7px 12px; gap:6px; }
+    .stat{ padding:4px 9px; font-size:11.5px; gap:3.5px; }
+    .stat span.label{ font-size:8.5px; }
+    .key{ height:21px; font-size:9px; min-width:18px;}
+    .critter, .invader{ width:56px; height:56px; font-size:22px;}
+    .racer{ width:58px; height:38px; font-size:19px;}
+    .player-car{ width:52px; height:52px; left:46px; }
+    .car-body{ font-size:38px; }
+  }
+  @media (max-width:480px){
+    .sidebar{ width:64px; padding:10px 3px; }
+    .sidebar.collapsed{ width:36px; }
+    .nav-btn .nav-icon{ font-size:20px; }
+    .nav-btn{ font-size:9px; padding:7px 2px; }
+    header{ padding:5px 8px; gap:4px; }
+    .stat{ padding:3px 6px; font-size:10px; gap:2px; }
+    .stat span.label{ font-size:7.5px; }
+    .key{ height:18px; font-size:8px; min-width:14px;}
+    .critter, .invader{ width:46px; height:46px; font-size:18px;}
+    .racer{ width:48px; height:32px; font-size:15px;}
+    .player-car{ width:40px; height:40px; left:32px; }
+    .car-body{ font-size:28px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 </style>
 <style>
@@ -4486,24 +4529,50 @@ const STORAGE_PREFIX = STORAGE_SCOPE ? ('g' + STORAGE_SCOPE + '-') : '';
 function skey(name){ return STORAGE_PREFIX + name; }
 
 // ============================================================
-// Shared "reward" sound effects for the handful of moments (coin
-// pickups, level-up, boss defeat) whose code lives in top-level
-// functions outside the main game closure — those don't have access
-// to that closure's local audioCtx/pTone, so they get their own small
-// synth context here instead. Same oscillator-envelope approach as
-// the in-closure pTone, just usable from anywhere in the file.
+// Global timer scheduler — every setTimeout in the file goes through
+// schedule() instead of the raw browser call, so a single
+// clearGameTimers() (called from cleanupGame() on quit / game over)
+// can reliably cancel every pending delayed effect — explosions,
+// overlay fades, boss-fight timeouts, world-effect transitions, etc.
+// — instead of relying on each one to check `running`/`paused` for
+// itself. schedule() still returns the real timeout id, so existing
+// `clearTimeout(someVar)` call sites keep working unchanged.
 // ============================================================
-let fxAudioCtx = null;
-function ensureFxAudio(){
-  if(!fxAudioCtx){
-    try{ fxAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
+const gameTimers = new Set();
+function schedule(fn, ms){
+  const id = setTimeout(()=>{ gameTimers.delete(id); fn(); }, ms);
+  gameTimers.add(id);
+  return id;
+}
+function clearGameTimers(){
+  gameTimers.forEach(id=>clearTimeout(id));
+  gameTimers.clear();
+}
+
+// ============================================================
+// Single shared AudioContext + tone synth, used everywhere in the file —
+// by both the top-level reward-sound functions below (coin pickup,
+// level-up, boss defeat — these run outside the main game closure) and
+// by the closure's own per-hit/per-power sound effects further down.
+// Previously these were two separate AudioContexts with near-identical
+// oscillator/gain code (fxAudioCtx here, a second audioCtx inside the
+// closure) purely because the top-level functions couldn't reach the
+// closure's local one. Now there's one context and one tone helper —
+// one place to add a master volume or mute control later, and no risk
+// of the two contexts drifting out of sync on mobile browsers that
+// suspend audio contexts until a user gesture.
+// ============================================================
+let audioCtx = null;
+function ensureAudio(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
   }
 }
-function fxTone(freq, type, t0, dur, vol, opts){
-  if(!fxAudioCtx) return;
+function pTone(freq, type, t0, dur, vol, opts){
+  if(!audioCtx) return null;
   opts = opts || {};
-  const o = fxAudioCtx.createOscillator();
-  const g = fxAudioCtx.createGain();
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
   o.type = type;
   if(opts.detune) o.detune.setValueAtTime(opts.detune, t0);
   o.frequency.setValueAtTime(freq, t0);
@@ -4511,34 +4580,35 @@ function fxTone(freq, type, t0, dur, vol, opts){
   g.gain.setValueAtTime(0.0001, t0);
   g.gain.linearRampToValueAtTime(vol, t0+Math.min(0.03, dur*0.3));
   g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
-  o.connect(g); g.connect(fxAudioCtx.destination);
+  o.connect(g); g.connect(audioCtx.destination);
   o.start(t0); o.stop(t0+dur+0.03);
+  return o;
 }
 // Bright two-note "cha-ching" — used for combo-tier coin bonuses, shiny
 // pickups, and the end-of-game coin payout.
 function playCoinChime(){
-  ensureFxAudio();
-  if(!fxAudioCtx) return;
-  const t0 = fxAudioCtx.currentTime;
-  fxTone(1046, 'sine', t0, 0.09, 0.09);
-  fxTone(1568, 'sine', t0+0.06, 0.14, 0.08);
+  ensureAudio();
+  if(!audioCtx) return;
+  const t0 = audioCtx.currentTime;
+  pTone(1046, 'sine', t0, 0.09, 0.09);
+  pTone(1568, 'sine', t0+0.06, 0.14, 0.08);
 }
 // Quick 4-note ascending arpeggio — plays alongside the level-complete
 // celebration card.
 function playLevelUpFanfare(){
-  ensureFxAudio();
-  if(!fxAudioCtx) return;
-  const t0 = fxAudioCtx.currentTime;
-  [523, 659, 784, 1046].forEach((f,i)=> fxTone(f, 'triangle', t0+i*0.09, 0.16, 0.1));
+  ensureAudio();
+  if(!audioCtx) return;
+  const t0 = audioCtx.currentTime;
+  [523, 659, 784, 1046].forEach((f,i)=> pTone(f, 'triangle', t0+i*0.09, 0.16, 0.1));
 }
 // Punchy low hit + a triumphant rising run — plays the instant a boss
 // is defeated, distinct from the regular per-letter zap.
 function playBossDefeatSting(){
-  ensureFxAudio();
-  if(!fxAudioCtx) return;
-  const t0 = fxAudioCtx.currentTime;
-  fxTone(120, 'square', t0, 0.22, 0.14, { toFreq:70 });
-  [392, 523, 659, 784].forEach((f,i)=> fxTone(f, 'triangle', t0+0.1+i*0.09, 0.2, 0.11));
+  ensureAudio();
+  if(!audioCtx) return;
+  const t0 = audioCtx.currentTime;
+  pTone(120, 'square', t0, 0.22, 0.14, { toFreq:70 });
+  [392, 523, 659, 784].forEach((f,i)=> pTone(f, 'triangle', t0+0.1+i*0.09, 0.2, 0.11));
 }
 
 function getCoins(){
@@ -4683,12 +4753,12 @@ function showLevelPopup(gameEl, levelNumber, stats, callback, worldKey){
       p.style.setProperty('--fly', `translate(${fx}px, ${fy}px)`);
       p.style.zIndex = '14';
       gameEl.appendChild(p);
-      setTimeout(()=>p.remove(), 780);
+      schedule(()=>p.remove(), 780);
     }
   }
-  setTimeout(()=>{
+  schedule(()=>{
     overlay.classList.add('leaving');
-    setTimeout(()=>{
+    schedule(()=>{
       overlay.remove();
       if(callback) callback();
     }, 300);
@@ -4747,9 +4817,9 @@ function showEndOfGameCoins(gameEl, difficultyKey, levelReached, callback){
   `;
   overlay.appendChild(card);
   gameEl.appendChild(overlay);
-  setTimeout(()=>{
+  schedule(()=>{
     overlay.classList.add('leaving');
-    setTimeout(()=>{
+    schedule(()=>{
       overlay.remove();
       if(callback) callback();
     }, 300);
@@ -4789,7 +4859,7 @@ function screenShake(el, intensity){
   el.classList.remove('screen-shake-heavy','screen-shake-light');
   void el.offsetWidth;
   el.classList.add(cls);
-  setTimeout(function(){ el.classList.remove(cls); }, 400);
+  schedule(function(){ el.classList.remove(cls); }, 400);
 }
 
 // ============================================================
@@ -4804,7 +4874,7 @@ function screenShake(el, intensity){
 function hitStop(el, ms){
   if(!el) return;
   el.classList.add('hit-stop');
-  setTimeout(function(){ el.classList.remove('hit-stop'); }, ms || 80);
+  schedule(function(){ el.classList.remove('hit-stop'); }, ms || 80);
 }
 
 // ============================================================
@@ -4876,13 +4946,16 @@ function speak(text){
   }catch(e){}
 }
 
-const SUCCESS_PHRASES = ["Awesome!","Great job!","Fantastic!","You're getting faster!"];
+const SUCCESS_PHRASES = ["Awesome!","Great job!","Fantastic!","You're getting faster!","SUPER!"];
 
-// Call this on every correct letter, passing the current in-a-row streak count.
+// Called on every correct letter, but only actually speaks at streak
+// milestones (every 5 in a row). Previously this spoke praise on every
+// single correct hit — harmless in isolation (speech doesn't stack), but
+// for a fast typist it meant the game was constantly trying to talk,
+// landing mid-word in a strange rhythm. Milestone-only keeps voice praise
+// meaningful without competing with rapid gameplay.
 function speakSuccess(streakCount){
   if(streakCount > 0 && streakCount % 5 === 0){
-    speak("SUPER!");
-  } else {
     speak(SUCCESS_PHRASES[Math.floor(Math.random()*SUCCESS_PHRASES.length)]);
   }
 }
@@ -5205,7 +5278,7 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
   // word/timer/hp-bar stay hidden (see .taunt-phase CSS) and no keystrokes
   // count yet. Phase 2 (beginFight) reveals the word and starts the clock.
   speak(bossInfo.name + '! ' + tauntText);
-  const tauntTimeout = setTimeout(beginFight, BOSS_TAUNT_MS);
+  const tauntTimeout = schedule(beginFight, BOSS_TAUNT_MS);
 
   function beginFight(){
     if(finished) return;
@@ -5232,9 +5305,9 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
       screenShake(gameEl, 'heavy');
       playBossDefeatSting();
       speak('Boss defeated!');
-      setTimeout(()=>{
+      schedule(()=>{
         overlay.classList.add('leaving');
-        setTimeout(()=>{ overlay.remove(); onDefeat(); }, 350);
+        schedule(()=>{ overlay.remove(); onDefeat(); }, 350);
       }, 900);
     } else {
       introEl.textContent = "TIME'S UP!";
@@ -5242,9 +5315,9 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
       void bossFigure.offsetWidth;
       bossFigure.classList.add('boss-shake');
       speak('Out of time!');
-      setTimeout(()=>{
+      schedule(()=>{
         overlay.classList.add('leaving');
-        setTimeout(()=>{ overlay.remove(); onTimeout(); }, 350);
+        schedule(()=>{ overlay.remove(); onTimeout(); }, 350);
       }, 900);
     }
   }
@@ -5365,7 +5438,7 @@ const pauseSpace = (function(){
     cannonEl.style.transition = 'left 0.28s cubic-bezier(.34,1.56,.64,1)';
     cannonEl.style.left = clampedX + 'px';
     clearTimeout(cannonReturnTimer);
-    cannonReturnTimer = setTimeout(()=>{
+    cannonReturnTimer = schedule(()=>{
       cannonEl.style.transition = 'left 0.6s ease';
       cannonEl.style.left = '50%';
     }, 1500);
@@ -5757,7 +5830,7 @@ const pauseSpace = (function(){
     const ov = document.getElementById('world-effect-tint-sp');
     if(!ov) return;
     ov.style.opacity = '0';
-    setTimeout(()=>ov.remove(), 300);
+    schedule(()=>ov.remove(), 300);
   }
 
   function beginWorldEffect(){
@@ -5796,7 +5869,7 @@ const pauseSpace = (function(){
         const sweep = document.getElementById('world-cloak-sweep-sp');
         if(sweep){
           sweep.classList.remove('show');
-          setTimeout(()=>sweep.remove(), 350);
+          schedule(()=>sweep.remove(), 350);
         }
       }
     }
@@ -6131,7 +6204,7 @@ const pauseSpace = (function(){
   function closeSetupPanel(){
     setupOverlayEl.classList.add('leaving');
     playUIClick();
-    setTimeout(()=>{
+    schedule(()=>{
       setupOverlayEl.classList.remove('show','leaving');
     }, 200);
   }
@@ -6358,9 +6431,9 @@ const pauseSpace = (function(){
       flash.style.cssText = `position:absolute;inset:0;border-radius:24px;pointer-events:none;z-index:50;background:radial-gradient(circle, ${hexToRgba(meta.c1,0.22)}, ${hexToRgba(meta.c2,0.32)});opacity:0;transition:opacity 0.25s ease;`;
       setupOverlayEl.appendChild(flash);
       requestAnimationFrame(()=>{ flash.style.opacity = '1'; });
-      setTimeout(()=>{
+      schedule(()=>{
         flash.style.opacity = '0';
-        setTimeout(()=>flash.remove(), 300);
+        schedule(()=>flash.remove(), 300);
       }, 380);
     }
   }
@@ -6413,6 +6486,7 @@ const pauseSpace = (function(){
   let level = 0;
   let score = 0;
   let streak = 0;
+  let bestStreakThisRun = 0;
   let popsThisLevel = 0;
   let missesThisLevel = 0;
   let running = false;
@@ -6421,6 +6495,22 @@ const pauseSpace = (function(){
   let hearts = MAX_HEARTS;
   let invaders = [];
   let spawnTimer = null;
+
+  // ---- Adaptive difficulty: a rolling window of recent hit/miss outcomes
+  // (correct pops, mistyped keys, and invaders that reach the ground all
+  // count) used to gently nudge spawn speed and back off special
+  // mechanics when a kid is actually struggling right now — not just
+  // based on level number, which only ramps difficulty one direction. ----
+  const RECENT_WINDOW = 20;
+  let recentOutcomes = [];
+  function recordOutcome(hit){
+    recentOutcomes.push(hit);
+    if(recentOutcomes.length > RECENT_WINDOW) recentOutcomes.shift();
+  }
+  function recentAccuracy(){
+    if(recentOutcomes.length < 8) return null; // not enough samples yet to react
+    return recentOutcomes.filter(Boolean).length / recentOutcomes.length;
+  }
   let rafId = null;
   let idCounter = 0;
   // Ship-power state: freezeActive pauses invader movement (and skips the
@@ -6493,6 +6583,24 @@ const pauseSpace = (function(){
     return pool[pool.length-1];
   }
   function formatKeyLabel(ch){ return ch===';' ? ';' : ch.toUpperCase(); }
+
+  // Whole-session accuracy and the set of keys actually seen this run —
+  // used on the game-over screen. letterStats accumulates for the whole
+  // run (only reset in startGame), unlike popsThisLevel/missesThisLevel
+  // which reset every level-up, so it's the right source for a session
+  // total rather than just the most recent level.
+  function calcSessionAccuracy(){
+    let hits = 0, total = 0;
+    Object.keys(letterStats).forEach(ch=>{
+      hits += letterStats[ch].hits;
+      total += letterStats[ch].hits + letterStats[ch].misses;
+    });
+    return Math.round(calcAccuracy(hits, total - hits));
+  }
+  function getKeysPracticed(){
+    const keys = Object.keys(letterStats).filter(ch=> letterStats[ch].hits + letterStats[ch].misses > 0);
+    return keys.length ? keys.sort().map(formatKeyLabel).join(' ') : '—';
+  }
   function buildKeyReport(){
     const entries = Object.keys(letterStats).map(function(ch){
       var s = letterStats[ch];
@@ -6522,9 +6630,9 @@ const pauseSpace = (function(){
     card.innerHTML = html;
     overlay.appendChild(card);
     gameEl.appendChild(overlay);
-    setTimeout(function(){
+    schedule(function(){
       overlay.classList.add('leaving');
-      setTimeout(function(){ overlay.remove(); if(callback) callback(); }, 300);
+      schedule(function(){ overlay.remove(); if(callback) callback(); }, 300);
     }, 2600);
   }
 
@@ -6564,7 +6672,7 @@ const pauseSpace = (function(){
     ghost.textContent = cannonBarrel.textContent;
     ghost.style.cssText = 'position:absolute; left:' + (rect.left-gameRect.left) + 'px; top:' + (rect.top-gameRect.top) + 'px; font-size:' + rect.height + 'px; line-height:1; pointer-events:none; opacity:0.5; filter:blur(1px); animation: ship-trail-fade 0.4s ease-out forwards; z-index:1;';
     game.appendChild(ghost);
-    setTimeout(function(){ ghost.remove(); }, 420);
+    schedule(function(){ ghost.remove(); }, 420);
   }
   function punchScore(){
     if(!scoreVal || !scoreVal.parentElement) return;
@@ -6670,15 +6778,12 @@ const pauseSpace = (function(){
     const k = keyEls[ch];
     if(!k) return;
     k.classList.add('pressed');
-    setTimeout(()=>k.classList.remove('pressed'), 120);
+    schedule(()=>k.classList.remove('pressed'), 120);
   }
 
-  let audioCtx = null;
-  function ensureAudio(){
-    if(!audioCtx){
-      try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
-    }
-  }
+  // audioCtx/ensureAudio are now declared once at global scope (see top
+  // of file) and shared with the top-level reward-sound functions —
+  // this closure just uses them via normal JS scope lookup.
 
   // ---- Per-world sound palette: same synth-engine hit/gimmick sounds,
   // but a different oscillator wave + pitch shape per world so each one
@@ -6746,25 +6851,8 @@ const pauseSpace = (function(){
   // as playZap/playWorldGimmickSting. Each power gets its own shape so
   // activating one is recognizable by ear, not just by its overlay tint —
   // freeze descends into a cold chime, chain zap crackles in triplets,
-  // life support resolves warmly, etc. ----
-  function pTone(freq, type, t0, dur, vol, opts){
-    if(!audioCtx) return null;
-    opts = opts || {};
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.type = type;
-    if(opts.detune) o.detune.setValueAtTime(opts.detune, t0);
-    o.frequency.setValueAtTime(freq, t0);
-    if(opts.toFreq){
-      o.frequency.exponentialRampToValueAtTime(Math.max(20,opts.toFreq), t0+dur);
-    }
-    g.gain.setValueAtTime(0.0001, t0);
-    g.gain.linearRampToValueAtTime(vol, t0+Math.min(0.03,dur*0.3));
-    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
-    o.connect(g); g.connect(audioCtx.destination);
-    o.start(t0); o.stop(t0+dur+0.03);
-    return o;
-  }
+  // life support resolves warmly, etc. (pTone itself is the shared global
+  // version declared at the top of the file.) ----
   const POWER_STINGERS = {
     freeze(t0){ pTone(1100,'triangle',t0,0.16,0.13); pTone(700,'triangle',t0+0.11,0.22,0.12); },
     slow(t0){ pTone(260,'sine',t0,0.5,0.12,{toFreq:120}); },
@@ -6818,7 +6906,7 @@ const pauseSpace = (function(){
     }
     const osc = ambientOsc, lfo = ambientLFO, g = ambientGain;
     ambientOsc = null; ambientLFO = null; ambientGain = null;
-    setTimeout(()=>{
+    schedule(()=>{
       try{ if(osc) osc.stop(); }catch(e){}
       try{ if(lfo) lfo.stop(); }catch(e){}
       try{ if(g) g.disconnect(); }catch(e){}
@@ -6861,18 +6949,18 @@ const pauseSpace = (function(){
     impact.className = 'impact-flash';
     impact.style.cssText = `left:${x}px;top:${y}px;width:20px;height:20px;background:radial-gradient(circle,#fff,${color} 50%,transparent);box-shadow:0 0 18px #fff,0 0 30px ${color};`;
     game.appendChild(impact);
-    setTimeout(()=>impact.remove(), 230);
+    schedule(()=>impact.remove(), 230);
 
     const ring = document.createElement('div');
     ring.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:6px;height:6px;border-radius:50%;pointer-events:none;box-shadow:0 0 0 2px ${color},0 0 14px 3px var(--world-glow, ${color});transform:translate(-50%,-50%);animation:explosion-ring 0.4s ease-out forwards;`;
     game.appendChild(ring);
-    setTimeout(()=>ring.remove(), 420);
+    schedule(()=>ring.remove(), 420);
     const shapes = ['shape-circle','shape-star','shape-diamond'];
     for(let i=0;i<16;i++){
       // Stagger each piece's spawn by a few ms so the burst reads as a
       // scatter rather than all 16 pieces launching in perfect unison.
       const spawnDelay = Math.random()*90;
-      setTimeout(()=>{
+      schedule(()=>{
         const p = document.createElement('div');
         p.className = 'confetti-piece ' + shapes[Math.floor(Math.random()*shapes.length)];
         const sz = 5 + Math.random()*6;
@@ -6890,7 +6978,7 @@ const pauseSpace = (function(){
         p.style.setProperty('--spin', (Math.random()<0.5?-1:1)*(280+Math.random()*260)+'deg');
         p.style.setProperty('--fly', `translate(${fx}px, ${fy}px)`);
         game.appendChild(p);
-        setTimeout(()=>p.remove(), 780);
+        schedule(()=>p.remove(), 780);
       }, spawnDelay);
     }
   }
@@ -6917,7 +7005,7 @@ const pauseSpace = (function(){
       shard.style.setProperty('--shard-rot', (Math.random()<0.5?-1:1)*(240+Math.random()*280)+'deg');
       game.appendChild(shard);
       requestAnimationFrame(()=> shard.classList.add('flying'));
-      setTimeout(()=> shard.remove(), 660);
+      schedule(()=> shard.remove(), 660);
     }
   }
 
@@ -7000,7 +7088,7 @@ const pauseSpace = (function(){
     }
 
     game.appendChild(beam);
-    setTimeout(()=>beam.remove(), 160);
+    schedule(()=>beam.remove(), 160);
 
     // Tip pulse: a bright pop at the beam's landing point (the target),
     // arriving a beat after the muzzle flash so the shot reads as
@@ -7009,14 +7097,14 @@ const pauseSpace = (function(){
     tipPulse.className = 'laser-tip-pulse';
     tipPulse.style.cssText = `left:${targetX}px;top:${targetY}px;width:14px;height:14px;background:radial-gradient(circle,#fff,${color} 60%,transparent);box-shadow:0 0 14px ${color};`;
     game.appendChild(tipPulse);
-    setTimeout(()=>tipPulse.remove(), 240);
+    schedule(()=>tipPulse.remove(), 240);
 
     // Muzzle flash: a hot circular pop at the barrel tip...
     const flash = document.createElement('div');
     flash.className = 'muzzle-flash';
     flash.style.cssText += `left:${originX}px;top:${originY}px;width:16px;height:16px;background:radial-gradient(circle,#fff,${color} 55%,transparent);box-shadow:0 0 16px ${color},0 0 28px ${color};`;
     game.appendChild(flash);
-    setTimeout(()=>flash.remove(), 150);
+    schedule(()=>flash.remove(), 150);
     // ...plus a short flare oriented back along the beam direction, so
     // the flash reads as "coming from the barrel" rather than a static dot.
     const flareAngle = Math.atan2(dx, -dy) * (180/Math.PI);
@@ -7024,7 +7112,7 @@ const pauseSpace = (function(){
     flare.className = 'muzzle-flare';
     flare.style.cssText = `left:${originX}px;top:${originY}px;width:18px;height:4px;background:linear-gradient(90deg,#fff,${color},transparent);box-shadow:0 0 10px ${color};transform:rotate(${flareAngle}deg);`;
     game.appendChild(flare);
-    setTimeout(()=>flare.remove(), 130);
+    schedule(()=>flare.remove(), 130);
 
     if(isBlazeShip){
       // Trailing embers along the beam path
@@ -7042,7 +7130,7 @@ const pauseSpace = (function(){
         ember.style.setProperty('--ex', (Math.random()*16-8)+'px');
         ember.style.setProperty('--ey', (-8-Math.random()*14)+'px');
         game.appendChild(ember);
-        setTimeout(()=>ember.remove(), 440);
+        schedule(()=>ember.remove(), 440);
       }
     } else if(isDragonShip){
       // Trailing sparkles along the beam path
@@ -7059,7 +7147,7 @@ const pauseSpace = (function(){
         sparkle.style.setProperty('--sx', (Math.random()*20-10)+'px');
         sparkle.style.setProperty('--sy', (-10-Math.random()*16)+'px');
         game.appendChild(sparkle);
-        setTimeout(()=>sparkle.remove(), 400);
+        schedule(()=>sparkle.remove(), 400);
       }
     } else if(isIceShip){
       // Trailing ice shards along the beam path
@@ -7074,7 +7162,7 @@ const pauseSpace = (function(){
         shard.style.setProperty('--ix', (Math.random()*16-8)+'px');
         shard.style.setProperty('--iy', (-8-Math.random()*14)+'px');
         game.appendChild(shard);
-        setTimeout(()=>shard.remove(), 440);
+        schedule(()=>shard.remove(), 440);
       }
     } else if(isStarShip){
       // Trailing meteor sparkles along the beam path
@@ -7091,7 +7179,7 @@ const pauseSpace = (function(){
         meteor.style.setProperty('--sx', (Math.random()*20-10)+'px');
         meteor.style.setProperty('--sy', (-10-Math.random()*16)+'px');
         game.appendChild(meteor);
-        setTimeout(()=>meteor.remove(), 400);
+        schedule(()=>meteor.remove(), 400);
       }
     } else if(isVoltShip){
       // Trailing electric sparks along the beam path
@@ -7107,7 +7195,7 @@ const pauseSpace = (function(){
         spark.style.setProperty('--sx2', (Math.random()*14-7)+'px');
         spark.style.setProperty('--sy2', (-6-Math.random()*10)+'px');
         game.appendChild(spark);
-        setTimeout(()=>spark.remove(), 320);
+        schedule(()=>spark.remove(), 320);
       }
     } else if(isTerraShip){
       // Trailing rock pebbles along the beam path
@@ -7122,7 +7210,7 @@ const pauseSpace = (function(){
         pebble.style.setProperty('--px', (Math.random()*16-8)+'px');
         pebble.style.setProperty('--py', (Math.random()*8)+'px');
         game.appendChild(pebble);
-        setTimeout(()=>pebble.remove(), 460);
+        schedule(()=>pebble.remove(), 460);
       }
     } else if(isAlienShip){
       // Trailing toxic-green orbs along the beam path
@@ -7140,7 +7228,7 @@ const pauseSpace = (function(){
         orb.style.setProperty('--wx', (Math.random()*16-8)+'px');
         orb.style.setProperty('--wy', (-8-Math.random()*14)+'px');
         game.appendChild(orb);
-        setTimeout(()=>orb.remove(), 470);
+        schedule(()=>orb.remove(), 470);
       }
     } else if(isShadowShip){
       // Trailing shadow wisps along the beam path
@@ -7158,7 +7246,7 @@ const pauseSpace = (function(){
         wisp.style.setProperty('--wx', (Math.random()*16-8)+'px');
         wisp.style.setProperty('--wy', (-8-Math.random()*14)+'px');
         game.appendChild(wisp);
-        setTimeout(()=>wisp.remove(), 470);
+        schedule(()=>wisp.remove(), 470);
       }
     } else if(isStormShip){
       // Trailing lightning sparkles along the beam path
@@ -7175,7 +7263,7 @@ const pauseSpace = (function(){
         bolt.style.setProperty('--sx', (Math.random()*20-10)+'px');
         bolt.style.setProperty('--sy', (-10-Math.random()*16)+'px');
         game.appendChild(bolt);
-        setTimeout(()=>bolt.remove(), 400);
+        schedule(()=>bolt.remove(), 400);
       }
     } else if(isCosmicShip){
       // Big trailing burst of cosmic sparkles along the beam path
@@ -7193,7 +7281,7 @@ const pauseSpace = (function(){
         star.style.setProperty('--sx', (Math.random()*26-13)+'px');
         star.style.setProperty('--sy', (-12-Math.random()*20)+'px');
         game.appendChild(star);
-        setTimeout(()=>star.remove(), 460);
+        schedule(()=>star.remove(), 460);
       }
     }
   }
@@ -7203,7 +7291,7 @@ const pauseSpace = (function(){
     t.className = 'toast';
     t.textContent = text;
     game.appendChild(t);
-    setTimeout(()=>t.remove(), 1150);
+    schedule(()=>t.remove(), 1150);
   }
 
   const ENCOURAGEMENTS = ["Direct hit!","Blaster ace!","You're on fire!","Nice shooting!","Whoa, fast!","Keep blasting!","Stellar!"];
@@ -7284,7 +7372,7 @@ const pauseSpace = (function(){
     burst.style.background = `radial-gradient(circle, #fff, ${c1} 45%, ${c2} 80%, transparent)`;
     burst.style.boxShadow = `0 0 18px ${c2}`;
     game.appendChild(burst);
-    setTimeout(()=>burst.remove(), 380);
+    schedule(()=>burst.remove(), 380);
     const ring = document.createElement('div');
     ring.className = 'power-activation-ring';
     ring.style.left = originX+'px';
@@ -7293,7 +7381,7 @@ const pauseSpace = (function(){
     ring.style.borderColor = hexToRgba(c1, 0.85);
     ring.style.boxShadow = `0 0 20px 4px ${hexToRgba(c2,0.5)}`;
     game.appendChild(ring);
-    setTimeout(()=>ring.remove(), 550);
+    schedule(()=>ring.remove(), 550);
   }
 
   // Central per-power identity: emoji + 2-stop accent gradient (also used
@@ -7409,7 +7497,7 @@ const pauseSpace = (function(){
     const ov = document.getElementById('power-overlay-sp');
     if(!ov) return;
     ov.style.opacity = '0';
-    setTimeout(()=>ov.remove(), 300);
+    schedule(()=>ov.remove(), 300);
   }
 
   function freezeInvadersVisual(on, glow){
@@ -7441,7 +7529,7 @@ const pauseSpace = (function(){
     const ring = document.createElement('div');
     ring.className = 'freeze-blast-ring';
     game.appendChild(ring);
-    setTimeout(()=>ring.remove(), 700);
+    schedule(()=>ring.remove(), 700);
     const centerX = game.clientWidth/2, centerY = game.clientHeight/2;
     for(let i=0;i<10;i++){
       const shard = document.createElement('div');
@@ -7451,7 +7539,7 @@ const pauseSpace = (function(){
       shard.style.setProperty('--shard-rot', (i*36)+'deg');
       shard.style.setProperty('--shard-dist', -(160+Math.random()*140)+'px');
       game.appendChild(shard);
-      setTimeout(()=>shard.remove(), 620);
+      schedule(()=>shard.remove(), 620);
     }
   }
   function triggerFreezePower(){
@@ -7464,7 +7552,7 @@ const pauseSpace = (function(){
     showToast('❄️ Freeze Blast!');
     speak('Freeze Blast!');
     const dur = powerDurationMs(FREEZE_MS, 'freeze');
-    setTimeout(()=>{
+    schedule(()=>{
       freezeActive = false;
       freezeInvadersVisual(false);
       hidePowerOverlay();
@@ -7490,13 +7578,13 @@ const pauseSpace = (function(){
       const drag = document.createElement('div');
       drag.className = 'slow-field-drag';
       game.appendChild(drag);
-      setTimeout(()=>drag.remove(), 900);
+      schedule(()=>drag.remove(), 900);
     }
     showPowerOverlay('radial-gradient(circle, rgba(46,217,195,0.20), rgba(28,168,143,0.28))');
     showToast('🐌 Slow Field!');
     speak('Slow Field!');
     const dur = powerDurationMs(SLOW_MS, 'slow');
-    setTimeout(()=>{
+    schedule(()=>{
       slowActive = false;
       invaders.forEach(c=>{
         if(typeof c._preSlowSpeed === 'number'){
@@ -7526,7 +7614,7 @@ const pauseSpace = (function(){
       burstExplosion(cx, cy, c.color);
       if(c.elite || c.wordling) spawnShatterShards(cx, cy, c.color);
       c.el.classList.add('pop');
-      setTimeout(()=>c.el.remove(), 280);
+      schedule(()=>c.el.remove(), 280);
       score += bonusPerInvader + level*2;
     });
     const ids = new Set(list.map(c=>c.id));
@@ -7556,14 +7644,14 @@ const pauseSpace = (function(){
     const flash = document.createElement('div');
     flash.className = 'meteor-bomb-flash';
     game.appendChild(flash);
-    setTimeout(()=>flash.remove(), 400);
+    schedule(()=>flash.remove(), 400);
     const rect = game.getBoundingClientRect();
     const shock = document.createElement('div');
     shock.className = 'meteor-bomb-shockwave';
     shock.style.left = (rect.width/2)+'px';
     shock.style.top = (rect.height/2)+'px';
     game.appendChild(shock);
-    setTimeout(()=>shock.remove(), 600);
+    schedule(()=>shock.remove(), 600);
     screenShake(game, 'heavy');
     explodeAllInvaders(8);
   }
@@ -7588,7 +7676,7 @@ const pauseSpace = (function(){
       streak.style.height = (30+Math.random()*20)+'px';
       streak.style.transformOrigin = '50% 100%';
       game.appendChild(streak);
-      setTimeout(()=>streak.remove(), 560);
+      schedule(()=>streak.remove(), 560);
     });
   }
   function triggerTimeWarpPower(){
@@ -7602,7 +7690,7 @@ const pauseSpace = (function(){
     showToast('⏳ Time Warp!');
     speak('Time warp!');
     const dur = powerDurationMs(TIME_WARP_MS, 'timewarp');
-    setTimeout(()=>{
+    schedule(()=>{
       timeWarpActive = false;
       hidePowerOverlay();
       const resumeAt = performance.now() + TIME_WARP_RESUME_STAGGER_MS;
@@ -7687,7 +7775,7 @@ const pauseSpace = (function(){
     beam.style.transformOrigin = '0 50%';
     beam.style.transform = `rotate(${angleDeg}deg)`;
     game.appendChild(beam);
-    setTimeout(()=>beam.remove(), 380);
+    schedule(()=>beam.remove(), 380);
 
     popInvaderGroup(line, 9);
   }
@@ -7697,7 +7785,7 @@ const pauseSpace = (function(){
     strikeBestLine();
     const dur = powerDurationMs(CHAIN_ZAP_MS, 'chainzap');
     const iv = setInterval(strikeBestLine, CHAIN_ZAP_INTERVAL);
-    setTimeout(()=>clearInterval(iv), dur);
+    schedule(()=>clearInterval(iv), dur);
   }
 
   // ---- Mirror Blaster: duplicates the ship into 4, stacked vertically
@@ -7745,16 +7833,16 @@ const pauseSpace = (function(){
     beam.style.transform = `rotate(${angleDeg}deg)`;
     beam.style.background = `linear-gradient(180deg, #fff, ${color} 40%, transparent)`;
     game.appendChild(beam);
-    setTimeout(()=>beam.remove(), 160);
+    schedule(()=>beam.remove(), 160);
     const tipPulse = document.createElement('div');
     tipPulse.className = 'laser-tip-pulse';
     tipPulse.style.cssText = `left:${targetX}px;top:${targetY}px;width:12px;height:12px;background:radial-gradient(circle,#fff,${color} 60%,transparent);box-shadow:0 0 12px ${color};`;
     game.appendChild(tipPulse);
-    setTimeout(()=>tipPulse.remove(), 220);
+    schedule(()=>tipPulse.remove(), 220);
     const flash = document.createElement('div');
     flash.style.cssText = `position:absolute;left:${originX}px;top:${originY}px;width:9px;height:9px;border-radius:50%;background:radial-gradient(circle,#fff,${color},transparent);transform:translate(-50%,-50%);pointer-events:none;animation:laser-fade 0.18s ease-out forwards;box-shadow:0 0 12px ${color};`;
     game.appendChild(flash);
-    setTimeout(()=>flash.remove(), 200);
+    schedule(()=>flash.remove(), 200);
   }
   function fireMirrorBlasterVolley(mainTarget){
     if(!mirrorShipEls.length) return;
@@ -7772,7 +7860,7 @@ const pauseSpace = (function(){
       burstExplosion(cx, cy, c.color);
       if(c.elite || c.wordling) spawnShatterShards(cx, cy, c.color);
       c.el.classList.add('pop');
-      setTimeout(()=>c.el.remove(), 280);
+      schedule(()=>c.el.remove(), 280);
       score += 6 + level*2;
     });
     const ids = new Set(picks.map(c=>c.id));
@@ -7789,7 +7877,7 @@ const pauseSpace = (function(){
     showPowerOverlay('radial-gradient(circle, rgba(77,232,255,0.16), rgba(184,77,255,0.20))');
     showToast('🪞 Mirror Blaster!');
     speak('Mirror blaster!');
-    setTimeout(()=>{
+    schedule(()=>{
       hidePowerOverlay();
       removeMirrorShips();
     }, dur);
@@ -7826,9 +7914,9 @@ const pauseSpace = (function(){
       c.el.style.transform = 'scale(0.35)';
       c.el.style.zIndex = 7;
     });
-    setTimeout(()=>{
+    schedule(()=>{
       circle.classList.remove('show');
-      setTimeout(()=>circle.remove(), 300);
+      schedule(()=>circle.remove(), 300);
       freezeActive = false;
       popInvaderGroup(onScreen, 10);
       if(running && !paused) scheduleSpawn();
@@ -7854,7 +7942,7 @@ const pauseSpace = (function(){
     showToast('👻 Ghost Touch! Tap A!');
     speak('Ghost touch!');
     const dur = powerDurationMs(GHOST_TOUCH_MS, 'ghosttouch');
-    setTimeout(()=>{
+    schedule(()=>{
       ghostTouchActive = false;
       if(keyEls['a']) keyEls['a'].classList.remove('ghost-touch-glow');
       if(cannonPulse) cannonPulse.remove();
@@ -7919,7 +8007,7 @@ const pauseSpace = (function(){
     speak('Icy shatter!');
     freezeInvadersVisual(true, '#B8F0FF');
     showPowerOverlay('radial-gradient(circle, rgba(184,240,255,0.22), rgba(63,198,255,0.30))');
-    setTimeout(()=>{
+    schedule(()=>{
       hidePowerOverlay();
       hitStop(game, 80);
       const gameRect = game.getBoundingClientRect();
@@ -8025,7 +8113,7 @@ const pauseSpace = (function(){
     const originX = originRect.left + originRect.width/2 - gameRect.left;
     const originY = originRect.top - gameRect.top + originRect.height*0.18;
     list.forEach((c,i)=>{
-      setTimeout(()=>{
+      schedule(()=>{
         if(c.popping || c.missed) return;
         const targetX = c.x + 24, targetY = c.y + 24;
         const rocket = document.createElement('div');
@@ -8039,7 +8127,7 @@ const pauseSpace = (function(){
           rocket.style.left = (targetX-7)+'px';
           rocket.style.top = (targetY-13)+'px';
         });
-        setTimeout(()=>{
+        schedule(()=>{
           rocket.remove();
           if(!c.popping && !c.missed) popInvaderGroup([c], 8);
         }, ROCKET_FLIGHT_MS);
@@ -8075,20 +8163,48 @@ const pauseSpace = (function(){
     const typePool = isElite ? worldDef.eliteTypes : worldDef.types;
     const type = typePool[Math.floor(Math.random()*typePool.length)];
 
-    // Level 13+ (level index 12+) introduces two special invader kinds:
-    // zigzag (weaves side to side) and shielded (needs two letters typed
-    // in sequence to pop).
-    // Level 26+ (level index 25+) steps this up further: every invader
-    // becomes a "word invader" — a real short word typed letter by letter,
-    // reusing the same sequential mechanic as shielded — and every one of
-    // them zigzags. Level 31+ (level index 30+) bumps the word length from
-    // 2 letters to 3.
-    const isWordLevel = level >= 25;
-    const wordLen = level >= 30 ? 3 : 2;
-    const canSpecial = level >= 12 && !isWordLevel;
-    const specialRoll = canSpecial ? Math.random() : 1;
-    const isZigzag = isWordLevel ? true : (canSpecial && specialRoll < 0.16);
-    const isShielded = isWordLevel ? true : (canSpecial && !isZigzag && specialRoll < 0.28);
+    // Difficulty mechanics ramp in on independent schedules rather than
+    // several flipping on at once. Previously level 26 forced word-reading
+    // + shielding + zigzag + a word-length bump all in the same level
+    // transition, which was too many new cognitive demands at once for a
+    // young typist. Now each knob turns on separately:
+    //   Level 11+ (index 10+): occasional 2-letter shielded invaders
+    //   Level 16+ (index 15+): occasional zigzag movement
+    //   Level 21+ (index 20+): word invaders start mixing in (~40% of spawns)
+    //   Level 26+ (index 25+): every invader is a word invader
+    //   Level 31+ (index 30+): words grow from 2 letters to 3, and zigzag
+    //     becomes guaranteed on word invaders too (this is the "everything
+    //     together" mixed-mechanics stage, now arriving later and gradually)
+    const SHIELD_START = 10, ZIGZAG_START = 15, WORD_START = 20, WORD_FULL = 25, WORD_LEN3 = 30, MIXED_FULL = 30;
+    const wordLevelActive = level >= WORD_START;
+    const wordLen = level >= WORD_LEN3 ? 3 : 2;
+    // Below WORD_FULL, word invaders mix in with plain/shielded ones so the
+    // switch to reading whole words isn't instant; from WORD_FULL on, every
+    // invader is a word invader.
+    let isWordInvader = wordLevelActive && (level >= WORD_FULL || Math.random() < 0.4);
+    let canShield = level >= SHIELD_START && !isWordInvader;
+    let canZigzag = level >= ZIGZAG_START;
+    const specialRoll = Math.random();
+    let isZigzag = isWordInvader
+      ? (level >= MIXED_FULL || specialRoll < 0.35)
+      : (canZigzag && specialRoll < 0.16);
+    let isShielded = isWordInvader ? true : (canShield && !isZigzag && specialRoll < 0.28);
+
+    // Adaptive difficulty: nudges speed and, if a kid is really struggling
+    // right now, backs off the special mechanics entirely — on top of
+    // (not instead of) the level-based staging above. Level number alone
+    // only ever ramps difficulty up; this reacts to how the current
+    // session is actually going, in either direction.
+    const acc = recentAccuracy();
+    let adaptiveSpeedMult = 1;
+    if(acc !== null){
+      if(acc >= 0.95) adaptiveSpeedMult = 1.08;       // doing great — pick up the pace a little
+      else if(acc < 0.70){                             // really struggling — ease off hard
+        adaptiveSpeedMult = 0.75;
+        isWordInvader = false; isZigzag = false; isShielded = false;
+      } else if(acc < 0.85) adaptiveSpeedMult = 0.85;  // a bit shaky — slow down, keep mechanics as-is
+    }
+
     // Rare golden "shiny" variant — a classic collector hook. Worth 5x the
     // usual coin payout when popped; kept off shielded/word invaders so its
     // single-letter pop behaves exactly like a normal invader underneath.
@@ -8096,7 +8212,7 @@ const pauseSpace = (function(){
 
     const el = document.createElement('div');
     const worldShape = getWorldShapeClass(currentWorld, type.key);
-    el.className = 'invader ' + type.key + '-type' + (isElite ? ' elite' : '') + (isShielded ? ' shielded' : '') + (isWordLevel ? ' wordling' : '') + (isZigzag ? ' zigzag' : '') + (isShiny ? ' shiny-invader' : '') + (worldShape ? ' ' + worldShape : '');
+    el.className = 'invader ' + type.key + '-type' + (isElite ? ' elite' : '') + (isShielded ? ' shielded' : '') + (isWordInvader ? ' wordling' : '') + (isZigzag ? ' zigzag' : '') + (isShiny ? ' shiny-invader' : '') + (worldShape ? ' ' + worldShape : '');
     if(isShiny){
       el.style.color = '#7A4A00';
     } else {
@@ -8116,7 +8232,7 @@ const pauseSpace = (function(){
 
     let letter = null, letters = null;
     if(isShielded){
-      if(isWordLevel){
+      if(isWordInvader){
         letters = pickWordInvaderWord(cfg.letters, wordLen).split('');
       } else {
         const first = weightedPickLetter(cfg.letters);
@@ -8126,7 +8242,13 @@ const pauseSpace = (function(){
         }
         letters = [first, second];
       }
-      letterTxt.innerHTML = letters.map((ch,i)=> '<span class="shield-l' + (i===0?' active':'') + '">' + (ch===';'?';':ch.toUpperCase()) + '</span>').join('');
+      letterTxt.innerHTML = '';
+      letters.forEach((ch, i)=>{
+        const lspan = document.createElement('span');
+        lspan.className = 'shield-l' + (i===0 ? ' active' : '');
+        lspan.textContent = ch===';' ? ';' : ch.toUpperCase();
+        letterTxt.appendChild(lspan);
+      });
     } else {
       letter = weightedPickLetter(cfg.letters);
       letterTxt.textContent = letter===';' ? ';' : letter.toUpperCase();
@@ -8139,7 +8261,7 @@ const pauseSpace = (function(){
     if(isShielded){
       const shieldIcon = document.createElement('div');
       shieldIcon.className = 'shield-icon';
-      shieldIcon.textContent = isWordLevel ? '⚡' : '🛡️';
+      shieldIcon.textContent = isWordInvader ? '⚡' : '🛡️';
       el.appendChild(shieldIcon);
     }
     game.appendChild(el);
@@ -8164,19 +8286,19 @@ const pauseSpace = (function(){
       el, x, baseX: x, y:-70,
       revealed: false,
       spawnTime: performance.now(),
-      speed: cfg.speed * (0.85 + Math.random()*0.4) * diff.speedMult * worldMove.speedMult * (isZigzag ? 0.85 : 1) * (isShielded ? 0.8 : 1) * (slowActive ? SLOW_FACTOR : 1),
+      speed: cfg.speed * (0.85 + Math.random()*0.4) * diff.speedMult * worldMove.speedMult * (isZigzag ? 0.85 : 1) * (isShielded ? 0.8 : 1) * (slowActive ? SLOW_FACTOR : 1) * adaptiveSpeedMult,
       color: isShiny ? '#FFD700' : type.color,
       typeKey: type.key,
       shiny: isShiny,
       elite: isElite,
-      wordling: isWordLevel
+      wordling: isWordInvader
     };
     invaders.push(c);
     // Wordlings (level 26+) are the new invader kind for every spawn in
     // that range, so stingering every single one would be noise rather
     // than a signal — a ~1-in-4 chance keeps it feeling special without
     // wearing the player down over 5 fast-spawning levels.
-    if(isWordLevel && Math.random() < 0.25) playEliteSpawnStinger(true);
+    if(isWordInvader && Math.random() < 0.25) playEliteSpawnStinger(true);
     highlightTargets();
   }
 
@@ -8184,7 +8306,7 @@ const pauseSpace = (function(){
     clearTimeout(spawnTimer);
     if(!running || paused) return;
     const diff = DIFFICULTIES[difficulty];
-    spawnTimer = setTimeout(()=>{
+    spawnTimer = schedule(()=>{
       spawnInvader();
       scheduleSpawn();
     }, LEVELS[level].spawnMs * diff.spawnMult);
@@ -8264,8 +8386,9 @@ const pauseSpace = (function(){
           updateShipGlow();
           const missLetter = c.shielded ? c.letters[c.shieldIndex] : c.letter;
           recordLetterOutcome(missLetter, false);
+          recordOutcome(false);
           loseHeart();
-          setTimeout(()=>{ c.el.remove(); }, 500);
+          schedule(()=>{ c.el.remove(); }, 500);
         }
       });
       invaders = invaders.filter(c=>!c.missed);
@@ -8316,6 +8439,7 @@ const pauseSpace = (function(){
           s.classList.toggle('done', i<target.shieldIndex);
         });
         recordLetterOutcome(ch, true);
+        recordOutcome(true);
         playZap(520 + target.shieldIndex*90);
         score += 4;
         scoreVal.textContent = score;
@@ -8326,6 +8450,7 @@ const pauseSpace = (function(){
       target.popping = true;
       const reactionMs = performance.now() - target.spawnTime;
       recordLetterOutcome(ch, true, reactionMs);
+      recordOutcome(true);
 
       const rect = target.el.getBoundingClientRect();
       const gameRect = game.getBoundingClientRect();
@@ -8334,6 +8459,7 @@ const pauseSpace = (function(){
 
       const prevTier = getComboTierIndex(streak);
       streak += 1;
+      if(streak > bestStreakThisRun) bestStreakThisRun = streak;
       const newTier = getComboTierIndex(streak);
       const multiplier = COMBO_TIERS[newTier].mult;
 
@@ -8344,7 +8470,7 @@ const pauseSpace = (function(){
       if(target.elite || target.wordling) spawnShatterShards(cx, cy, target.color);
       playZap(380 + level*25 + toneForType(target.typeKey) + Math.min(140, streak*4));
       target.el.classList.add('pop');
-      setTimeout(()=>target.el.remove(), 280);
+      schedule(()=>target.el.remove(), 280);
       invaders = invaders.filter(c=>c.id!==target.id);
 
       if(mirrorBlasterUntil > performance.now()){
@@ -8416,18 +8542,22 @@ const pauseSpace = (function(){
       }
       highlightTargets();
     } else {
-      // Typing a wrong letter breaks the streak-of-10 needed to charge a
-      // ship power, so mistypes actually cost the player something instead
-      // of being free to spam. A soft, low "miss" blip gives audible
-      // feedback too — quiet and short on purpose so it reads as "try
-      // again" rather than a punishing buzzer.
+      // Typing a wrong letter still costs something — otherwise mistypes
+      // are free to spam — but a stray slip shouldn't wipe out a long
+      // streak the same way letting an invader hit the ground does.
+      // That felt like "wrong key = failure" rather than "try again", so
+      // this now trims the streak by a small fixed amount (floor at 0)
+      // instead of zeroing it outright. A soft, low "miss" blip gives
+      // audible feedback too — quiet and short on purpose so it reads as
+      // "try again" rather than a punishing buzzer.
       const missT0 = audioCtx ? audioCtx.currentTime : 0;
       pTone(180, 'sine', missT0, 0.11, 0.05, { toFreq:120 });
       hapticPulse(8);
       missesThisLevel += 1;
+      recordOutcome(false);
       flashKeyPress(ch);
       if(streak > 0){
-        streak = 0;
+        streak = Math.max(0, streak - 2);
         streakVal.textContent = streak;
         updateStreakBadge();
         updateShipGlow();
@@ -8435,7 +8565,11 @@ const pauseSpace = (function(){
     }
   }
 
-  document.addEventListener('keydown', (e)=>{
+  // Attached/detached around gameplay (startGame/cleanupGame) rather than
+  // left permanently bound — keeps input scoped to an active round, which
+  // matters if this game is ever mounted inside a larger shell alongside
+  // other games or views.
+  function onSpaceKeyDown(e){
     if(!running || paused) return;
     let ch = e.key.toLowerCase();
     if(ch === ' '){
@@ -8446,7 +8580,9 @@ const pauseSpace = (function(){
     if(ch.length !== 1) return;
     if(!/^[a-z0-9,.;]$/.test(ch)) return;
     handleLetter(ch);
-  });
+  }
+  function startInput(){ document.addEventListener('keydown', onSpaceKeyDown); }
+  function stopInput(){ document.removeEventListener('keydown', onSpaceKeyDown); }
 
   // The on-screen keyboard (shown for easy/medium) is a visual guide
   // only — it highlights which key to press next but is not itself
@@ -8483,7 +8619,7 @@ const pauseSpace = (function(){
     const flash = document.createElement('div');
     flash.className = 'miss-flash';
     game.appendChild(flash);
-    setTimeout(()=>flash.remove(), 460);
+    schedule(()=>flash.remove(), 460);
     if(cannonEl){
       cannonEl.classList.remove('ship-flinch');
       void cannonEl.offsetWidth;
@@ -8498,10 +8634,13 @@ const pauseSpace = (function(){
       triggerGameOver();
     }
   }
-  function triggerGameOver(){
-    if(!running) return;
-    running = false;
-    paused = true;
+  // Shared teardown for every path that ends an active round (quitting,
+  // running out of hearts). Previously quitGame() and triggerGameOver()
+  // each duplicated this block by hand — a real bug risk, since adding a
+  // new piece of run-state later meant remembering to reset it in *both*
+  // places or leaving one path with stale state. Now there's one place
+  // that knows how to fully stop a round.
+  function cleanupGame(){
     freezeActive = false;
     slowActive = false;
     ghostTouchActive = false;
@@ -8512,22 +8651,35 @@ const pauseSpace = (function(){
     updatePowerBadge();
     if(streakBadgeEl) streakBadgeEl.style.opacity = '0';
     clearTimeout(spawnTimer);
+    clearGameTimers();
     invaders.forEach(c=>c.el.remove());
     invaders = [];
     view.classList.remove('playing');
+    stopInput();
+  }
+
+  function triggerGameOver(){
+    if(!running) return;
+    running = false;
+    paused = true;
+    cleanupGame();
     const levelReached = level + 1;
     const captainName = getCaptainName();
+    const sessionAccuracy = calcSessionAccuracy();
+    const keysPracticed = getKeysPracticed();
     const overlay = document.createElement('div');
     overlay.className = 'boss-overlay';
     overlay.innerHTML =
-      '<div class="boss-intro">GAME OVER</div>' +
-      '<div class="boss-figure">💥</div>' +
-      '<div class="boss-hint">Out of hearts, ' + captainName + '! You reached level ' + levelReached + '.</div>';
+      '<div class="boss-intro">Great Practice! ⭐</div>' +
+      '<div class="boss-figure">🚀</div>' +
+      '<div class="boss-hint">' + captainName + ', you reached level ' + levelReached + '!</div>' +
+      '<div class="boss-hint">Accuracy: ' + sessionAccuracy + '% · Best streak: ' + bestStreakThisRun + '</div>' +
+      '<div class="boss-hint">Keys practiced: ' + keysPracticed + '</div>';
     game.appendChild(overlay);
-    speak('Game over!');
-    setTimeout(()=>{
+    speak('Great practice!');
+    schedule(()=>{
       overlay.classList.add('leaving');
-      setTimeout(()=>{
+      schedule(()=>{
         overlay.remove();
         showEndOfGameCoins(game, difficulty, levelReached, ()=>{
           showKeyReport(game, ()=>{
@@ -8552,19 +8704,7 @@ const pauseSpace = (function(){
   function quitGame(){
     running = false;
     paused = false;
-    freezeActive = false;
-    slowActive = false;
-    ghostTouchActive = false;
-    resetWorldEffect();
-    clearWorldAmbience();
-    hidePowerOverlay();
-    powerCharges = 0;
-    updatePowerBadge();
-    if(streakBadgeEl) streakBadgeEl.style.opacity = '0';
-    clearTimeout(spawnTimer);
-    invaders.forEach(c=>c.el.remove());
-    invaders = [];
-    view.classList.remove('playing');
+    cleanupGame();
     const levelReached = level + 1;
     showEndOfGameCoins(game, difficulty, levelReached, ()=>{
       showKeyReport(game, ()=>{
@@ -8589,10 +8729,11 @@ const pauseSpace = (function(){
     hidePowerOverlay();
     powerCharges = 0;
     updatePowerBadge();
-    level = 0; score = 0; streak = 0; popsThisLevel = 0; missesThisLevel = 0;
+    level = 0; score = 0; streak = 0; bestStreakThisRun = 0; popsThisLevel = 0; missesThisLevel = 0;
     hearts = MAX_HEARTS;
     game.classList.remove('hearts-critical');
     letterStats = {};
+    recentOutcomes = [];
     resetCannonPosition();
     updateShipGlow();
     levelVal.textContent = 1;
@@ -8608,6 +8749,7 @@ const pauseSpace = (function(){
     // have to rely on real keyboard muscle memory instead of the visual cue.
     if(keyboardWrap) keyboardWrap.style.display = (difficulty === 'hard') ? 'none' : '';
     ensureAudio();
+    startInput();
     scheduleSpawn();
     loop();
   }
