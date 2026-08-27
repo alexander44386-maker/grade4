@@ -5037,6 +5037,7 @@ const EDITS_KEY = "gs4_content_edits_v1";
 const BANK_KEY = "gs4_question_bank_v1";
 const MOVES_KEY = "gs4_lesson_moves_v1";
 const CUSTOM_LESSONS_KEY = "gs4_custom_lessons_v1";
+const HIDDEN_LESSONS_KEY = "gs4_hidden_lessons_v1";
 const SETTINGS_KEY = "gs4_settings_v1";
 const NOTES_KEY = "gs4_notes_v1";
 const ACTIVITY_KEY = "gs4_activity_log_v1";
@@ -5116,6 +5117,23 @@ function saveCustomLessons(c) {
 }
 function newLessonId() {
   return "custom" + Date.now() + Math.random().toString(36).slice(2, 8);
+}
+// Default (built-in) topics that a teacher/parent has removed from view.
+// Stored as a plain array of lesson ids — unlike custom topics, these can't be
+// deleted from the curriculum data itself, so "deleting" one just hides it
+// (and it can be brought back later from the quarter's "Removed Topics" list).
+function loadHiddenLessons() {
+  try {
+    const raw = localStorage.getItem(HIDDEN_LESSONS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return [];
+}
+function saveHiddenLessons(h) {
+  try {
+    localStorage.setItem(HIDDEN_LESSONS_KEY, JSON.stringify(h));
+  } catch (e) {}
+  queueCloudSync();
 }
 function defaultSettings() {
   return {
@@ -6421,8 +6439,9 @@ function customLessonsForQuarter(subject, quarter, customLessons) {
     };
   });
 }
-function allSubjectLessons(subject, customLessons) {
-  const built = subject.quarters.flatMap(q => allLessons(q));
+function allSubjectLessons(subject, customLessons, hiddenLessons) {
+  const hidden = hiddenLessons || [];
+  const built = subject.quarters.flatMap(q => allLessons(q)).filter(l => !hidden.includes(l.id));
   const custom = subject.quarters.flatMap(q => customLessonsForQuarter(subject, q, customLessons));
   return built.concat(custom);
 }
@@ -6430,17 +6449,17 @@ function lessonQuarterId(lesson, moves) {
   const mv = moves[lesson.id];
   return mv && mv.quarterId ? mv.quarterId : lesson.homeQuarterId;
 }
-function quarterLessons(subject, quarter, moves, customLessons) {
-  return allSubjectLessons(subject, customLessons).filter(l => lessonQuarterId(l, moves) === quarter.id);
+function quarterLessons(subject, quarter, moves, customLessons, hiddenLessons) {
+  return allSubjectLessons(subject, customLessons, hiddenLessons).filter(l => lessonQuarterId(l, moves) === quarter.id);
 }
-function quarterLessonCount(subject, quarter, moves, customLessons) {
-  return quarterLessons(subject, quarter, moves, customLessons).length;
+function quarterLessonCount(subject, quarter, moves, customLessons, hiddenLessons) {
+  return quarterLessons(subject, quarter, moves, customLessons, hiddenLessons).length;
 }
-function quarterLearnedCount(subject, quarter, moves, progress, customLessons) {
-  return quarterLessons(subject, quarter, moves, customLessons).filter(l => progress.lessons[l.id] && progress.lessons[l.id].learned).length;
+function quarterLearnedCount(subject, quarter, moves, progress, customLessons, hiddenLessons) {
+  return quarterLessons(subject, quarter, moves, customLessons, hiddenLessons).filter(l => progress.lessons[l.id] && progress.lessons[l.id].learned).length;
 }
-function isQuarterComplete(subject, quarter, moves, progress, customLessons) {
-  const lessons = quarterLessons(subject, quarter, moves, customLessons);
+function isQuarterComplete(subject, quarter, moves, progress, customLessons, hiddenLessons) {
+  const lessons = quarterLessons(subject, quarter, moves, customLessons, hiddenLessons);
   const allPassed = lessons.length > 0 && lessons.every(l => {
     const rec = progress.lessons[l.id];
     return rec && rec.best && rec.best.correct / rec.best.total >= 0.7;
@@ -11699,16 +11718,31 @@ function QuarterScreen({
   getQuestions,
   goLesson,
   goSubjectHome,
+  hiddenLessons,
+  hideLesson,
+  moveLesson,
   moves,
   nav,
   progress,
   removeCustomTopic,
+  restoreLesson,
   setLessonQuestions,
   startLongQuiz
 }) {
     const subject = currentSubject();
     const quarter = subject.quarters.find(q => q.id === nav.quarterId);
     const isStories = subject.special === "stories";
+    const otherQuarters = subject.quarters.filter(q => q.id !== quarter.id);
+    // Built-in topics the teacher/parent removed from this quarter — kept
+    // around (not deleted) so they can be brought back from the panel below.
+    const hiddenHere = subject.quarters.flatMap(q => allLessons(q)).filter(l => (hiddenLessons || []).includes(l.id) && lessonQuarterId(l, moves) === quarter.id);
+    const [movingCard, setMovingCard] = useState(null); // lesson currently being moved to another quarter
+    const [moveCardTarget, setMoveCardTarget] = useState("");
+    function openMoveCard(l, e) {
+      if (e) e.stopPropagation();
+      setMovingCard(l);
+      setMoveCardTarget("");
+    }
     const [showSetup, setShowSetup] = useState(false);
     const [generatingIds, setGeneratingIds] = useState({});
     const [genLesson, setGenLesson] = useState(null); // lesson currently being configured for AI generation
@@ -11717,7 +11751,7 @@ function QuarterScreen({
     const [genTopic, setGenTopic] = useState("");
     const [genTopicTag, setGenTopicTag] = useState("");
     const [genDifficulty, setGenDifficulty] = useState("medium");
-    const lessons = quarterLessons(subject, quarter, moves, customLessons);
+    const lessons = quarterLessons(subject, quarter, moves, customLessons, hiddenLessons);
     const nativeLessons = lessons.filter(l => l.homeQuarterId === quarter.id);
     const movedInLessons = lessons.filter(l => l.homeQuarterId !== quarter.id);
     const totalBankQ = lessons.reduce((sum, l) => sum + getQuestions(l.id).length, 0);
@@ -11855,9 +11889,19 @@ function QuarterScreen({
           className: "pill todo"
         }, "\uD83D\uDCE6 Moved here"), /*#__PURE__*/React.createElement("span", {
           className: "pill " + (learned ? "done" : "todo")
-        }, learned ? "✅ Read" : "▶ Read"))), l0.isCustom && /*#__PURE__*/React.createElement("span", {
+        }, learned ? "✅ Read" : "▶ Read"))), /*#__PURE__*/React.createElement("span", {
           role: "button",
-          title: "Delete this story",
+          title: "Move this story to another quarter",
+          className: "note-remove-btn",
+          style: {
+            position: "absolute",
+            top: 8,
+            right: 34
+          },
+          onClick: e => openMoveCard(l0, e)
+        }, "\u2194"), /*#__PURE__*/React.createElement("span", {
+          role: "button",
+          title: l0.isCustom ? "Delete this story" : "Remove this story (you can restore it later)",
           className: "note-remove-btn",
           style: {
             position: "absolute",
@@ -11866,8 +11910,12 @@ function QuarterScreen({
           },
           onClick: e => {
             e.stopPropagation();
-            if (window.confirm('Delete the story "' + l.title + '"?')) {
-              removeCustomTopic(l.id);
+            if (l0.isCustom) {
+              if (window.confirm('Delete the story "' + l.title + '"?')) {
+                removeCustomTopic(l.id);
+              }
+            } else if (window.confirm('Remove the story "' + l.title + '" from this quarter? You can bring it back anytime from the Removed Topics list below.')) {
+              hideLesson(l.id);
             }
           }
         }, "\u2715"), /*#__PURE__*/React.createElement("div", {
@@ -11914,9 +11962,19 @@ function QuarterScreen({
         className: "pill todo"
       }, "\uD83D\uDCDD ", qCount, " Qs \u2014 ", questionTypeBreakdown(getQuestions(l.id))) : /*#__PURE__*/React.createElement("span", {
         className: "pill todo"
-      }, "\uD83D\uDCDD No questions yet"))), l0.isCustom && /*#__PURE__*/React.createElement("span", {
+      }, "\uD83D\uDCDD No questions yet"))), /*#__PURE__*/React.createElement("span", {
         role: "button",
-        title: "Delete this topic",
+        title: "Move this topic to another quarter",
+        className: "note-remove-btn",
+        style: {
+          position: "absolute",
+          top: 8,
+          right: 34
+        },
+        onClick: e => openMoveCard(l0, e)
+      }, "\u2194"), /*#__PURE__*/React.createElement("span", {
+        role: "button",
+        title: l0.isCustom ? "Delete this topic" : "Remove this topic (you can restore it later)",
         className: "note-remove-btn",
         style: {
           position: "absolute",
@@ -11925,8 +11983,12 @@ function QuarterScreen({
         },
         onClick: e => {
           e.stopPropagation();
-          if (window.confirm('Delete the topic "' + l.title + '"? This removes its notes and question bank too.')) {
-            removeCustomTopic(l.id);
+          if (l0.isCustom) {
+            if (window.confirm('Delete the topic "' + l.title + '"? This removes its notes and question bank too.')) {
+              removeCustomTopic(l.id);
+            }
+          } else if (window.confirm('Remove the topic "' + l.title + '" from this quarter? Its notes and question bank stay saved, and you can bring it back anytime from the Removed Topics list below.')) {
+            hideLesson(l.id);
           }
         }
       }, "\u2715"), /*#__PURE__*/React.createElement("div", {
@@ -12029,7 +12091,27 @@ function QuarterScreen({
         width: "100%"
       },
       onClick: () => setAddingTopic(true)
-    }, "+ Add New ", isStories ? "Story" : "Topic", " to ", quarter.title)), !isStories && /*#__PURE__*/React.createElement("div", {
+    }, "+ Add New ", isStories ? "Story" : "Topic", " to ", quarter.title)), hiddenHere.length > 0 && /*#__PURE__*/React.createElement("div", {
+      className: "bank-topic-tools"
+    }, /*#__PURE__*/React.createElement("h3", {
+      className: "chapter-title",
+      style: {
+        marginTop: 0
+      }
+    }, "\uD83D\uDDD1 Removed Topics (", hiddenHere.length, ")"), /*#__PURE__*/React.createElement("p", {
+      className: "sub",
+      style: {
+        marginTop: 0
+      }
+    }, "These were removed from ", quarter.title, ". Their notes and question banks are still saved."), hiddenHere.map(l => /*#__PURE__*/React.createElement("div", {
+      key: l.id,
+      className: "bank-topic-row"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "bank-topic-name"
+    }, l.title), /*#__PURE__*/React.createElement("button", {
+      className: "btn btn-ghost btn-sm",
+      onClick: () => restoreLesson(l.id)
+    }, "\u21A9 Restore")))), !isStories && /*#__PURE__*/React.createElement("div", {
       className: "longquiz-card",
       style: {
         flexDirection: "column",
@@ -12119,7 +12201,55 @@ function QuarterScreen({
         background: quarter.color
       },
       onClick: () => startLongQuiz(quarter, longCount, longTopics, longType)
-    }, "Start Long Quiz \u2192")))), genLesson && /*#__PURE__*/React.createElement("div", {
+    }, "Start Long Quiz \u2192")))), movingCard && /*#__PURE__*/React.createElement("div", {
+      className: "gen-setup-overlay",
+      onClick: () => setMovingCard(null)
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "gen-setup-card",
+      onClick: e => e.stopPropagation()
+    }, /*#__PURE__*/React.createElement("h3", {
+      style: {
+        margin: "0 0 4px"
+      }
+    }, "\u2194 Move \"", movingCard.title, "\""), /*#__PURE__*/React.createElement("p", {
+      className: "sub",
+      style: {
+        margin: "0 0 14px"
+      }
+    }, "Currently in: ", quarter.num, " \u2014 ", quarter.title), /*#__PURE__*/React.createElement("label", {
+      className: "field-label"
+    }, "Move to"), /*#__PURE__*/React.createElement("select", {
+      className: "text-input",
+      value: moveCardTarget,
+      onChange: e => setMoveCardTarget(e.target.value)
+    }, /*#__PURE__*/React.createElement("option", {
+      value: ""
+    }, "Choose a quarter\u2026"), otherQuarters.map(q => /*#__PURE__*/React.createElement("option", {
+      key: q.id,
+      value: q.id
+    }, q.num, " \u2014 ", q.title))), /*#__PURE__*/React.createElement("div", {
+      className: "learn-footer",
+      style: {
+        gap: 10
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      className: "btn btn-ghost",
+      onClick: () => {
+        setMovingCard(null);
+        setMoveCardTarget("");
+      }
+    }, "Cancel"), /*#__PURE__*/React.createElement("button", {
+      className: "btn btn-primary",
+      style: {
+        background: quarter.color
+      },
+      disabled: !moveCardTarget,
+      onClick: () => {
+        moveLesson(movingCard.id, moveCardTarget);
+        setMovingCard(null);
+        setMoveCardTarget("");
+      }
+    }, "\u2194 Move")))), genLesson && /*#__PURE__*/React.createElement("div", {
       className: "gen-setup-overlay",
       onClick: () => setGenLesson(null)
     }, /*#__PURE__*/React.createElement("div", {
@@ -12232,6 +12362,8 @@ function LessonScreen({
   getQuestions,
   goQuarter,
   handleQuizFinish,
+  hiddenLessons,
+  hideLesson,
   markLearned,
   moveLesson,
   nav,
@@ -12246,7 +12378,7 @@ function LessonScreen({
 }) {
     const subject = currentSubject();
     const quarter = subject.quarters.find(q => q.id === nav.quarterId);
-    const rawLesson = allSubjectLessons(subject, customLessons).find(l => l.id === nav.lessonId);
+    const rawLesson = allSubjectLessons(subject, customLessons, hiddenLessons).find(l => l.id === nav.lessonId);
     const lesson = mergeLesson(rawLesson, edits);
     const tab = nav.tab || "learn";
     function setTab(t) {
@@ -12376,11 +12508,16 @@ function LessonScreen({
       }, "\u270F\uFE0F Edit Story"), /*#__PURE__*/React.createElement("button", {
         className: "btn btn-ghost btn-sm",
         onClick: () => setMovingLesson(true)
-      }, "\u2194 Move Shelf"), rawLesson.isCustom && /*#__PURE__*/React.createElement("button", {
+      }, "\u2194 Move Shelf"), /*#__PURE__*/React.createElement("button", {
         className: "btn btn-ghost btn-sm",
         onClick: () => {
-          if (window.confirm('Delete the story "' + lesson.title + '"?')) {
-            removeCustomTopic(lesson.id);
+          if (rawLesson.isCustom) {
+            if (window.confirm('Delete the story "' + lesson.title + '"?')) {
+              removeCustomTopic(lesson.id);
+              goQuarter(subject.id, quarter.id);
+            }
+          } else if (window.confirm('Remove the story "' + lesson.title + '" from this quarter? You can bring it back anytime from the Removed Topics list.')) {
+            hideLesson(lesson.id);
             goQuarter(subject.id, quarter.id);
           }
         }
@@ -12537,11 +12674,16 @@ function LessonScreen({
     }, "\u270F\uFE0F Edit Topic"), /*#__PURE__*/React.createElement("button", {
       className: "btn btn-ghost btn-sm",
       onClick: () => setMovingLesson(true)
-    }, "\u2194 Move Quarter"), rawLesson.isCustom && /*#__PURE__*/React.createElement("button", {
+    }, "\u2194 Move Quarter"), /*#__PURE__*/React.createElement("button", {
       className: "btn btn-ghost btn-sm",
       onClick: () => {
-        if (window.confirm('Delete the topic "' + lesson.title + '"? This removes its notes and question bank too.')) {
-          removeCustomTopic(lesson.id);
+        if (rawLesson.isCustom) {
+          if (window.confirm('Delete the topic "' + lesson.title + '"? This removes its notes and question bank too.')) {
+            removeCustomTopic(lesson.id);
+            goQuarter(subject.id, quarter.id);
+          }
+        } else if (window.confirm('Remove the topic "' + lesson.title + '" from this quarter? Its notes and question bank stay saved, and you can bring it back anytime from the Removed Topics list.')) {
+          hideLesson(lesson.id);
           goQuarter(subject.id, quarter.id);
         }
       }
@@ -12711,6 +12853,7 @@ function SubjectHomeScreen({
   customLessons,
   goDashboard,
   goQuarter,
+  hiddenLessons,
   moves,
   progress
 }) {
@@ -12718,8 +12861,8 @@ function SubjectHomeScreen({
     const quarters = subject.quarters;
     const isStories = subject.special === "stories";
     function renderShelfCard(q, qi) {
-      const learned = quarterLearnedCount(subject, q, moves, progress, customLessons);
-      const totalL = quarterLessonCount(subject, q, moves, customLessons);
+      const learned = quarterLearnedCount(subject, q, moves, progress, customLessons, hiddenLessons);
+      const totalL = quarterLessonCount(subject, q, moves, customLessons, hiddenLessons);
       const lq = progress.longQuiz[q.id];
       const pct = totalL ? Math.round(learned / totalL * 100) : 0;
       return /*#__PURE__*/React.createElement("button", {
@@ -13834,6 +13977,7 @@ function App() {
   const [bank, setBank] = useState(loadBank());
   const [moves, setMoves] = useState(loadMoves());
   const [customLessons, setCustomLessons] = useState(loadCustomLessons());
+  const [hiddenLessons, setHiddenLessons] = useState(loadHiddenLessons());
   const [settings, setSettings] = useState(loadSettings());
   const [notes, setNotes] = useState(loadNotes());
   const [activity, setActivity] = useState(loadActivity());
@@ -13899,6 +14043,9 @@ function App() {
     saveCustomLessons(customLessons);
   }, [customLessons]);
   useEffect(() => {
+    saveHiddenLessons(hiddenLessons);
+  }, [hiddenLessons]);
+  useEffect(() => {
     saveSettings(settings);
   }, [settings]);
   useEffect(() => {
@@ -13949,6 +14096,7 @@ function App() {
       setBank(loadBank());
       setMoves(loadMoves());
       setCustomLessons(loadCustomLessons());
+      setHiddenLessons(loadHiddenLessons());
       setSettings(loadSettings());
       setNotes(loadNotes());
       setActivity(loadActivity());
@@ -13990,6 +14138,7 @@ function App() {
     saveBank(bank);
     saveMoves(moves);
     saveCustomLessons(customLessons);
+    saveHiddenLessons(hiddenLessons);
     saveSettings(settings);
     saveNotes(notes);
     saveActivity(activity);
@@ -14015,6 +14164,7 @@ function App() {
         bank,
         moves,
         customLessons,
+        hiddenLessons,
         gradeConfig,
         settings,
         notes,
@@ -14062,6 +14212,7 @@ function App() {
         if (d.bank) setBank(d.bank);
         if (d.moves) setMoves(d.moves);
         if (d.customLessons) setCustomLessons(d.customLessons);
+        if (d.hiddenLessons) setHiddenLessons(d.hiddenLessons);
         if (d.gradeConfig) setGradeConfig(d.gradeConfig);
         if (d.settings) setSettings(d.settings);
         if (d.notes) setNotes(d.notes);
@@ -14080,6 +14231,7 @@ function App() {
         if (d.bank) saveBank(d.bank);
         if (d.moves) saveMoves(d.moves);
         if (d.customLessons) saveCustomLessons(d.customLessons);
+        if (d.hiddenLessons) saveHiddenLessons(d.hiddenLessons);
         if (d.gradeConfig) saveGradeConfig(d.gradeConfig);
         if (d.settings) saveSettings(d.settings);
         if (d.notes) saveNotes(d.notes);
@@ -14208,6 +14360,16 @@ function App() {
       delete n.lessons[lessonId];
       return n;
     });
+  }
+  // Hides a built-in (non-custom) topic from every list/quiz/question-bank
+  // without touching its notes or question bank — unlike removeCustomTopic,
+  // this is reversible via restoreLesson since the curriculum data itself
+  // can't be deleted, only hidden.
+  function hideLesson(lessonId) {
+    setHiddenLessons(prev => prev.includes(lessonId) ? prev : [...prev, lessonId]);
+  }
+  function restoreLesson(lessonId) {
+    setHiddenLessons(prev => prev.filter(id => id !== lessonId));
   }
   function currentSubject() {
     return SUBJECTS.find(s => s.id === nav.subjectId);
@@ -14602,7 +14764,7 @@ function App() {
   function startLongQuiz(quarter, count, topics, qType) {
     Sound.nav();
     const subject = currentSubject();
-    const lessons = quarterLessons(subject, quarter, moves, customLessons);
+    const lessons = quarterLessons(subject, quarter, moves, customLessons, hiddenLessons);
     let pool = lessons.flatMap(l => getQuestions(l.id).map(q => ({
       ...q,
       tag: mergeLesson(l, edits).title
@@ -14681,10 +14843,10 @@ function App() {
 
   /* ---------------- helpers across a whole subject ---------------- */
   function subjectLessonCount(subject) {
-    return allSubjectLessons(subject, customLessons).length;
+    return allSubjectLessons(subject, customLessons, hiddenLessons).length;
   }
   function subjectLearnedCount(subject, progress) {
-    return allSubjectLessons(subject, customLessons).filter(l => progress.lessons[l.id] && progress.lessons[l.id].learned).length;
+    return allSubjectLessons(subject, customLessons, hiddenLessons).filter(l => progress.lessons[l.id] && progress.lessons[l.id].learned).length;
   }
 
   /* ---------------- DASHBOARD SCREEN (app home) ---------------- */
@@ -14735,10 +14897,14 @@ function App() {
       getQuestions,
       goLesson,
       goSubjectHome,
+      hiddenLessons,
+      hideLesson,
+      moveLesson,
       moves,
       nav,
       progress,
       removeCustomTopic,
+      restoreLesson,
       setLessonQuestions,
       startLongQuiz
     });
@@ -14750,6 +14916,8 @@ function App() {
       getQuestions,
       goQuarter,
       handleQuizFinish,
+      hiddenLessons,
+      hideLesson,
       markLearned,
       moveLesson,
       nav,
@@ -14768,6 +14936,7 @@ function App() {
       customLessons,
       goDashboard,
       goQuarter,
+      hiddenLessons,
       moves,
       progress
     });
