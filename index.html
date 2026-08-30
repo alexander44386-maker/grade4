@@ -4842,99 +4842,6 @@ function saveFilSpellingTinikProblems(m) {
    app around it. Dark-mode-only bonus subject.
    ========================================================= */
 
-/* =========================================================
-   STORY SHELVES — "Story Time" is a special, ungraded subject: a
-   library of short stories (not lessons), organized into a handful of
-   shelves/categories. It reuses the exact same {id,num,icon,title,
-   chapters,color} shape every other subject's quarters use, but each
-   shelf's `chapters` stays empty on purpose — there's no built-in
-   curriculum here, every story is added in-app (see addCustomTopic +
-   LessonEditForm's storyMode) and simply falls into that shelf's
-   "✨ My Stories" bucket, same mechanism as a custom topic elsewhere.
-
-   Each shelf also carries a `lang` tag ("en" or "fil") so
-   SubjectHomeScreen can group them into separate "English Stories" /
-   "Filipino Stories" sections instead of one mixed grid — the shelves
-   themselves stay independent (a story added to one shelf never shows
-   up under the other language's section).
-   ========================================================= */
-const STORY_SHELVES = [
-// ---- English ----
-{
-  id: "story-en-folktales",
-  num: "Shelf 1",
-  icon: "🏰",
-  title: "Fairy Tales & Folktales",
-  lang: "en",
-  chapters: [],
-  color: "var(--subj-g4-english)"
-}, {
-  id: "story-en-fables",
-  num: "Shelf 2",
-  icon: "🦁",
-  title: "Animal Fables",
-  lang: "en",
-  chapters: [],
-  color: "var(--subj-g4-science)"
-}, {
-  id: "story-en-bedtime",
-  num: "Shelf 3",
-  icon: "🌙",
-  title: "Bedtime Stories",
-  lang: "en",
-  chapters: [],
-  color: "var(--subj-g4-ap)"
-}, {
-  id: "story-en-values",
-  num: "Shelf 4",
-  icon: "💛",
-  title: "Values & Character",
-  lang: "en",
-  chapters: [],
-  color: "var(--subj-g4-gmrc)"
-}, {
-  id: "story-en-adventure",
-  num: "Shelf 5",
-  icon: "🗺️",
-  title: "Adventure & Fantasy",
-  lang: "en",
-  chapters: [],
-  color: "var(--subj-g4-computer)"
-},
-// ---- Filipino ----
-{
-  id: "story-fil-alamat",
-  num: "Istante 1",
-  icon: "🐢",
-  title: "Alamat at Kwentong Bayan",
-  lang: "fil",
-  chapters: [],
-  color: "var(--subj-g4-filipino)"
-}, {
-  id: "story-fil-pabula",
-  num: "Istante 2",
-  icon: "🐒",
-  title: "Mga Pabula (Hayop)",
-  lang: "fil",
-  chapters: [],
-  color: "var(--subj-g4-science)"
-}, {
-  id: "story-fil-pantulog",
-  num: "Istante 3",
-  icon: "🌜",
-  title: "Kwentong Pantulog",
-  lang: "fil",
-  chapters: [],
-  color: "var(--subj-g4-ap)"
-}, {
-  id: "story-fil-aral",
-  num: "Istante 4",
-  icon: "💛",
-  title: "Aral at Pag-uugali",
-  lang: "fil",
-  chapters: [],
-  color: "var(--subj-g4-gmrc)"
-}];
 const SUBJECTS = [{
   id: "general",
   name: "General Knowledge",
@@ -5036,16 +4943,6 @@ const SUBJECTS = [{
   color: "#6B5B95",
   soft: "#EDE8F5",
   special: "questions"
-}, {
-  id: "stories",
-  name: "Story Time",
-  shortName: "Stories",
-  icon: "📖",
-  tagline: "Story Shelf — Read & Listen",
-  quarters: STORY_SHELVES,
-  color: "var(--subj-stories)",
-  soft: "#F7E6F3",
-  special: "stories"
 }, {
   id: "typing",
   name: "Typing Galaxy",
@@ -9541,9 +9438,6 @@ const QUESTION_TYPES = [{
   id: "mcq",
   label: "🔤 Multiple Choice"
 }, {
-  id: "sva",
-  label: "🧑‍🏫 Subject-Verb Agreement"
-}, {
   id: "tf",
   label: "✅ True / False"
 }, {
@@ -9586,9 +9480,6 @@ const QUIZ_TYPE_OPTIONS = [{
 }, {
   id: "mcq",
   label: "🔤 Multiple Choice"
-}, {
-  id: "sva",
-  label: "🧑‍🏫 Subject-Verb Agreement"
 }, {
   id: "tf",
   label: "✅ True / False"
@@ -9716,9 +9607,6 @@ function normalizeQuestionsJSON(parsed, fallbackTopicRaw, forcedTopicRaw) {
   return parsed.filter(p => {
     if (!p || !p.q) return false;
     const t = String(p.type || "mcq").toLowerCase();
-    if (t === "sva" || t === "subjectverb" || t === "subject_verb" || t === "svb") {
-      return Array.isArray(p.options) && p.options.length >= 2;
-    }
     if (t === "fill" || t === "fillblank" || t === "fill_in_the_blank") return !!p.answer;
     if (t === "tf" || t === "truefalse" || t === "true_false") return true;
     if (t === "emoji" || t === "happysad" || t === "happy_sad" || t === "emojitf") return true;
@@ -9743,16 +9631,6 @@ function normalizeQuestionsJSON(parsed, fallbackTopicRaw, forcedTopicRaw) {
   }).map(p => {
     const t = String(p.type || "mcq").toLowerCase();
     const topic = forcedTopic || normTopic(p.topic) || fallbackTopic;
-    if (t === "sva" || t === "subjectverb" || t === "subject_verb" || t === "svb") {
-      return {
-        type: "sva",
-        q: String(p.q),
-        options: p.options.map(o => String(o)),
-        correct: Number.isInteger(p.correct) ? p.correct : 0,
-        explain: p.explain ? String(p.explain) : "",
-        topic
-      };
-    }
     if (t === "fill" || t === "fillblank" || t === "fill_in_the_blank") {
       return {
         type: "fill",
@@ -9976,7 +9854,6 @@ function buildLessonContext(lesson) {
 }
 const GENERATE_TYPE_LIBRARY = {
   mcq: `- Multiple Choice: {"type":"mcq","q":"...","options":["A","B","C","D"],"correct":0,"explain":"...","topic":"..."} — "correct" is the 0-based index of the right option in "options". Distractors must be plausible wrong answers (common misconceptions, near-misses), not silly or obviously wrong.`,
-  sva: `- Subject-Verb Agreement: {"type":"sva","q":"Choose the sentence with correct subject-verb agreement.","options":["George is fat.","George am fat.","George was fat.","George are fat."],"correct":0,"explain":"...","topic":"..."} — each option in "options" is a FULL sentence that differs from the others only in its verb form (tense/number), so the student must pick the one grammatically correct sentence. "correct" is the 0-based index of the one grammatically correct sentence. Cover different agreement patterns across questions (singular/plural subjects, mass nouns vs count nouns, simple present/past/future tense, "is/am/are/was/were", irregular verbs, etc.) as fits the lesson's topic.`,
   tf: `- True / False: {"type":"tf","q":"...","correct":true,"explain":"...","topic":"..."} — "correct" must be the JSON boolean true if the statement in "q" is factually TRUE, or false if the statement is factually FALSE. Judge this only from whether the statement itself is correct — never write a numeric index here, and never flip it to mean something else.`,
   emoji: `- Happy / Sad (agree-or-disagree with a statement): {"type":"emoji","q":"...","correct":true,"explain":"...","topic":"..."} — "correct" must be the JSON boolean true if a student should react 😊 Happy because the statement is correct/true, or false if they should react 😢 Sad because the statement is incorrect/false.`,
   tama: `- Tama o Mali (Filipino True/False — only use this for Filipino-language lessons): {"type":"tama","q":"...","correct":true,"explain":"...","topic":"..."} — "q" must be a Filipino statement (pangungusap). "correct" must be the JSON boolean true if the statement is "Tama" (tama/totoo), or false if it is "Mali" (mali/hindi tama).`,
@@ -9988,7 +9865,6 @@ const GENERATE_TYPE_LIBRARY = {
 };
 const GENERATE_TYPE_LABELS = {
   mcq: "Multiple Choice",
-  sva: "Subject-Verb Agreement",
   tf: "True / False",
   emoji: "Happy / Sad",
   tama: "Tama o Mali",
@@ -9998,11 +9874,10 @@ const GENERATE_TYPE_LABELS = {
   order: "Ordering",
   underline: "Underline / Circle"
 };
-const GENERATE_TYPE_ORDER = ["mcq", "sva", "tf", "emoji", "tama", "fill", "match", "dragdrop", "order", "underline"];
+const GENERATE_TYPE_ORDER = ["mcq", "tf", "emoji", "tama", "fill", "match", "dragdrop", "order", "underline"];
 // Short labels for every question type (used in the chapter-list "Qs in bank" breakdown pill).
 const QUESTION_TYPE_SHORT_LABELS = {
   mcq: "MC",
-  sva: "SVA",
   tf: "T/F",
   emoji: "Happy/Sad",
   tama: "Tama/Mali",
@@ -10037,10 +9912,6 @@ function questionTypeBreakdown(questions) {
 const GENERATE_COUNT_RANGES = {
   mcq: {
     min: 10,
-    max: 12
-  },
-  sva: {
-    min: 8,
     max: 12
   },
   tf: {
@@ -10219,7 +10090,7 @@ function QuestionBankManager({
       return;
     }
     const t = draft.type || "mcq";
-    if (t === "mcq" || t === "sva" || t === "tf" || t === "tama" || t === "emoji") {
+    if (t === "mcq" || t === "tf" || t === "tama" || t === "emoji") {
       if (!draft.options || draft.options.some(o => !String(o).trim())) {
         alert("All choices need text.");
         return;
@@ -10861,10 +10732,6 @@ function QuestionBankManager({
       label: "\uD83D\uDD24 Multiple Choice",
       json: '[{"q":"...","options":["A","B","C","D"],"correct":0,"explain":"...","topic":"Comparing"}]'
     }), /*#__PURE__*/React.createElement(CopyableJson, {
-      label: "\uD83E\uDDD1\u200D\uD83C\uDFEB Subject-Verb Agreement",
-      json: '[{"type":"sva","q":"Choose the sentence with correct subject-verb agreement.","options":["George is fat.","George am fat.","George was fat.","George are fat."],"correct":0,"explain":"...","topic":"Simple Present Tense"}]',
-      note: "Each option is a full sentence differing only in verb form \u2014 \"correct\" is the 0-based index of the one grammatically correct sentence."
-    }), /*#__PURE__*/React.createElement(CopyableJson, {
       label: "\u2705 True / False",
       json: '[{"type":"tf","q":"...","correct":0,"explain":"...","topic":"Ordering"}]',
       note: "correct: 0 = True, 1 = False"
@@ -11126,7 +10993,7 @@ function QuestionBankManager({
     }, "\uD83D\uDDD1\uFE0F Delete All")));
   })), questions.map((q, i) => {
     const t = q.type || "mcq";
-    const typeLabel = t === "fill" ? "✍️ Fill in the Blank" : t === "sva" ? "🧑‍🏫 Subject-Verb Agreement" : t === "tf" ? "✅ True / False" : t === "emoji" ? "😊 Happy / Sad" : t === "tama" ? "🇵🇭 Tama o Mali" : t === "match" ? "🔗 Matching" : t === "matchimg" ? "🖼️ Image Matching" : t === "dragdrop" ? "🧩 Drag and Drop" : t === "order" ? "📋 Ordering / Sequencing" : t === "label" ? "🖼️ Label the Parts" : t === "pattern" ? "🔢 Number Pattern" : t === "underline" ? "🖊️ Underline / Circle" : "🔤 Multiple Choice";
+    const typeLabel = t === "fill" ? "✍️ Fill in the Blank" : t === "tf" ? "✅ True / False" : t === "emoji" ? "😊 Happy / Sad" : t === "tama" ? "🇵🇭 Tama o Mali" : t === "match" ? "🔗 Matching" : t === "matchimg" ? "🖼️ Image Matching" : t === "dragdrop" ? "🧩 Drag and Drop" : t === "order" ? "📋 Ordering / Sequencing" : t === "label" ? "🖼️ Label the Parts" : t === "pattern" ? "🔢 Number Pattern" : t === "underline" ? "🖊️ Underline / Circle" : "🔤 Multiple Choice";
     const isEditing = editingIndex === i;
     if (isEditing) {
       const dt = draft.type || "mcq";
@@ -11161,9 +11028,9 @@ function QuestionBankManager({
         name: "correct-" + i,
         checked: draft.correct === oi,
         onChange: () => updateDraft("correct", oi)
-      }), /*#__PURE__*/React.createElement("span", null, o))))), (dt === "mcq" || dt === "sva") && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
+      }), /*#__PURE__*/React.createElement("span", null, o))))), dt === "mcq" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
         className: "field-label"
-      }, dt === "sva" ? "Choices — full sentences (pick the correct one)" : "Choices (pick the correct one)"), /*#__PURE__*/React.createElement("div", {
+      }, "Choices (pick the correct one)"), /*#__PURE__*/React.createElement("div", {
         className: "bank-edit-opts"
       }, draft.options.map((o, oi) => /*#__PURE__*/React.createElement("div", {
         key: oi,
@@ -11492,7 +11359,7 @@ function QuestionBankManager({
       className: "bank-item-opts"
     }, /*#__PURE__*/React.createElement("span", {
       className: "bank-opt bank-opt-correct"
-    }, "\uD83D\uDD8A\uFE0F ", q.sentence, " \u2014 underline: ", (q.underline || []).join(", "), (q.circle || []).some(w => String(w || "").trim()) && "; circle: " + q.circle.join(", "))), (t === "mcq" || t === "sva" || t === "tf" || t === "tama" || t === "emoji") && /*#__PURE__*/React.createElement("div", {
+    }, "\uD83D\uDD8A\uFE0F ", q.sentence, " \u2014 underline: ", (q.underline || []).join(", "), (q.circle || []).some(w => String(w || "").trim()) && "; circle: " + q.circle.join(", "))), (t === "mcq" || t === "tf" || t === "tama" || t === "emoji") && /*#__PURE__*/React.createElement("div", {
       className: "bank-item-opts"
     }, q.options.map((o, oi) => /*#__PURE__*/React.createElement("span", {
       key: oi,
@@ -12889,7 +12756,7 @@ function QuarterScreen({
         cursor: "pointer"
       },
       onClick: () => toggleGenType(t)
-    }, genTypes.has(t) ? "✓ " : "", GENERATE_TYPE_LABELS[t]))), /*#__PURE__*/React.createElement("label", {
+    }, genTypes.has(t) ? "✓ " : "", QUESTION_TYPE_SHORT_LABELS[t] || GENERATE_TYPE_LABELS[t]))), /*#__PURE__*/React.createElement("label", {
       className: "field-label"
     }, "Focus area (optional)"), /*#__PURE__*/React.createElement("input", {
       type: "text",
@@ -12907,7 +12774,7 @@ function QuarterScreen({
       style: {
         margin: "4px 0 0"
       }
-    }, "Type a specific part of the lesson (e.g. \"addition\" instead of all of Math, or \"the water cycle\" instead of all of Science) to narrow every generated question to just that."), /*#__PURE__*/React.createElement("label", {
+    }, "Input here the topic, if you want to focus in one area."), /*#__PURE__*/React.createElement("label", {
       className: "field-label"
     }, "Topic (optional)"), /*#__PURE__*/React.createElement("input", {
       type: "text",
@@ -12920,7 +12787,7 @@ function QuarterScreen({
       style: {
         margin: "4px 0 0"
       }
-    }, "This has nothing to do with what Gemini writes \u2014 it just tags every generated question with this topic so you can easily find it later when starting a quiz."), /*#__PURE__*/React.createElement("label", {
+    }, "Input here the topic tags."), /*#__PURE__*/React.createElement("label", {
       className: "field-label"
     }, "Difficulty"), /*#__PURE__*/React.createElement("div", {
       style: {
@@ -13975,10 +13842,11 @@ function QuestionsScreen({
       alignItems: "center",
       gap: 12,
       width: "100%",
-      border: "2px solid var(--border, #ddd)",
+      border: "2px solid var(--line)",
       borderRadius: 16,
       padding: "14px 16px",
-      background: "#EDE8F5",
+      background: "var(--card)",
+      color: "var(--ink)",
       marginBottom: 12,
       cursor: "pointer",
       font: "inherit",
@@ -14075,10 +13943,11 @@ function TinikScreen({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          border: "2px solid var(--border, #ddd)",
+          border: "2px solid var(--line)",
           borderRadius: 16,
           padding: "22px 8px",
-          background: "#fff",
+          background: "var(--card)",
+          color: "var(--ink)",
           cursor: "pointer",
           font: "inherit"
         }
