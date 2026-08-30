@@ -858,28 +858,30 @@
     box-shadow:0 0 0 3px rgba(255,180,90,0.6) inset, 0 0 10px rgba(255,120,40,0.9);
   }
 
-  /* Deep Ocean: soft undulating jelly-blob, gentle swimming sway */
-  .invader.tide-invader, .demo-invader.tide-invader{
+  /* Cyber Grid: jittery glitch-blob, sharp digital stutter */
+  .invader.grid-invader, .demo-invader.grid-invader{
     clip-path: polygon(50% 2%, 67% 18%, 85% 29%, 100% 50%, 88% 74%, 67% 82%, 50% 93%, 25% 97%, 12% 74%, 16% 50%, 16% 29%, 25% 4%);
-    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, tide-sway 2.8s ease-in-out 0.3s infinite;
+    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, grid-flicker 1.6s steps(4) 0.3s infinite;
   }
-  .demo-invader.tide-invader{ animation:none; }
-  @keyframes tide-sway{
-    0%,100%{ transform: translateY(0) rotate(-3deg) scaleX(1); }
-    50%{ transform: translateY(4px) rotate(3deg) scaleX(1.04); }
+  .demo-invader.grid-invader{ animation:none; }
+  @keyframes grid-flicker{
+    0%,100%{ transform: translate(0,0); opacity:1; }
+    30%{ transform: translate(2px,-1px); opacity:0.7; }
+    55%{ transform: translate(-2px,1px); opacity:1; }
+    80%{ transform: translate(1px,0); opacity:0.85; }
   }
-  .invader.tide-invader.elite, .demo-invader.tide-invader.elite{
+  .invader.grid-invader.elite, .demo-invader.grid-invader.elite{
     clip-path: polygon(50% -10%, 69% 6%, 76% 27%, 97% 38%, 102% 63%, 78% 75%, 67% 88%, 50% 100%, 31% 94%, 24% 73%, 3% 62%, 0% 37%, 22% 26%, 33% 12%);
   }
-  .invader.tide-invader-b, .demo-invader.tide-invader-b{
+  .invader.grid-invader-b, .demo-invader.grid-invader-b{
     clip-path: polygon(50% 0%, 72% 10%, 92% 26%, 100% 52%, 90% 78%, 70% 94%, 46% 100%, 22% 90%, 4% 70%, 6% 44%, 20% 20%, 34% 4%);
   }
-  .invader.tide-invader-c, .demo-invader.tide-invader-c{
+  .invader.grid-invader-c, .demo-invader.grid-invader-c{
     clip-path: polygon(46% 4%, 64% 0%, 82% 14%, 96% 38%, 92% 62%, 100% 84%, 74% 92%, 56% 100%, 34% 92%, 14% 96%, 8% 70%, 2% 46%, 16% 24%, 30% 10%);
   }
-  .invader.tide-invader .eye-single, .demo-invader.tide-invader .eye-single{
+  .invader.grid-invader .eye-single, .demo-invader.grid-invader .eye-single{
     top:18px; width:24px; height:18px;
-    box-shadow:0 0 8px rgba(125,211,252,0.8), 0 0 0 3px rgba(255,255,255,0.4) inset;
+    box-shadow:0 0 8px rgba(255,46,196,0.8), 0 0 0 3px rgba(46,255,232,0.4) inset;
   }
 
   /* Crystal Caverns: faceted gem shard, glinting facets */
@@ -1140,28 +1142,28 @@
     box-shadow:0 0 10px rgba(255,143,214,0.85), 0 0 0 3px rgba(124,255,196,0.5) inset;
   }
 
-  /* Toxic Swamp: dripping ooze blob with a drawn-out drip tail */
-  .invader.bog-invader, .demo-invader.bog-invader{
+  /* Ashfall Wastes: crumbling ash blob with a smouldering ember tail */
+  .invader.ash-invader, .demo-invader.ash-invader{
     clip-path: polygon(50% 3%, 66% 17%, 74% 31%, 88% 41%, 97% 61%, 85% 78%, 73% 97%, 50% 100%, 21% 111%, 12% 81%, 10% 59%, 19% 43%, 22% 28%, 30% 8%);
-    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, bog-drip 1.7s ease-in-out 0.3s infinite;
+    animation: pop-in 0.3s cubic-bezier(.34,1.56,.64,1) both, ash-crumble 1.7s ease-in-out 0.3s infinite;
   }
-  .demo-invader.bog-invader{ animation:none; }
-  @keyframes bog-drip{
+  .demo-invader.ash-invader{ animation:none; }
+  @keyframes ash-crumble{
     0%,100%{ transform: scaleY(1) translateY(0); }
     50%{ transform: scaleY(1.06) translateY(2px); }
   }
-  .invader.bog-invader.elite, .demo-invader.bog-invader.elite{
+  .invader.ash-invader.elite, .demo-invader.ash-invader.elite{
     clip-path: polygon(50% -2%, 65% 14%, 71% 29%, 83% 36%, 99% 50%, 100% 71%, 81% 81%, 71% 100%, 50% 105%, 21% 120%, 12% 88%, 5% 69%, 15% 50%, 22% 38%, 22% 22%, 30% 2%);
   }
-  .invader.bog-invader-b, .demo-invader.bog-invader-b{
+  .invader.ash-invader-b, .demo-invader.ash-invader-b{
     clip-path: polygon(50% 0%, 70% 12%, 84% 30%, 100% 46%, 92% 68%, 76% 80%, 62% 100%, 44% 108%, 30% 90%, 10% 78%, 0% 56%, 10% 36%, 20% 16%, 36% 4%);
   }
-  .invader.bog-invader-c, .demo-invader.bog-invader-c{
+  .invader.ash-invader-c, .demo-invader.ash-invader-c{
     clip-path: polygon(46% 5%, 62% 0%, 78% 12%, 90% 30%, 88% 52%, 100% 70%, 80% 82%, 68% 104%, 48% 90%, 32% 106%, 18% 86%, 20% 62%, 4% 48%, 14% 26%, 30% 10%);
   }
-  .invader.bog-invader .eye-single, .demo-invader.bog-invader .eye-single{
-    background:#0B1740;
-    box-shadow:0 0 8px rgba(163,230,53,0.8), 0 0 0 3px rgba(255,255,255,0.4) inset;
+  .invader.ash-invader .eye-single, .demo-invader.ash-invader .eye-single{
+    background:#1A1614;
+    box-shadow:0 0 8px rgba(255,107,53,0.8), 0 0 0 3px rgba(255,255,255,0.4) inset;
   }
 
   /* True squash-and-stretch spawn: the invader enters stretched tall/thin
@@ -1578,11 +1580,11 @@
     box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(255,159,69,0.45), 0 0 28px rgba(217,41,28,0.4);
   }
   #view-space .level-popup-card.world-moltencore .level-popup-title{ color:#FF9F45; text-shadow:0 0 16px rgba(255,159,69,0.7); }
-  #view-space .level-popup-card.world-deepocean{
-    background: radial-gradient(circle at 50% 20%, rgba(28,109,143,0.28), transparent 60%), #052430;
-    box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(77,232,255,0.45), 0 0 28px rgba(28,109,143,0.4);
+  #view-space .level-popup-card.world-cybergrid{
+    background: radial-gradient(circle at 50% 20%, rgba(46,255,232,0.24), transparent 60%), #050008;
+    box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(255,46,196,0.45), 0 0 28px rgba(46,255,232,0.4);
   }
-  #view-space .level-popup-card.world-deepocean .level-popup-title{ color:#4DE8FF; text-shadow:0 0 16px rgba(77,232,255,0.7); }
+  #view-space .level-popup-card.world-cybergrid .level-popup-title{ color:#2EFFE8; text-shadow:0 0 16px rgba(255,46,196,0.7); }
   #view-space .level-popup-card.world-desertwastes{
     background: radial-gradient(circle at 50% 20%, rgba(196,138,68,0.28), transparent 60%), #241a06;
     box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(255,203,119,0.45), 0 0 28px rgba(196,138,68,0.4);
@@ -1598,11 +1600,11 @@
     box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(124,255,196,0.45), 0 0 28px rgba(255,143,214,0.35);
   }
   #view-space .level-popup-card.world-plutoparadise .level-popup-title{ color:#7CFFC4; text-shadow:0 0 16px rgba(124,255,196,0.7); }
-  #view-space .level-popup-card.world-toxicswamp{
-    background: radial-gradient(circle at 50% 20%, rgba(107,122,47,0.3), transparent 60%), #181C08;
-    box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(195,216,37,0.45), 0 0 28px rgba(107,122,47,0.4);
+  #view-space .level-popup-card.world-ashfallwastes{
+    background: radial-gradient(circle at 50% 20%, rgba(255,107,53,0.2), transparent 60%), #17140F;
+    box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(201,196,188,0.4), 0 0 28px rgba(255,107,53,0.35);
   }
-  #view-space .level-popup-card.world-toxicswamp .level-popup-title{ color:#C3D825; text-shadow:0 0 16px rgba(195,216,37,0.6); }
+  #view-space .level-popup-card.world-ashfallwastes .level-popup-title{ color:#D8D3CB; text-shadow:0 0 16px rgba(255,107,53,0.6); }
   #view-space .level-popup-card.world-crystalcaverns{
     background: radial-gradient(circle at 50% 20%, rgba(156,77,204,0.28), transparent 60%), #1E0A2A;
     box-shadow:0 14px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(255,184,240,0.45), 0 0 28px rgba(156,77,204,0.4);
@@ -2251,11 +2253,11 @@
   .world-btn[data-world="blackhole"]{ --sw1:#C4B5FD; --sw2:#7C3AED; }
   .world-btn[data-world="frozencomet"]{ --sw1:#BAE6FD; --sw2:#2E9FD6; }
   .world-btn[data-world="moltencore"]{ --sw1:#FFB37A; --sw2:#D9291C; }
-  .world-btn[data-world="deepocean"]{ --sw1:#7DE8FF; --sw2:#0E7A8C; }
+  .world-btn[data-world="cybergrid"]{ --sw1:#2EFFE8; --sw2:#FF2EC4; }
   .world-btn[data-world="desertwastes"]{ --sw1:#FFE7A8; --sw2:#C98A2E; }
   .world-btn[data-world="stormnebula"]{ --sw1:#F4E04D; --sw2:#6B5BFF; }
   .world-btn[data-world="plutoparadise"]{ --sw1:#7CFFC4; --sw2:#FF8FD6; }
-  .world-btn[data-world="toxicswamp"]{ --sw1:#D4F27A; --sw2:#5B6E1A; }
+  .world-btn[data-world="ashfallwastes"]{ --sw1:#C9C4BC; --sw2:#FF6B35; }
   .world-btn[data-world="crystalcaverns"]{ --sw1:#FFD6F5; --sw2:#9C4DCC; }
   .world-btn[data-world="ruins"]{ --sw1:#E8C468; --sw2:#2E7D6B; }
   .world-btn[data-world="haunted"]{ --sw1:#9AFFC0; --sw2:#5B2E8C; }
@@ -2924,13 +2926,20 @@
   .planet.moltencore-look::after{
     border-color: rgba(255,159,69,0.55);
   }
-  /* Deep Ocean world: swaps the sunny planet for a teal water-moon. */
-  .planet.deepocean-look{
-    background: radial-gradient(circle at 35% 35%, #B2EBF2, #26C6DA 55%, #006064 100%);
-    box-shadow:0 0 30px 10px rgba(38,198,218,0.5), inset -10px -8px 18px rgba(0,0,0,0.3);
+  /* Cyber Grid world: swaps the sunny planet for a wireframe data-sphere. */
+  .planet.cybergrid-look{
+    background: radial-gradient(circle at 35% 35%, #E8FFFC, #2EFFE8 45%, #FF2EC4 78%, #05000C 100%);
+    box-shadow:0 0 34px 10px rgba(46,255,232,0.5), 0 0 20px 6px rgba(255,46,196,0.35), inset -10px -8px 18px rgba(0,0,0,0.4);
+    animation: cybergrid-glitch 2.8s steps(1) infinite;
   }
-  .planet.deepocean-look::after{
-    border-color: rgba(178,235,242,0.55);
+  @keyframes cybergrid-glitch{
+    0%,84%,100%{ filter:hue-rotate(0deg) brightness(1); }
+    85%{ filter:hue-rotate(25deg) brightness(1.3); }
+    86%{ filter:hue-rotate(0deg) brightness(0.9); }
+    88%{ filter:hue-rotate(-15deg) brightness(1.2); }
+  }
+  .planet.cybergrid-look::after{
+    border-color: rgba(46,255,232,0.55);
   }
   /* Desert Wastes world: swaps the sunny planet for a sandy dune-moon. */
   .planet.desertwastes-look{
@@ -2969,13 +2978,19 @@
   .planet.plutoparadise-look::after{
     border-color: rgba(255,214,240,0.55);
   }
-  /* Toxic Swamp world: a murky, fog-shrouded bog moon. */
-  .planet.toxicswamp-look{
-    background: radial-gradient(circle at 35% 35%, #E8E296, #6B7A2F 55%, #2A2F0E 100%);
-    box-shadow:0 0 32px 10px rgba(195,216,37,0.55), inset -10px -8px 18px rgba(0,0,0,0.4);
+  /* Ashfall Wastes world: a smouldering grey ash-moon with dim ember cracks. */
+  .planet.ashfallwastes-look{
+    background: radial-gradient(circle at 35% 35%, #C9C4BC, #6B6560 55%, #1A1614 100%);
+    box-shadow:0 0 30px 10px rgba(255,107,53,0.35), inset -10px -8px 18px rgba(0,0,0,0.5);
+    animation: ashfallwastes-ember 3s ease-in-out infinite;
   }
-  .planet.toxicswamp-look::after{
-    border-color: rgba(212,201,122,0.5);
+  @keyframes ashfallwastes-ember{
+    0%,78%,100%{ filter:brightness(1); }
+    80%{ filter:brightness(1.25) sepia(0.15); }
+    83%{ filter:brightness(0.9); }
+  }
+  .planet.ashfallwastes-look::after{
+    border-color: rgba(255,107,53,0.45);
   }
   /* Crystal Caverns world: a faceted geode-moon that catches the light. */
   .planet.crystalcaverns-look{
@@ -3203,11 +3218,11 @@
   #game-space.world-blackhole{ --star-color:#C4B5FD; --space-bg: linear-gradient(180deg, #1A0A2E 0%, #0A0018 55%, #000000 100%); }
   #game-space.world-frozencomet{ --star-color:#BAE6FD; --space-bg: linear-gradient(180deg, #0D2F42 0%, #061C29 55%, #020B10 100%); }
   #game-space.world-moltencore{ --star-color:#FFB37A; --space-bg: linear-gradient(180deg, #2E0900 0%, #1A0500 55%, #0A0200 100%); }
-  #game-space.world-deepocean{ --star-color:#7DE8FF; --space-bg: linear-gradient(180deg, #063040 0%, #02141A 55%, #01090C 100%); }
+  #game-space.world-cybergrid{ --star-color:#2EFFE8; --space-bg: linear-gradient(180deg, #06060A 0%, #020204 55%, #000000 100%); }
   #game-space.world-desertwastes{ --star-color:#FFE7A8; --space-bg: linear-gradient(180deg, #2E2008 0%, #1A1206 55%, #0D0A03 100%); }
   #game-space.world-stormnebula{ --star-color:#F4E04D; --space-bg: linear-gradient(180deg, #0F1438 0%, #090C22 55%, #03040F 100%); }
   #game-space.world-plutoparadise{ --star-color:#B8FFE0; --space-bg: linear-gradient(180deg, #0A1A2E 0%, #120A26 55%, #05030F 100%); }
-  #game-space.world-toxicswamp{ --star-color:#D4F27A; --space-bg: linear-gradient(180deg, #1E2210 0%, #12140A 55%, #090A05 100%); }
+  #game-space.world-ashfallwastes{ --star-color:#C9C4BC; --space-bg: linear-gradient(180deg, #2A2622 0%, #14120F 55%, #060505 100%); }
   #game-space.world-crystalcaverns{ --star-color:#FFB8F0; --space-bg: linear-gradient(180deg, #2A0A38 0%, #180620 55%, #0A0210 100%); }
   #game-space.world-ruins{ --star-color:#E8C468; --space-bg: linear-gradient(180deg, #241C08 0%, #140F04 55%, #0A0702 100%); }
   #game-space.world-haunted{ --star-color:#7CFFA8; --space-bg: linear-gradient(180deg, #170B26 0%, #0A0512 55%, #030108 100%); }
@@ -3354,32 +3369,31 @@
       radial-gradient(2px 2px at 88% 40%, rgba(255,179,122,0.9), transparent);
     background-size:250px 290px;
   }
-  /* Deep Ocean: far = bioluminescent glow wisps, near = drifting bubble chunks. */
-  .world-parallax-layer.pfar-deepocean{
+  /* Cyber Grid: far = drifting magenta grid-line haze, near = glowing cyan data-node chunks. */
+  .world-parallax-layer.pfar-cybergrid{
     background-image:
-      radial-gradient(65px 40px at 25% 30%, rgba(77,232,255,0.18), transparent 70%),
-      radial-gradient(90px 50px at 70% 65%, rgba(28,109,143,0.16), transparent 70%),
-      radial-gradient(50px 65px at 45% 88%, rgba(125,232,255,0.13), transparent 70%);
+      repeating-linear-gradient(0deg, rgba(255,46,196,0.10) 0 1px, transparent 1px 64px),
+      repeating-linear-gradient(90deg, rgba(46,255,232,0.08) 0 1px, transparent 1px 64px);
     background-size:340px 340px;
   }
-  .world-parallax-layer.pnear-deepocean{
+  .world-parallax-layer.pnear-cybergrid{
     background-image:
-      radial-gradient(circle at 50% 50%, transparent 0 5px, rgba(77,232,255,0.5) 5px 7px, transparent 8px),
-      radial-gradient(circle at 50% 50%, transparent 0 3px, rgba(125,232,255,0.45) 3px 5px, transparent 6px);
+      radial-gradient(circle at 50% 50%, transparent 0 5px, rgba(46,255,232,0.55) 5px 7px, transparent 8px),
+      radial-gradient(circle at 50% 50%, transparent 0 3px, rgba(255,46,196,0.5) 3px 5px, transparent 6px);
     background-size:250px 230px, 160px 290px;
     background-position:40px 30px, 180px 150px;
   }
-  .world-parallax-layer.pclose-deepocean{
+  .world-parallax-layer.pclose-cybergrid{
     background-image:
-      radial-gradient(circle at 50% 50%, transparent 0 11px, rgba(77,232,255,0.6) 11px 14px, transparent 16px);
+      radial-gradient(circle at 50% 50%, transparent 0 11px, rgba(46,255,232,0.6) 11px 14px, transparent 16px);
     background-size:420px 460px;
     background-position:110px 100px;
   }
-  .world-parallax-layer.pfg-deepocean{
+  .world-parallax-layer.pfg-cybergrid{
     background-image:
-      radial-gradient(2px 2px at 18% 35%, rgba(200,250,255,0.95), transparent),
-      radial-gradient(1.5px 1.5px at 58% 60%, rgba(125,232,255,0.9), transparent),
-      radial-gradient(2px 2px at 84% 22%, rgba(77,232,255,0.9), transparent);
+      radial-gradient(2px 2px at 18% 35%, rgba(220,255,250,0.95), transparent),
+      radial-gradient(1.5px 1.5px at 58% 60%, rgba(255,46,196,0.9), transparent),
+      radial-gradient(2px 2px at 84% 22%, rgba(46,255,232,0.9), transparent);
     background-size:245px 285px;
   }
   /* Desert Wastes: far = dusty haze wisps, near = drifting rock/dune chunks. */
@@ -3466,32 +3480,32 @@
       radial-gradient(2px 2px at 82% 20%, rgba(255,143,214,0.9), transparent);
     background-size:250px 290px;
   }
-  /* Toxic Swamp: far = murky fog wisps, near = bog debris/spore chunks. */
-  .world-parallax-layer.pfar-toxicswamp{
+  /* Ashfall Wastes: far = drifting grey haze wisps, near = falling ash/ember chunks. */
+  .world-parallax-layer.pfar-ashfallwastes{
     background-image:
-      radial-gradient(65px 42px at 25% 30%, rgba(195,216,37,0.18), transparent 70%),
-      radial-gradient(90px 50px at 68% 62%, rgba(107,122,47,0.16), transparent 70%),
-      radial-gradient(55px 65px at 45% 88%, rgba(212,242,122,0.14), transparent 70%);
+      radial-gradient(65px 42px at 25% 30%, rgba(196,191,184,0.18), transparent 70%),
+      radial-gradient(90px 50px at 68% 62%, rgba(255,107,53,0.12), transparent 70%),
+      radial-gradient(55px 65px at 45% 88%, rgba(138,133,128,0.16), transparent 70%);
     background-size:340px 340px;
   }
-  .world-parallax-layer.pnear-toxicswamp{
+  .world-parallax-layer.pnear-ashfallwastes{
     background-image:
-      radial-gradient(circle at 50% 50%, rgba(24,28,6,0.8) 0 6px, rgba(195,216,37,0.5) 6px 7px, transparent 8px),
-      radial-gradient(circle at 50% 50%, rgba(18,22,4,0.75) 0 4px, rgba(107,122,47,0.45) 4px 5px, transparent 6px);
+      radial-gradient(circle at 50% 50%, rgba(20,18,16,0.8) 0 6px, rgba(196,191,184,0.5) 6px 7px, transparent 8px),
+      radial-gradient(circle at 50% 50%, rgba(28,16,10,0.75) 0 4px, rgba(255,107,53,0.5) 4px 5px, transparent 6px);
     background-size:260px 220px, 170px 300px;
     background-position:30px 40px, 190px 160px;
   }
-  .world-parallax-layer.pclose-toxicswamp{
+  .world-parallax-layer.pclose-ashfallwastes{
     background-image:
-      radial-gradient(circle at 50% 50%, rgba(18,22,4,0.88) 0 12px, rgba(195,216,37,0.6) 12px 14px, transparent 16px);
+      radial-gradient(circle at 50% 50%, rgba(16,14,12,0.88) 0 12px, rgba(196,191,184,0.6) 12px 14px, transparent 16px);
     background-size:430px 470px;
     background-position:120px 80px;
   }
-  .world-parallax-layer.pfg-toxicswamp{
+  .world-parallax-layer.pfg-ashfallwastes{
     background-image:
-      radial-gradient(2px 2px at 20% 26%, rgba(212,242,122,0.95), transparent),
-      radial-gradient(1.5px 1.5px at 62% 58%, rgba(195,216,37,0.9), transparent),
-      radial-gradient(2px 2px at 84% 34%, rgba(107,122,47,0.9), transparent);
+      radial-gradient(2px 2px at 20% 26%, rgba(212,207,200,0.95), transparent),
+      radial-gradient(1.5px 1.5px at 62% 58%, rgba(255,107,53,0.9), transparent),
+      radial-gradient(2px 2px at 84% 34%, rgba(138,133,128,0.9), transparent);
     background-size:245px 285px;
   }
   /* Crystal Caverns: far = glowing crystal-dust wisps, near = gem-shard chunks. */
@@ -3741,13 +3755,13 @@
     box-shadow:0 -10px 70px 20px rgba(255,159,69,0.35);
     animation: sig-magma-breathe 3.2s ease-in-out infinite;
   }
-  /* Deep Ocean: shafts of caustic light filtering down from the surface. */
-  .world-signature.sig-deepocean{
+  /* Cyber Grid: scanning neon grid-lines sweeping down through the sky. */
+  .world-signature.sig-cybergrid{
     top:0; left:0; right:0; height:70%;
     background:
-      linear-gradient(105deg, transparent 20%, rgba(125,232,255,0.10) 24%, transparent 30%),
-      linear-gradient(100deg, transparent 45%, rgba(77,232,255,0.08) 50%, transparent 58%),
-      linear-gradient(110deg, transparent 68%, rgba(125,232,255,0.09) 73%, transparent 80%);
+      linear-gradient(105deg, transparent 20%, rgba(46,255,232,0.14) 24%, transparent 30%),
+      linear-gradient(100deg, transparent 45%, rgba(255,46,196,0.10) 50%, transparent 58%),
+      linear-gradient(110deg, transparent 68%, rgba(46,255,232,0.12) 73%, transparent 80%);
     animation: sig-caustic-sway 6s ease-in-out infinite;
   }
   /* Desert Wastes: a hazy, low-hanging sun near the horizon with shimmer. */
@@ -3778,20 +3792,20 @@
     filter:blur(2px);
     animation: sig-aurora-wave 8s ease-in-out infinite;
   }
-  /* Toxic Swamp: rising, popping gas bubbles from a murky bottom haze. */
-  .world-signature.sig-toxicswamp{
-    bottom:0; left:0; right:0; height:24%;
-    background:linear-gradient(180deg, transparent, rgba(107,122,47,0.35));
+  /* Ashfall Wastes: grey ash flakes drifting down through a dim ember haze. */
+  .world-signature.sig-ashfallwastes{
+    top:0; left:0; right:0; height:60%;
+    background:linear-gradient(180deg, rgba(138,133,128,0.22), transparent);
   }
-  .world-signature.sig-toxicswamp .bub{
-    position:absolute; bottom:0; border-radius:50%;
-    background:radial-gradient(circle at 35% 35%, rgba(212,242,122,0.9), rgba(195,216,37,0.3));
-    animation: sig-bubble-rise 4.5s ease-in infinite;
+  .world-signature.sig-ashfallwastes .bub{
+    position:absolute; top:0; border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, rgba(212,207,200,0.9), rgba(255,107,53,0.35));
+    animation: sig-ash-fall 5s linear infinite;
   }
-  .world-signature.sig-toxicswamp .bub1{ left:15%; width:14px; height:14px; animation-delay:0s; }
-  .world-signature.sig-toxicswamp .bub2{ left:40%; width:9px; height:9px; animation-delay:1.4s; }
-  .world-signature.sig-toxicswamp .bub3{ left:65%; width:18px; height:18px; animation-delay:2.6s; }
-  .world-signature.sig-toxicswamp .bub4{ left:82%; width:11px; height:11px; animation-delay:0.7s; }
+  .world-signature.sig-ashfallwastes .bub1{ left:15%; width:6px; height:6px; animation-delay:0s; }
+  .world-signature.sig-ashfallwastes .bub2{ left:40%; width:4px; height:4px; animation-delay:1.4s; }
+  .world-signature.sig-ashfallwastes .bub3{ left:65%; width:8px; height:8px; animation-delay:2.6s; }
+  .world-signature.sig-ashfallwastes .bub4{ left:82%; width:5px; height:5px; animation-delay:0.7s; }
   /* Crystal Caverns: large faceted gem clusters jutting in from the
      edges, glinting on a slow cycle. */
   .world-signature.sig-crystalcaverns{
@@ -3828,7 +3842,7 @@
     border-radius:50%;
     background:radial-gradient(circle at 35% 35%, #E8FFF0 0%, #9AFFC0 45%, #4E2E7A 85%);
     box-shadow:0 0 46px 12px rgba(124,255,168,0.4);
-    animation: sig-comet-drift 10s ease-in-out infinite;
+    animation: sig-ghost-drift 10s ease-in-out infinite;
   }
   .world-signature.sig-haunted .bub{
     position:absolute; bottom:0; border-radius:50%;
@@ -3846,7 +3860,7 @@
       linear-gradient(115deg, transparent 15%, rgba(255,92,138,0.16) 20%, transparent 26%),
       linear-gradient(105deg, transparent 45%, rgba(255,209,102,0.16) 50%, transparent 57%),
       linear-gradient(120deg, transparent 70%, rgba(255,92,138,0.14) 75%, transparent 82%);
-    animation: sig-gem-pulse 3s ease-in-out infinite;
+    animation: sig-marquee-flicker 2.4s ease-in-out infinite;
   }
   /* Steampunk Skyworks: a slow-turning brass gear in the corner with
      rising steam puffs below it. */
@@ -3861,7 +3875,7 @@
   .world-signature.sig-steampunk .bub{
     position:absolute; bottom:0; border-radius:50%;
     background:radial-gradient(circle at 35% 35%, rgba(240,201,138,0.7), rgba(74,144,164,0.2));
-    animation: sig-bubble-rise 6s ease-in infinite;
+    animation: sig-steam-puff 4.5s ease-out infinite;
   }
   .world-signature.sig-steampunk .bub1{ left:20%; width:16px; height:16px; animation-delay:0s; }
   .world-signature.sig-steampunk .bub2{ left:50%; width:10px; height:10px; animation-delay:2s; }
@@ -3872,20 +3886,29 @@
     border-radius:50%;
     background: radial-gradient(circle at 30% 30%, rgba(107,255,192,0.35), transparent 60%), radial-gradient(circle at 70% 60%, rgba(199,124,255,0.3), transparent 65%);
     box-shadow:0 0 40px 10px rgba(107,255,192,0.35);
-    animation: sig-gem-pulse 3.4s ease-in-out infinite;
+    animation: sig-bio-breathe 4.4s ease-in-out infinite;
   }
-  /* Zero-G Playground: soft drifting candy-glow cluster in the corner. */
+  /* Zero-G Playground: soft weightless bob-and-wobble cluster in the
+     corner — deliberately NOT the comet-drift diagonal glide used by
+     Frozen Comet/Haunted, so it reads as "floating" rather than "drifting". */
   .world-signature.sig-zerog{
     top:8%; right:10%; width:min(20vw,110px); height:min(20vw,110px);
     border-radius:50%;
     background: radial-gradient(circle at 35% 35%, rgba(255,158,214,0.4), transparent 60%), radial-gradient(circle at 65% 65%, rgba(77,224,255,0.32), transparent 60%);
     box-shadow:0 0 42px 12px rgba(255,158,214,0.35);
-    animation: sig-comet-drift 8s ease-in-out infinite;
+    animation: sig-zero-bob 5s ease-in-out infinite;
   }
   @keyframes sig-spin{ 0%{ transform:rotate(0deg); } 100%{ transform:rotate(360deg); } }
   @keyframes sig-comet-drift{
     0%,100%{ transform:translate(0,0) rotate(0deg); }
     50%{ transform:translate(18px,26px) rotate(4deg); }
+  }
+  /* Haunted Manor: the moon drifts AND fades in and out like a spirit,
+     rather than the steady solid glide of Frozen Comet's sig-comet-drift. */
+  @keyframes sig-ghost-drift{
+    0%,100%{ transform:translate(0,0); opacity:0.85; }
+    40%{ transform:translate(-14px,18px); opacity:1; }
+    70%{ transform:translate(10px,10px); opacity:0.6; }
   }
   @keyframes sig-magma-breathe{
     0%,100%{ filter:brightness(1); box-shadow:0 -10px 70px 20px rgba(255,159,69,0.35); }
@@ -3916,9 +3939,49 @@
     90%{ opacity:0.8; }
     100%{ transform:translateY(-160px) scale(1.1); opacity:0; }
   }
+  @keyframes sig-ash-fall{
+    0%{ transform:translateY(0) translateX(0) scale(0.7); opacity:0; }
+    15%{ opacity:0.9; }
+    90%{ opacity:0.7; }
+    100%{ transform:translateY(180px) translateX(14px) scale(1); opacity:0; }
+  }
   @keyframes sig-gem-pulse{
     0%,100%{ filter:drop-shadow(0 0 18px rgba(255,184,240,0.35)) brightness(1); }
     50%{ filter:drop-shadow(0 0 30px rgba(255,184,240,0.65)) brightness(1.25); }
+  }
+  /* Bioluminescent Cave: a slow organic "breathing" pulse — scale-based
+     like an inhale/exhale, not just a brightness flash, so it reads as
+     alive rather than a gem catching light (see sig-gem-pulse). */
+  @keyframes sig-bio-breathe{
+    0%,100%{ transform:scale(0.94); filter:brightness(0.92); }
+    50%{ transform:scale(1.08); filter:brightness(1.2); }
+  }
+  /* Zero-G Playground: a weightless bob-and-tilt with no net drift
+     direction (returns to center each cycle), distinct from the
+     one-way diagonal glide of sig-comet-drift. */
+  @keyframes sig-zero-bob{
+    0%,100%{ transform:translateY(0) rotate(0deg); }
+    25%{ transform:translateY(-14px) rotate(-3deg); }
+    50%{ transform:translateY(4px) rotate(2deg); }
+    75%{ transform:translateY(-8px) rotate(3deg); }
+  }
+  /* Carnival Nightmare: quick, irregular string-light flicker — faster
+     and less smooth than the gentle sig-gem-pulse glow used elsewhere. */
+  @keyframes sig-marquee-flicker{
+    0%,100%{ opacity:0.75; }
+    20%{ opacity:1; }
+    35%{ opacity:0.6; }
+    55%{ opacity:1; }
+    70%{ opacity:0.7; }
+    85%{ opacity:0.95; }
+  }
+  /* Steampunk Skyworks: puffs expand and dissipate as they rise, unlike
+     the simple float-up of sig-bubble-rise (Haunted's wisps). */
+  @keyframes sig-steam-puff{
+    0%{ transform:translateY(0) scale(0.5); opacity:0; }
+    20%{ opacity:0.7; }
+    60%{ transform:translateY(-90px) scale(1.3); opacity:0.5; }
+    100%{ transform:translateY(-170px) scale(1.9); opacity:0; }
   }
   .world-ambience-tint{
     position:absolute; inset:0;
@@ -3928,7 +3991,7 @@
   .world-ambience-tint.env-blackhole{ background: radial-gradient(circle at 50% 30%, rgba(124,58,237,0.16), transparent 60%), linear-gradient(180deg, rgba(10,4,20,0.35), rgba(4,2,10,0.55)); }
   .world-ambience-tint.env-frozencomet{ background: radial-gradient(circle at 50% 20%, rgba(186,230,253,0.18), transparent 60%), linear-gradient(180deg, rgba(46,159,214,0.14), rgba(6,20,32,0.3)); }
   .world-ambience-tint.env-moltencore{ background: radial-gradient(circle at 50% 80%, rgba(255,120,40,0.2), transparent 60%), linear-gradient(180deg, rgba(60,10,0,0.15), rgba(30,4,0,0.35)); }
-  .world-ambience-tint.env-deepocean{ background: radial-gradient(circle at 50% 50%, rgba(77,232,255,0.12), transparent 65%), linear-gradient(180deg, rgba(4,30,40,0.2), rgba(4,20,26,0.4)); }
+  .world-ambience-tint.env-cybergrid{ background: radial-gradient(circle at 50% 50%, rgba(46,255,232,0.10), transparent 65%), linear-gradient(180deg, rgba(3,3,6,0.25), rgba(0,0,0,0.45)); }
   .world-ambience-tint.env-desertwastes{ background: radial-gradient(circle at 50% 30%, rgba(240,217,168,0.16), transparent 60%), linear-gradient(180deg, rgba(80,50,10,0.12), rgba(40,25,5,0.28)); }
   .world-ambience-tint.env-stormnebula{ background: radial-gradient(circle at 50% 25%, rgba(185,131,255,0.18), transparent 55%), linear-gradient(180deg, rgba(20,10,50,0.2), rgba(10,5,25,0.4)); position:relative; }
   .world-ambience-tint.env-plutoparadise{ background: radial-gradient(circle at 50% 25%, rgba(124,255,196,0.16), transparent 55%), radial-gradient(circle at 70% 55%, rgba(255,143,214,0.12), transparent 55%), linear-gradient(180deg, rgba(20,10,40,0.16), rgba(8,4,20,0.32)); position:relative; }
@@ -3942,7 +4005,7 @@
     0%,100%{ opacity:0; transform:translateX(-10%); }
     50%{ opacity:1; transform:translateX(10%); }
   }
-  .world-ambience-tint.env-toxicswamp{ background: radial-gradient(circle at 50% 60%, rgba(163,230,53,0.16), transparent 60%), linear-gradient(180deg, rgba(30,40,5,0.18), rgba(15,20,5,0.36)); }
+  .world-ambience-tint.env-ashfallwastes{ background: radial-gradient(circle at 50% 60%, rgba(255,107,53,0.10), transparent 60%), linear-gradient(180deg, rgba(30,26,22,0.2), rgba(14,12,10,0.4)); }
   .world-ambience-tint.env-crystalcaverns{ background: radial-gradient(circle at 50% 30%, rgba(255,184,240,0.18), transparent 60%), linear-gradient(180deg, rgba(40,10,50,0.16), rgba(20,4,25,0.34)); }
   .world-ambience-tint.env-ruins{ background: radial-gradient(circle at 50% 75%, rgba(232,196,104,0.16), transparent 60%), linear-gradient(180deg, rgba(50,38,10,0.15), rgba(20,15,5,0.32)); }
   .world-ambience-tint.env-haunted{ background: radial-gradient(circle at 50% 25%, rgba(124,255,168,0.14), transparent 60%), linear-gradient(180deg, rgba(30,15,50,0.22), rgba(10,5,18,0.4)); }
@@ -4000,11 +4063,11 @@
   .amb-void{ width:4px;height:4px; background:radial-gradient(circle,#F3F0FF,#A78BFA); border-radius:50%; box-shadow:0 0 8px #C4B5FD, 0 0 14px rgba(124,58,237,0.65); }
   .amb-snow{ width:5px;height:5px; background:#fff; border-radius:50%; box-shadow:0 0 4px #fff; }
   .amb-ember{ width:4px;height:4px; background:radial-gradient(circle,#FFF3B0,#FF6F3C); border-radius:50%; box-shadow:0 0 8px #FFD166, 0 0 14px rgba(255,111,60,0.6); }
-  .amb-bubble{ width:8px;height:8px; border:1px solid rgba(200,245,255,0.75); border-radius:50%; background:rgba(200,245,255,0.14); box-shadow:0 0 6px rgba(125,211,252,0.6); }
+  .amb-pixel{ width:5px;height:5px; border-radius:1px; background:#2EFFE8; box-shadow:0 0 6px #2EFFE8, 0 0 12px rgba(255,46,196,0.6); }
   .amb-sand{ width:3px;height:3px; background:radial-gradient(circle,#FFE7A8,#E8B75A); border-radius:50%; box-shadow:0 0 5px rgba(255,231,168,0.7); }
   .amb-spark{ width:3px;height:13px; background:linear-gradient(180deg,#fff,#F4E04D); box-shadow:0 0 6px #F4E04D; border-radius:2px; }
   .amb-aurora{ width:6px;height:6px; background:radial-gradient(circle,#EAFFF6,#7CFFC4); border-radius:50%; box-shadow:0 0 8px #FF8FD6, 0 0 14px rgba(124,255,196,0.6); }
-  .amb-goo{ width:6px;height:6px; background:radial-gradient(circle,#EEFFC0,#7CFC6A); border-radius:50%; box-shadow:0 0 8px #A3E635, 0 0 14px rgba(163,230,53,0.55); }
+  .amb-ash{ width:4px;height:4px; background:radial-gradient(circle,#D8D3CB,#8A8580); border-radius:50%; box-shadow:0 0 5px rgba(255,107,53,0.5); }
   .amb-crystal{ width:5px;height:5px; background:radial-gradient(circle,#FFFFFF,#E0AFFF); transform:rotate(45deg); box-shadow:0 0 8px #FFB8F0, 0 0 14px rgba(224,175,255,0.55); }
   .amb-dust{ width:3px;height:3px; background:radial-gradient(circle,#F5E6C0,#C99A4A); border-radius:50%; box-shadow:0 0 5px rgba(245,230,192,0.7); }
   .amb-wisp{ width:6px;height:6px; background:radial-gradient(circle,#E8FFF0,#7CFFA8); border-radius:50%; box-shadow:0 0 8px #9AFFC0, 0 0 14px rgba(91,46,140,0.6); }
@@ -4174,25 +4237,25 @@
     0%,100%{ opacity:0.7; transform:translate(0,0); }
     50%{ opacity:1; transform:translate(1px,-1px); }
   }
-  .cannon.status-poisoned::before{
-    content:'☠️';
+  .cannon.status-ashfall::before{
+    content:'🌫️';
     position:absolute;
     inset:-12px -8px;
     display:flex; align-items:center; justify-content:center;
     font-size:24px;
     line-height:1;
-    background:radial-gradient(circle, rgba(195,216,37,0.5), rgba(85,107,47,0.3) 70%, transparent);
+    background:radial-gradient(circle, rgba(201,196,188,0.5), rgba(255,107,53,0.3) 70%, transparent);
     border-radius:10px;
-    animation: poisoned-wobble 1.4s ease-in-out infinite;
+    animation: ashfall-wobble 1.4s ease-in-out infinite;
     z-index:3;
   }
-  @keyframes poisoned-wobble{
+  @keyframes ashfall-wobble{
     0%,100%{ transform:rotate(-3deg) scale(1); opacity:0.85; }
     50%{ transform:rotate(3deg) scale(1.05); opacity:1; }
   }
 
-  /* ---------- Cloak worlds (Deep Ocean / Desert Wastes): invaders keep
-     falling but fade to near-invisible under a moving water/sand sweep,
+  /* ---------- Cloak worlds (Cyber Grid / Desert Wastes): invaders keep
+     falling but fade to near-invisible under a moving glitch/sand sweep,
      so the player can't see a letter to type. ---------- */
   #game-space.world-cloak-active .invader{
     opacity:0.1;
@@ -4207,9 +4270,9 @@
     transition:opacity 0.35s ease;
   }
   .world-cloak-sweep.show{ opacity:1; }
-  .world-cloak-sweep.water{
-    background: repeating-linear-gradient(120deg, rgba(38,198,218,0.32) 0 24px, rgba(0,96,100,0.4) 24px 48px);
-    animation: water-sweep 2.2s linear infinite;
+  .world-cloak-sweep.glitch{
+    background: repeating-linear-gradient(120deg, rgba(46,255,232,0.32) 0 16px, rgba(255,46,196,0.36) 16px 32px);
+    animation: glitch-sweep 0.9s steps(6) infinite;
   }
   .world-cloak-sweep.sand{
     background: repeating-linear-gradient(100deg, rgba(217,164,65,0.4) 0 26px, rgba(140,90,46,0.45) 26px 52px);
@@ -4259,7 +4322,7 @@
     background: repeating-linear-gradient(110deg, rgba(255,158,214,0.4) 0 20px, rgba(77,224,255,0.4) 20px 40px);
     animation: sand-sweep 1.4s linear infinite;
   }
-  @keyframes water-sweep{ 0%{ background-position:0 0; } 100%{ background-position:220px 110px; } }
+  @keyframes glitch-sweep{ 0%{ background-position:0 0; } 50%{ background-position:-40px 20px; } 100%{ background-position:220px 110px; } }
   @keyframes sand-sweep{ 0%{ background-position:0 0; } 100%{ background-position:260px 40px; } }
   @keyframes aurora-pulse{ 0%,100%{ filter:blur(0px); opacity:0.9; } 50%{ filter:blur(2px); opacity:1; } }
   @keyframes crystal-sweep{ 0%{ background-position:0 0; } 100%{ background-position:-200px 120px; } }
@@ -5060,11 +5123,11 @@
                 <button class="diff-btn world-btn world-locked" data-world="blackhole" data-cost="200" data-name="Black Hole">🕳️ Black Hole <span class="world-lock-tag">🔒 200</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="frozencomet" data-cost="400" data-name="Frozen Comet Belt">🧊 Frozen Comet Belt <span class="world-lock-tag">🔒 400</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="moltencore" data-cost="500" data-name="Molten Core">🌋 Molten Core <span class="world-lock-tag">🔒 500</span></button>
-                <button class="diff-btn world-btn world-locked" data-world="deepocean" data-cost="300" data-name="Deep Ocean">🌊 Deep Ocean <span class="world-lock-tag">🔒 300</span></button>
+                <button class="diff-btn world-btn world-locked" data-world="cybergrid" data-cost="300" data-name="Cyber Grid">🌐 Cyber Grid <span class="world-lock-tag">🔒 300</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="desertwastes" data-cost="300" data-name="Desert Wastes">🏜️ Desert Wastes <span class="world-lock-tag">🔒 300</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="stormnebula" data-cost="400" data-name="Storm Nebula">⚡ Storm Nebula <span class="world-lock-tag">🔒 400</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="plutoparadise" data-cost="400" data-name="Pluto's Paradise">🪐 Pluto's Paradise <span class="world-lock-tag">🔒 400</span></button>
-                <button class="diff-btn world-btn world-locked" data-world="toxicswamp" data-cost="400" data-name="Toxic Swamp">☠️ Toxic Swamp <span class="world-lock-tag">🔒 400</span></button>
+                <button class="diff-btn world-btn world-locked" data-world="ashfallwastes" data-cost="400" data-name="Ashfall Wastes">🌫️ Ashfall Wastes <span class="world-lock-tag">🔒 400</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="crystalcaverns" data-cost="450" data-name="Crystal Caverns">💎 Crystal Caverns <span class="world-lock-tag">🔒 450</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="ruins" data-cost="350" data-name="Ancient Ruins">🏛️ Ancient Ruins <span class="world-lock-tag">🔒 350</span></button>
                 <button class="diff-btn world-btn world-locked" data-world="haunted" data-cost="400" data-name="Haunted Manor">👻 Haunted Manor <span class="world-lock-tag">🔒 400</span></button>
@@ -5579,11 +5642,11 @@ const CELEBRATION_WORLD_ACCENT = {
   blackhole: '#A78BFA',
   frozencomet: '#7BE8FF',
   moltencore: '#FF9F45',
-  deepocean: '#4DE8FF',
+  cybergrid: '#4DE8FF',
   desertwastes: '#FFCB77',
   stormnebula: '#F4E04D',
   plutoparadise: '#FF8FD6',
-  toxicswamp: '#C3D825',
+  ashfallwastes: '#C3D825',
   crystalcaverns: '#FFB8F0',
   ruins: '#E8C468',
   haunted: '#9AFFC0',
@@ -5710,11 +5773,11 @@ const WORLD_VOICE_STYLES = {
   blackhole:    { pitch:0.65, rate:0.85, prefer:/male|daniel|fred|alex|david|george/i },
   frozencomet:  { pitch:1.50, rate:0.95, prefer:/female|samantha|victoria|karen|zira|fiona|moira|tessa/i },
   moltencore:   { pitch:1.05, rate:1.20, prefer:/male|daniel|fred|alex|david|george|diego/i },
-  deepocean:    { pitch:0.90, rate:0.85, prefer:/female|samantha|victoria|karen|zira|moira|tessa/i },
+  cybergrid:    { pitch:0.90, rate:0.85, prefer:/female|samantha|victoria|karen|zira|moira|tessa/i },
   desertwastes: { pitch:1.00, rate:0.95, prefer:/male|daniel|fred|alex|david|george/i },
   stormnebula:  { pitch:1.35, rate:1.20, prefer:/female|samantha|victoria|karen|zira|fiona/i },
   plutoparadise:{ pitch:1.45, rate:1.05, prefer:/child|kid|female|samantha|karen|zira/i },
-  toxicswamp:   { pitch:0.75, rate:0.90, prefer:/male|daniel|fred|alex|david|george/i },
+  ashfallwastes:   { pitch:0.75, rate:0.90, prefer:/male|daniel|fred|alex|david|george/i },
   crystalcaverns: { pitch:1.45, rate:1.00, prefer:/female|samantha|victoria|karen|zira|fiona|moira|child|kid/i },
   ruins:        { pitch:0.80, rate:0.90, prefer:/male|daniel|fred|alex|david|george/i },
   haunted:      { pitch:0.60, rate:0.80, prefer:/male|daniel|fred|alex|david|george/i },
@@ -6116,7 +6179,7 @@ const BOSS_THEMES = {
     "bosses": [
       {
         "name": "Workspace",
-        "taunt": "Workspace will make you work forever while running, {captain}!",
+        "taunt": "Workspace will make you type for life while running, {captain}!",
         "photo": "data:image/png;base64,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"
       },
       {
@@ -6184,94 +6247,94 @@ const BOSS_THEMES = {
     "hpGradient": "linear-gradient(90deg, #FF9F45, #D9291C)",
     "glow": "rgba(255,159,69,0.8)"
   },
-  "deepocean": {
+  "cybergrid": {
     "emojis": [
-      "🐙",
-      "🦑",
-      "🦈",
-      "🐡",
-      "🦀",
-      "🐠",
-      "🌊",
-      "🐳",
-      "🦞",
-      "🐢",
-      "🪼",
-      "🐬",
-      "🦐",
-      "🐋",
-      "🪸",
-      "🐚"
+      "💾",
+      "🖲️",
+      "🔌",
+      "📡",
+      "🛰️",
+      "💻",
+      "🖥️",
+      "⌨️",
+      "🔋",
+      "📶",
+      "🧮",
+      "💽",
+      "🕹️",
+      "📀",
+      "🔦",
+      "🧿"
     ],
     "bosses": [
       {
-        "name": "Krakenpaw",
-        "taunt": "Krakenpaw drags mistypers down to the depths, {captain}!"
+        "name": "Netcrawler",
+        "taunt": "Netcrawler crawls the wires waiting for typos, {captain}!"
       },
       {
-        "name": "Inkspire",
-        "taunt": "Inkspire clouds your vision with ink, {captain}!"
+        "name": "Byteshade",
+        "taunt": "Byteshade corrupts every misspelled packet, {captain}!"
       },
       {
-        "name": "Finnrazor",
-        "taunt": "Finnrazor smells slow typing from a mile away, {captain}!"
+        "name": "Firewraith",
+        "taunt": "Firewraith burns through weak passwords, {captain}!"
       },
       {
-        "name": "Puffdread",
-        "taunt": "Puffdread puffs up at your puny spelling, {captain}!"
+        "name": "Glitchfang",
+        "taunt": "Glitchfang bites down on slow keystrokes, {captain}!"
       },
       {
-        "name": "Clawmander",
-        "taunt": "Clawmander pinches every wrong letter, {captain}!"
+        "name": "Coreshatter",
+        "taunt": "Coreshatter smells slow typing from the mainframe, {captain}!"
       },
       {
-        "name": "Glimmerfin",
-        "taunt": "Glimmerfin dazzles you into typos, {captain}!"
+        "name": "Pulsehack",
+        "taunt": "Pulsehack dazzles you with static, {captain}!"
       },
       {
-        "name": "Tidebreaker",
-        "taunt": "Tidebreaker crashes down on slow spellers, {captain}!"
+        "name": "Databreaker",
+        "taunt": "Databreaker crashes down on slow spellers, {captain}!"
       },
       {
-        "name": "Bluemaw",
-        "taunt": "Bluemaw swallows slow spellers whole, {captain}!"
+        "name": "Voidcache",
+        "taunt": "Voidcache swallows slow spellers whole, {captain}!"
       },
       {
-        "name": "Pinchtide",
-        "taunt": "Pinchtide snaps at every hesitant keystroke, {captain}!"
+        "name": "Snaproot",
+        "taunt": "Snaproot snaps at every hesitant keystroke, {captain}!"
       },
       {
-        "name": "Shellguard",
-        "taunt": "Shellguard blocks weak spelling attempts, {captain}!"
+        "name": "Firewall-9",
+        "taunt": "Firewall-9 blocks weak spelling attempts, {captain}!"
       },
       {
-        "name": "Driftjelly",
-        "taunt": "Driftjelly stings slow typers on sight, {captain}!"
+        "name": "Driftcircuit",
+        "taunt": "Driftcircuit shocks slow typers on sight, {captain}!"
       },
       {
-        "name": "Wavecaller",
-        "taunt": "Wavecaller summons a tide of typos, {captain}!"
+        "name": "Signalcaller",
+        "taunt": "Signalcaller summons a flood of typos, {captain}!"
       },
       {
-        "name": "Prawnfist",
-        "taunt": "Prawnfist snaps quicker than your fingers, {captain}!"
+        "name": "Quickfork",
+        "taunt": "Quickfork forks quicker than your fingers, {captain}!"
       },
       {
-        "name": "Deepsong",
-        "taunt": "Deepsong echoes through every mistake, {captain}!"
+        "name": "Echobyte",
+        "taunt": "Echobyte echoes through every mistake, {captain}!"
       },
       {
-        "name": "Coralwarden",
-        "taunt": "Coralwarden guards the depths from bad spellers, {captain}!"
+        "name": "Gridwarden",
+        "taunt": "Gridwarden guards the network from bad spellers, {captain}!"
       },
       {
-        "name": "Pearlwhirl",
-        "taunt": "Pearlwhirl spins circles around slow typing, {captain}!"
+        "name": "Pixelwhirl",
+        "taunt": "Pixelwhirl spins circles around slow typing, {captain}!"
       }
     ],
-    "overlayBg": "radial-gradient(circle at 50% 40%, rgba(28,109,143,0.5), rgba(4,20,26,0.78))",
-    "hpGradient": "linear-gradient(90deg, #4DE8FF, #1C6D8F)",
-    "glow": "rgba(77,232,255,0.8)"
+    "overlayBg": "radial-gradient(circle at 50% 40%, rgba(46,255,232,0.4), rgba(5,0,8,0.82))",
+    "hpGradient": "linear-gradient(90deg, #2EFFE8, #FF2EC4)",
+    "glow": "rgba(46,255,232,0.8)"
   },
   "desertwastes": {
     "emojis": [
@@ -6540,94 +6603,94 @@ const BOSS_THEMES = {
     "hpGradient": "linear-gradient(90deg, #FF8FD6, #7CFFC4)",
     "glow": "rgba(255,143,214,0.8)"
   },
-  "toxicswamp": {
+  "ashfallwastes": {
     "emojis": [
-      "☠️",
-      "🐊",
-      "🦟",
-      "🧪",
-      "🐍",
-      "🐸",
-      "💀",
-      "🍄",
-      "🦠",
-      "🪱",
-      "🌿",
-      "🕸️",
-      "🐛",
-      "🦟",
-      "🧫",
-      "☣️"
+      "🌋",
+      "🪨",
+      "🔥",
+      "💨",
+      "🦴",
+      "🕳️",
+      "⚱️",
+      "🌫️",
+      "🪵",
+      "⚡",
+      "🗿",
+      "🧱",
+      "🪦",
+      "🔺",
+      "🌪️",
+      "🕯️"
     ],
     "bosses": [
       {
-        "name": "Sludgemaw",
-        "taunt": "Sludgemaw drags slow spellers into the muck, {captain}!"
+        "name": "Cindermaw",
+        "taunt": "Cindermaw drags slow spellers into the ash, {captain}!"
       },
       {
-        "name": "Vipertongue",
-        "taunt": "Vipertongue tastes fear in your typing, {captain}!"
+        "name": "Slagtongue",
+        "taunt": "Slagtongue tastes fear in your typing, {captain}!"
       },
       {
-        "name": "Bogrot",
-        "taunt": "Bogrot festers where typos pile up, {captain}!"
+        "name": "Ashrot",
+        "taunt": "Ashrot festers where typos pile up, {captain}!"
       },
       {
-        "name": "Toxindra",
-        "taunt": "Toxindra poisons every wrong letter, {captain}!"
+        "name": "Cinderdra",
+        "taunt": "Cinderdra scorches every wrong letter, {captain}!"
       },
       {
-        "name": "Mucklord",
-        "taunt": "Mucklord swallows slow keystrokes whole, {captain}!"
+        "name": "Charlord",
+        "taunt": "Charlord swallows slow keystrokes whole, {captain}!"
       },
       {
-        "name": "Gaswhisper",
-        "taunt": "Gaswhisper clouds your vision and your spelling, {captain}!"
+        "name": "Smogwhisper",
+        "taunt": "Smogwhisper clouds your vision and your spelling, {captain}!"
       },
       {
-        "name": "Croakshade",
-        "taunt": "Croakshade lurks where hesitation festers, {captain}!"
+        "name": "Emberdrake",
+        "taunt": "Emberdrake lurks where hesitation smoulders, {captain}!"
       },
       {
-        "name": "Sporelurk",
-        "taunt": "Sporelurk spreads spores over every typo, {captain}!"
+        "name": "Cinderlurk",
+        "taunt": "Cinderlurk spreads embers over every typo, {captain}!"
       },
       {
-        "name": "Molderfang",
-        "taunt": "Molderfang grows stronger with every miss, {captain}!"
+        "name": "Slagfang",
+        "taunt": "Slagfang grows stronger with every miss, {captain}!"
       },
       {
-        "name": "Wormtangle",
-        "taunt": "Wormtangle wraps around slow keystrokes, {captain}!"
+        "name": "Ashtangle",
+        "taunt": "Ashtangle wraps around slow keystrokes, {captain}!"
       },
       {
-        "name": "Vinewhisper",
-        "taunt": "Vinewhisper creeps toward hesitant spellers, {captain}!"
+        "name": "Cinderwhisper",
+        "taunt": "Cinderwhisper creeps toward hesitant spellers, {captain}!"
       },
       {
-        "name": "Webrot",
-        "taunt": "Webrot traps every wrong letter, {captain}!"
+        "name": "Sootweb",
+        "taunt": "Sootweb traps every wrong letter, {captain}!"
       },
       {
-        "name": "Grubcrawl",
-        "taunt": "Grubcrawl inches closer with every typo, {captain}!"
+        "name": "Cindercrawl",
+        "taunt": "Cindercrawl inches closer with every typo, {captain}!"
       },
       {
-        "name": "Gnatstorm",
-        "taunt": "Gnatstorm swarms slow spellers, {captain}!"
+        "name": "Ashstorm",
+        "taunt": "Ashstorm swarms slow spellers, {captain}!"
       },
       {
-        "name": "Petriblight",
-        "taunt": "Petriblight festers on hesitation, {captain}!"
+        "name": "Emberblight",
+        "taunt": "Emberblight festers on hesitation, {captain}!"
       },
       {
-        "name": "Plaguemire",
-        "taunt": "Plaguemire spreads faster than your typing, {captain}!"
+        "name": "Slagmire",
+        "taunt": "Slagmire spreads faster than your typing, {captain}!"
       }
     ],
-    "overlayBg": "radial-gradient(circle at 50% 40%, rgba(107,122,47,0.5), rgba(20,24,4,0.78))",
-    "hpGradient": "linear-gradient(90deg, #C3D825, #6B7A2F)",
-    "glow": "rgba(195,216,37,0.8)"
+    "overlayBg": "radial-gradient(circle at 50% 40%, rgba(255,107,53,0.35), rgba(20,18,16,0.82))",
+    "hpGradient": "linear-gradient(90deg, #C9C4BC, #FF6B35)",
+    "glow": "rgba(255,107,53,0.8)"
   },
   "crystalcaverns": {
     "emojis": [
@@ -7073,6 +7136,184 @@ const BOSS_THEMES = {
     "overlayBg": "radial-gradient(circle at 50% 40%, rgba(217,160,91,0.46), rgba(30,18,6,0.78))",
     "hpGradient": "linear-gradient(90deg, #D9A05B, #4A90A4)",
     "glow": "rgba(217,160,91,0.8)"
+  },
+  "biocave": {
+    "emojis": [
+      "🍄",
+      "🦠",
+      "💎",
+      "🌿",
+      "🧫",
+      "🔮",
+      "🫧",
+      "🦑",
+      "🕳️",
+      "🪱",
+      "🌌",
+      "🐌",
+      "🧪",
+      "🪴",
+      "✨",
+      "🐛"
+    ],
+    "bosses": [
+      {
+        "name": "Sporelord",
+        "taunt": "Sporelord glows brighter with every typo, {captain}!"
+      },
+      {
+        "name": "Mosshollow",
+        "taunt": "Mosshollow spreads through slow keystrokes, {captain}!"
+      },
+      {
+        "name": "Glimmercap",
+        "taunt": "Glimmercap pulses at every hesitation, {captain}!"
+      },
+      {
+        "name": "Wispbloom",
+        "taunt": "Wispbloom drifts toward weak spelling, {captain}!"
+      },
+      {
+        "name": "Cavernheart",
+        "taunt": "Cavernheart lights the way to your mistakes, {captain}!"
+      },
+      {
+        "name": "Lumenroot",
+        "taunt": "Lumenroot grows with every wrong letter, {captain}!"
+      },
+      {
+        "name": "Driftmycelia",
+        "taunt": "Driftmycelia spreads through pauses, {captain}!"
+      },
+      {
+        "name": "Glowspindle",
+        "taunt": "Glowspindle spins toward slow typers, {captain}!"
+      },
+      {
+        "name": "Sporequeen",
+        "taunt": "Sporequeen hums at every hesitation, {captain}!"
+      },
+      {
+        "name": "Fungalfen",
+        "taunt": "Fungalfen grows bolder with each typo, {captain}!"
+      },
+      {
+        "name": "Emberwisp",
+        "taunt": "Emberwisp floats toward slow spellers, {captain}!"
+      },
+      {
+        "name": "Crystalgrove",
+        "taunt": "Crystalgrove glimmers at every mistake, {captain}!"
+      },
+      {
+        "name": "Bloomshade",
+        "taunt": "Bloomshade circles hesitant typists, {captain}!"
+      },
+      {
+        "name": "Hollowlume",
+        "taunt": "Hollowlume haunts slow keystrokes, {captain}!"
+      },
+      {
+        "name": "Radiantcap",
+        "taunt": "Radiantcap drains confidence from typos, {captain}!"
+      },
+      {
+        "name": "Deepglowmaw",
+        "taunt": "Deepglowmaw seeps through weak spelling, {captain}!"
+      }
+    ],
+    "overlayBg": "radial-gradient(circle at 50% 40%, rgba(107,255,192,0.46), rgba(10,25,35,0.78))",
+    "hpGradient": "linear-gradient(90deg, #6BFFC0, #C77CFF)",
+    "glow": "rgba(107,255,192,0.8)"
+  },
+  "zerog": {
+    "emojis": [
+      "🎈",
+      "🪀",
+      "🚀",
+      "⭐",
+      "🛰️",
+      "🪐",
+      "🎯",
+      "🌟",
+      "🎪",
+      "🪁",
+      "🎠",
+      "💫",
+      "🧸",
+      "🎡",
+      "🌠",
+      "🧑"
+    ],
+    "bosses": [
+      {
+        "name": "Bouncemaster",
+        "taunt": "Bouncemaster springs harder at slow spellers, {captain}!"
+      },
+      {
+        "name": "Orbitrix",
+        "taunt": "Orbitrix loops faster with every typo, {captain}!"
+      },
+      {
+        "name": "Zoomerang",
+        "taunt": "Zoomerang zips past hesitant keystrokes, {captain}!"
+      },
+      {
+        "name": "Floatasaur",
+        "taunt": "Floatasaur drifts toward slow typing, {captain}!"
+      },
+      {
+        "name": "Springking",
+        "taunt": "Springking bounces at every wrong letter, {captain}!"
+      },
+      {
+        "name": "Gravityjest",
+        "taunt": "Gravityjest flips at your mistakes, {captain}!"
+      },
+      {
+        "name": "Starhopper",
+        "taunt": "Starhopper leaps past weak spelling, {captain}!"
+      },
+      {
+        "name": "Puffdrifter",
+        "taunt": "Puffdrifter floats above hesitant typers, {captain}!"
+      },
+      {
+        "name": "Rocketpup",
+        "taunt": "Rocketpup zooms toward slow keystrokes, {captain}!"
+      },
+      {
+        "name": "Orbitball",
+        "taunt": "Orbitball spins with every typo, {captain}!"
+      },
+      {
+        "name": "Skybouncer",
+        "taunt": "Skybouncer bounces past slow spellers, {captain}!"
+      },
+      {
+        "name": "Weightlesswisp",
+        "taunt": "Weightlesswisp drifts through pauses, {captain}!"
+      },
+      {
+        "name": "Cosmicoil",
+        "taunt": "Cosmicoil coils tighter at every mistake, {captain}!"
+      },
+      {
+        "name": "Driftglider",
+        "taunt": "Driftglider soars past hesitant typists, {captain}!"
+      },
+      {
+        "name": "Trampolina",
+        "taunt": "Trampolina bounces harder at slow keystrokes, {captain}!"
+      },
+      {
+        "name": "Stardustbounce",
+        "taunt": "Stardustbounce sparkles at every typo, {captain}!"
+      }
+    ],
+    "overlayBg": "radial-gradient(circle at 50% 40%, rgba(255,158,214,0.46), rgba(20,15,45,0.78))",
+    "hpGradient": "linear-gradient(90deg, #FF9ED6, #4DE0FF)",
+    "glow": "rgba(255,158,214,0.8)"
   }
 };
 
@@ -7888,94 +8129,94 @@ const pauseSpace = (function(){
 
 
 
-  // Deep Ocean: teal/blue aquatic palette.
-  const DEEPOCEAN_ITYPES = [
-    { key:'zorp',  name:'Finling',    color:'#4DD0E1' },
-    { key:'blip',  name:'Bubblenoid', color:'#26C6DA' },
-    { key:'volt',  name:'Tidespike',  color:'#00E5FF' },
-    { key:'magno', name:'Coraloid',   color:'#FF8A80' },
-    { key:'crag',  name:'Reefcrag',   color:'#00897B' },
-    { key:'nebu',  name:'Jellywisp',  color:'#80DEEA' },
+  // Cyber Grid: teal/blue aquatic palette.
+  const CYBERGRID_ITYPES = [
+    { key:'zorp',  name:'Pixling',    color:'#4DE8E0' },
+    { key:'blip',  name:'Bitspike', color:'#2EC7FF' },
+    { key:'volt',  name:'Glitchoid',  color:'#00E5D4' },
+    { key:'magno', name:'Byteclaw',   color:'#FF5FD4' },
+    { key:'crag',  name:'Netcrag',   color:'#00897B' },
+    { key:'nebu',  name:'Datawisp',  color:'#80EAE0' },
   ];
-  const DEEPOCEAN_ELITE_ITYPES = [
-    { key:'grym',  name:'Abysslord',  color:'#006064' },
-    { key:'obsi',  name:'Pearlshell', color:'#B2EBF2' },
-    { key:'ferro', name:'Ironfin',    color:'#78909C' },
-    { key:'venx',  name:'Vipereel',   color:'#00BFA5' },
-    { key:'scorc', name:'Riptide',    color:'#00ACC1' },
-    { key:'nyx',   name:'Depthstar',  color:'#4DD0E1' },
+  const CYBERGRID_ELITE_ITYPES = [
+    { key:'grym',  name:'Netlord',  color:'#006064' },
+    { key:'obsi',  name:'Coreshell', color:'#B2F5EE' },
+    { key:'ferro', name:'Ironbyte',    color:'#78909C' },
+    { key:'venx',  name:'Datareel',   color:'#FF2EC4' },
+    { key:'scorc', name:'Bitlord',    color:'#00ACC1' },
+    { key:'nyx',   name:'Pixelstar',  color:'#4DE8E0' },
   ];
-  const DEEPOCEAN_TIER2_ITYPES = [
-    { key:'t2a', name:'Prime Abysslord', color:'#2E7D80' },
-    { key:'t2b', name:'Prime Pearlshell', color:'#C0EFF4' },
-    { key:'t2c', name:'Prime Ironfin', color:'#90A4AE' },
-    { key:'t2d', name:'Prime Vipereel', color:'#2ECBB5' },
-    { key:'t2e', name:'Prime Riptide', color:'#2EBBCC' },
-    { key:'t2f', name:'Prime Depthstar', color:'#6DD8E6' },
+  const CYBERGRID_TIER2_ITYPES = [
+    { key:'t2a', name:'Prime Netlord', color:'#2E7D80' },
+    { key:'t2b', name:'Prime Coreshell', color:'#C0EFF4' },
+    { key:'t2c', name:'Prime Ironbyte', color:'#90A4AE' },
+    { key:'t2d', name:'Prime Datareel', color:'#D722A4' },
+    { key:'t2e', name:'Prime Bitlord', color:'#2EBBCC' },
+    { key:'t2f', name:'Prime Pixelstar', color:'#6DD8E6' },
   ];
-  const DEEPOCEAN_TIER3_ITYPES = [
-    { key:'t3a', name:'Ascended Abysslord', color:'#004B4E' },
-    { key:'t3b', name:'Ascended Pearlshell', color:'#8BB7BD' },
-    { key:'t3c', name:'Ascended Ironfin', color:'#5E707A' },
-    { key:'t3d', name:'Ascended Vipereel', color:'#009581' },
-    { key:'t3e', name:'Ascended Riptide', color:'#008697' },
-    { key:'t3f', name:'Ascended Depthstar', color:'#3CA2B0' },
+  const CYBERGRID_TIER3_ITYPES = [
+    { key:'t3a', name:'Ascended Netlord', color:'#004B4E' },
+    { key:'t3b', name:'Ascended Coreshell', color:'#8BB7BD' },
+    { key:'t3c', name:'Ascended Ironbyte', color:'#5E707A' },
+    { key:'t3d', name:'Ascended Datareel', color:'#95006B' },
+    { key:'t3e', name:'Ascended Bitlord', color:'#008697' },
+    { key:'t3f', name:'Ascended Pixelstar', color:'#3CA2B0' },
   ];
-  const DEEPOCEAN_TIER4_ITYPES = [
-    { key:'t4a', name:'Overlord Abysslord', color:'#474548' },
-    { key:'t4b', name:'Overlord Pearlshell', color:'#C8A9AE' },
-    { key:'t4c', name:'Overlord Ironfin', color:'#9E6870' },
-    { key:'t4d', name:'Overlord Vipereel', color:'#478A77' },
-    { key:'t4e', name:'Overlord Riptide', color:'#477C8B' },
-    { key:'t4f', name:'Overlord Depthstar', color:'#7F96A2' },
+  const CYBERGRID_TIER4_ITYPES = [
+    { key:'t4a', name:'Overlord Netlord', color:'#474548' },
+    { key:'t4b', name:'Overlord Coreshell', color:'#C8A9AE' },
+    { key:'t4c', name:'Overlord Ironbyte', color:'#9E6870' },
+    { key:'t4d', name:'Overlord Datareel', color:'#A22F81' },
+    { key:'t4e', name:'Overlord Bitlord', color:'#477C8B' },
+    { key:'t4f', name:'Overlord Pixelstar', color:'#7F96A2' },
   ];
-  const DEEPOCEAN_TIER5_ITYPES = [
-    { key:'t5a', name:'Omega Abysslord', color:'#73A8AA' },
-    { key:'t5b', name:'Omega Pearlshell', color:'#D5F4F8' },
-    { key:'t5c', name:'Omega Ironfin', color:'#B5C2C9' },
-    { key:'t5d', name:'Omega Vipereel', color:'#73DCCE' },
-    { key:'t5e', name:'Omega Riptide', color:'#73D1DD' },
-    { key:'t5f', name:'Omega Depthstar', color:'#9DE5EE' },
+  const CYBERGRID_TIER5_ITYPES = [
+    { key:'t5a', name:'Omega Netlord', color:'#73A8AA' },
+    { key:'t5b', name:'Omega Coreshell', color:'#D5F4F8' },
+    { key:'t5c', name:'Omega Ironbyte', color:'#B5C2C9' },
+    { key:'t5d', name:'Omega Datareel', color:'#E46BC2' },
+    { key:'t5e', name:'Omega Bitlord', color:'#73D1DD' },
+    { key:'t5f', name:'Omega Pixelstar', color:'#9DE5EE' },
   ];
-  const DEEPOCEAN_TIER6_ITYPES = [
-    { key:'t6a', name:'Exalted Abysslord', color:'#008892' },
-    { key:'t6b', name:'Exalted Pearlshell', color:'#7DE9F6' },
-    { key:'t6c', name:'Exalted Ironfin', color:'#54AABA' },
-    { key:'t6d', name:'Exalted Vipereel', color:'#00CAC0' },
-    { key:'t6e', name:'Exalted Riptide', color:'#00BDD4' },
-    { key:'t6f', name:'Exalted Depthstar', color:'#36D6EA' },
+  const CYBERGRID_TIER6_ITYPES = [
+    { key:'t6a', name:'Exalted Netlord', color:'#008892' },
+    { key:'t6b', name:'Exalted Coreshell', color:'#7DE9F6' },
+    { key:'t6c', name:'Exalted Ironbyte', color:'#54AABA' },
+    { key:'t6d', name:'Exalted Datareel', color:'#CA0091' },
+    { key:'t6e', name:'Exalted Bitlord', color:'#00BDD4' },
+    { key:'t6f', name:'Exalted Pixelstar', color:'#36D6EA' },
   ];
-  const DEEPOCEAN_TIER7_ITYPES = [
-    { key:'t7a', name:'Celestial Abysslord', color:'#4C438B' },
-    { key:'t7b', name:'Celestial Pearlshell', color:'#C9A4EE' },
-    { key:'t7c', name:'Celestial Ironfin', color:'#A065B2' },
-    { key:'t7d', name:'Celestial Vipereel', color:'#4C86B8' },
-    { key:'t7e', name:'Celestial Riptide', color:'#4C78CC' },
-    { key:'t7f', name:'Celestial Depthstar', color:'#8292E2' },
+  const CYBERGRID_TIER7_ITYPES = [
+    { key:'t7a', name:'Celestial Netlord', color:'#4C438B' },
+    { key:'t7b', name:'Celestial Coreshell', color:'#C9A4EE' },
+    { key:'t7c', name:'Celestial Ironbyte', color:'#A065B2' },
+    { key:'t7d', name:'Celestial Datareel', color:'#C73DA0' },
+    { key:'t7e', name:'Celestial Bitlord', color:'#4C78CC' },
+    { key:'t7f', name:'Celestial Pixelstar', color:'#8292E2' },
   ];
-  const DEEPOCEAN_TIER8_ITYPES = [
-    { key:'t8a', name:'Transcendent Abysslord', color:'#598A41' },
-    { key:'t8b', name:'Transcendent Pearlshell', color:'#CDE49D' },
-    { key:'t8c', name:'Transcendent Ironfin', color:'#A7A965' },
-    { key:'t8d', name:'Transcendent Vipereel', color:'#59C76B' },
-    { key:'t8e', name:'Transcendent Riptide', color:'#59BB7D' },
-    { key:'t8f', name:'Transcendent Depthstar', color:'#8BD292' },
+  const CYBERGRID_TIER8_ITYPES = [
+    { key:'t8a', name:'Transcendent Netlord', color:'#598A41' },
+    { key:'t8b', name:'Transcendent Coreshell', color:'#CDE49D' },
+    { key:'t8c', name:'Transcendent Ironbyte', color:'#A7A965' },
+    { key:'t8d', name:'Transcendent Datareel', color:'#CF51AB' },
+    { key:'t8e', name:'Transcendent Bitlord', color:'#59BB7D' },
+    { key:'t8f', name:'Transcendent Pixelstar', color:'#8BD292' },
   ];
-  const DEEPOCEAN_TIER9_ITYPES = [
-    { key:'t9a', name:'Voidborn Abysslord', color:'#003A3C' },
-    { key:'t9b', name:'Voidborn Pearlshell', color:'#6B8D91' },
-    { key:'t9c', name:'Voidborn Ironfin', color:'#48565E' },
-    { key:'t9d', name:'Voidborn Vipereel', color:'#007363' },
-    { key:'t9e', name:'Voidborn Riptide', color:'#006774' },
-    { key:'t9f', name:'Voidborn Depthstar', color:'#2E7D87' },
+  const CYBERGRID_TIER9_ITYPES = [
+    { key:'t9a', name:'Voidborn Netlord', color:'#003A3C' },
+    { key:'t9b', name:'Voidborn Coreshell', color:'#6B8D91' },
+    { key:'t9c', name:'Voidborn Ironbyte', color:'#48565E' },
+    { key:'t9d', name:'Voidborn Datareel', color:'#730052' },
+    { key:'t9e', name:'Voidborn Bitlord', color:'#006774' },
+    { key:'t9f', name:'Voidborn Pixelstar', color:'#2E7D87' },
   ];
-  const DEEPOCEAN_TIER10_ITYPES = [
-    { key:'t10a', name:'Eternal Abysslord', color:'#99BFC1' },
-    { key:'t10b', name:'Eternal Pearlshell', color:'#E0F7FA' },
-    { key:'t10c', name:'Eternal Ironfin', color:'#C9D3D7' },
-    { key:'t10d', name:'Eternal Vipereel', color:'#99E5DB' },
-    { key:'t10e', name:'Eternal Riptide', color:'#99DEE6' },
-    { key:'t10f', name:'Eternal Depthstar', color:'#B8ECF3' },
+  const CYBERGRID_TIER10_ITYPES = [
+    { key:'t10a', name:'Eternal Netlord', color:'#99BFC1' },
+    { key:'t10b', name:'Eternal Coreshell', color:'#E0F7FA' },
+    { key:'t10c', name:'Eternal Ironbyte', color:'#C9D3D7' },
+    { key:'t10d', name:'Eternal Datareel', color:'#EB93D2' },
+    { key:'t10e', name:'Eternal Bitlord', color:'#99DEE6' },
+    { key:'t10f', name:'Eternal Pixelstar', color:'#B8ECF3' },
   ];
 
 
@@ -8256,94 +8497,94 @@ const pauseSpace = (function(){
 
 
 
-  // Toxic Swamp: mustard yellow/brown palette.
-  const TOXICSWAMP_ITYPES = [
-    { key:'zorp',  name:'Bogling',    color:'#B5A642' },
-    { key:'blip',  name:'Mudspike',   color:'#A8853F' },
-    { key:'volt',  name:'Gasbloat',   color:'#C3D825' },
-    { key:'magno', name:'Sludgoid',   color:'#8A9C3F' },
-    { key:'crag',  name:'Croakfang',  color:'#6E8A3A' },
-    { key:'nebu',  name:'Vaporwisp',  color:'#D4C97A' },
+  // Ashfall Wastes: mustard yellow/brown palette.
+  const ASHFALLWASTES_ITYPES = [
+    { key:'zorp',  name:'Ashling',    color:'#A39A8F' },
+    { key:'blip',  name:'Cinderspike',   color:'#8A8580' },
+    { key:'volt',  name:'Smogbloat',   color:'#FF6B35' },
+    { key:'magno', name:'Emberoid',   color:'#E8895A' },
+    { key:'crag',  name:'Charfang',  color:'#4A423C' },
+    { key:'nebu',  name:'Sootwisp',  color:'#D8D3CB' },
   ];
-  const TOXICSWAMP_ELITE_ITYPES = [
-    { key:'grym',  name:'Bog Lord',   color:'#6B7E2A' },
-    { key:'obsi',  name:'Muckstone',  color:'#D4C97A' },
-    { key:'ferro', name:'Rustfang',   color:'#A8853F' },
-    { key:'venx',  name:'Venomtail',  color:'#9CB520' },
-    { key:'scorc', name:'Scumlord',   color:'#8A9C3F' },
-    { key:'nyx',   name:'Miasmastar', color:'#C3D825' },
+  const ASHFALLWASTES_ELITE_ITYPES = [
+    { key:'grym',  name:'Ashlord',   color:'#3A3632' },
+    { key:'obsi',  name:'Slagstone',  color:'#D8D3CB' },
+    { key:'ferro', name:'Ironash',   color:'#78706A' },
+    { key:'venx',  name:'Cindertail',  color:'#FF8C5A' },
+    { key:'scorc', name:'Scorchlord',   color:'#D9481F' },
+    { key:'nyx',   name:'Emberstar', color:'#FFB37A' },
   ];
-  const TOXICSWAMP_TIER2_ITYPES = [
-    { key:'t2a', name:'Prime Bog Lord', color:'#869550' },
-    { key:'t2b', name:'Prime Muckstone', color:'#DCD392' },
-    { key:'t2c', name:'Prime Rustfang', color:'#B89B62' },
-    { key:'t2d', name:'Prime Venomtail', color:'#AEC248' },
-    { key:'t2e', name:'Prime Scumlord', color:'#9FAE62' },
-    { key:'t2f', name:'Prime Miasmastar', color:'#CEDF4C' },
+  const ASHFALLWASTES_TIER2_ITYPES = [
+    { key:'t2a', name:'Prime Ashlord', color:'#7C7269' },
+    { key:'t2b', name:'Prime Slagstone', color:'#BDB7B1' },
+    { key:'t2c', name:'Prime Ironash', color:'#968D84' },
+    { key:'t2d', name:'Prime Cindertail', color:'#E06029' },
+    { key:'t2e', name:'Prime Scorchlord', color:'#E1642F' },
+    { key:'t2f', name:'Prime Emberstar', color:'#E57646' },
   ];
-  const TOXICSWAMP_TIER3_ITYPES = [
-    { key:'t3a', name:'Ascended Bog Lord', color:'#536221' },
-    { key:'t3b', name:'Ascended Muckstone', color:'#A59D5F' },
-    { key:'t3c', name:'Ascended Rustfang', color:'#836831' },
-    { key:'t3d', name:'Ascended Venomtail', color:'#7A8D19' },
-    { key:'t3e', name:'Ascended Scumlord', color:'#6C7A31' },
-    { key:'t3f', name:'Ascended Miasmastar', color:'#98A81D' },
+  const ASHFALLWASTES_TIER3_ITYPES = [
+    { key:'t3a', name:'Ascended Ashlord', color:'#47423C' },
+    { key:'t3b', name:'Ascended Slagstone', color:'#8C8278' },
+    { key:'t3c', name:'Ascended Ironash', color:'#615A53' },
+    { key:'t3d', name:'Ascended Cindertail', color:'#913A15' },
+    { key:'t3e', name:'Ascended Scorchlord', color:'#963C15' },
+    { key:'t3f', name:'Ascended Emberstar', color:'#AC4519' },
   ];
-  const TOXICSWAMP_TIER4_ITYPES = [
-    { key:'t4a', name:'Overlord Bog Lord', color:'#945B1E' },
-    { key:'t4b', name:'Overlord Muckstone', color:'#E09158' },
-    { key:'t4c', name:'Overlord Rustfang', color:'#C0602D' },
-    { key:'t4d', name:'Overlord Venomtail', color:'#B88217' },
-    { key:'t4e', name:'Overlord Scumlord', color:'#AB702D' },
-    { key:'t4f', name:'Overlord Miasmastar', color:'#D49C1B' },
+  const ASHFALLWASTES_TIER4_ITYPES = [
+    { key:'t4a', name:'Overlord Ashlord', color:'#605952' },
+    { key:'t4b', name:'Overlord Slagstone', color:'#A49C94' },
+    { key:'t4c', name:'Overlord Ironash', color:'#80766D' },
+    { key:'t4d', name:'Overlord Cindertail', color:'#B5481A' },
+    { key:'t4e', name:'Overlord Scorchlord', color:'#BD4C1B' },
+    { key:'t4f', name:'Overlord Emberstar', color:'#D1541E' },
   ];
-  const TOXICSWAMP_TIER5_ITYPES = [
-    { key:'t5a', name:'Omega Bog Lord', color:'#AEB88A' },
-    { key:'t5b', name:'Omega Muckstone', color:'#E7E1B6' },
-    { key:'t5c', name:'Omega Rustfang', color:'#CFBC95' },
-    { key:'t5d', name:'Omega Venomtail', color:'#C9D684' },
-    { key:'t5e', name:'Omega Scumlord', color:'#BFC995' },
-    { key:'t5f', name:'Omega Miasmastar', color:'#DEEA87' },
+  const ASHFALLWASTES_TIER5_ITYPES = [
+    { key:'t5a', name:'Omega Ashlord', color:'#A9A199' },
+    { key:'t5b', name:'Omega Slagstone', color:'#D2CECB' },
+    { key:'t5c', name:'Omega Ironash', color:'#B8B2AC' },
+    { key:'t5d', name:'Omega Cindertail', color:'#EB9470' },
+    { key:'t5e', name:'Omega Scorchlord', color:'#EB9773' },
+    { key:'t5f', name:'Omega Emberstar', color:'#EDA384' },
   ];
-  const TOXICSWAMP_TIER6_ITYPES = [
-    { key:'t6a', name:'Exalted Bog Lord', color:'#4B9D6A' },
-    { key:'t6b', name:'Exalted Muckstone', color:'#94D1A2' },
-    { key:'t6c', name:'Exalted Rustfang', color:'#76A279' },
-    { key:'t6d', name:'Exalted Venomtail', color:'#6DC363' },
-    { key:'t6e', name:'Exalted Scumlord', color:'#61B279' },
-    { key:'t6f', name:'Exalted Miasmastar', color:'#88DC66' },
+  const ASHFALLWASTES_TIER6_ITYPES = [
+    { key:'t6a', name:'Exalted Ashlord', color:'#7D746B' },
+    { key:'t6b', name:'Exalted Slagstone', color:'#B9B2AC' },
+    { key:'t6c', name:'Exalted Ironash', color:'#958C83' },
+    { key:'t6d', name:'Exalted Cindertail', color:'#E47342' },
+    { key:'t6e', name:'Exalted Scorchlord', color:'#E26631' },
+    { key:'t6f', name:'Exalted Emberstar', color:'#E8855A' },
   ];
-  const TOXICSWAMP_TIER7_ITYPES = [
-    { key:'t7a', name:'Celestial Bog Lord', color:'#975862' },
-    { key:'t7b', name:'Celestial Muckstone', color:'#E18D9A' },
-    { key:'t7c', name:'Celestial Rustfang', color:'#C25D71' },
-    { key:'t7d', name:'Celestial Venomtail', color:'#BA7F5B' },
-    { key:'t7e', name:'Celestial Scumlord', color:'#AD6D71' },
-    { key:'t7f', name:'Celestial Miasmastar', color:'#D5975F' },
+  const ASHFALLWASTES_TIER7_ITYPES = [
+    { key:'t7a', name:'Celestial Ashlord', color:'#81786E' },
+    { key:'t7b', name:'Celestial Slagstone', color:'#BDB7B1' },
+    { key:'t7c', name:'Celestial Ironash', color:'#989087' },
+    { key:'t7d', name:'Celestial Cindertail', color:'#E26833' },
+    { key:'t7e', name:'Celestial Scorchlord', color:'#E26B38' },
+    { key:'t7f', name:'Celestial Emberstar', color:'#E67C4E' },
   ];
-  const TOXICSWAMP_TIER8_ITYPES = [
-    { key:'t8a', name:'Transcendent Bog Lord', color:'#9F9D1B' },
-    { key:'t8b', name:'Transcendent Muckstone', color:'#E3CE4F' },
-    { key:'t8c', name:'Transcendent Rustfang', color:'#C6A229' },
-    { key:'t8d', name:'Transcendent Venomtail', color:'#BFC115' },
-    { key:'t8e', name:'Transcendent Scumlord', color:'#B3B129' },
-    { key:'t8f', name:'Transcendent Miasmastar', color:'#D8D818' },
+  const ASHFALLWASTES_TIER8_ITYPES = [
+    { key:'t8a', name:'Transcendent Ashlord', color:'#645D56' },
+    { key:'t8b', name:'Transcendent Slagstone', color:'#A19991' },
+    { key:'t8c', name:'Transcendent Ironash', color:'#81786E' },
+    { key:'t8d', name:'Transcendent Cindertail', color:'#BB4B1B' },
+    { key:'t8e', name:'Transcendent Scorchlord', color:'#C04D1B' },
+    { key:'t8f', name:'Transcendent Emberstar', color:'#D2541E' },
   ];
-  const TOXICSWAMP_TIER9_ITYPES = [
-    { key:'t9a', name:'Voidborn Bog Lord', color:'#404C19' },
-    { key:'t9b', name:'Voidborn Muckstone', color:'#7F7949' },
-    { key:'t9c', name:'Voidborn Rustfang', color:'#655026' },
-    { key:'t9d', name:'Voidborn Venomtail', color:'#5E6D13' },
-    { key:'t9e', name:'Voidborn Scumlord', color:'#535E26' },
-    { key:'t9f', name:'Voidborn Miasmastar', color:'#758216' },
+  const ASHFALLWASTES_TIER9_ITYPES = [
+    { key:'t9a', name:'Voidborn Ashlord', color:'#37322E' },
+    { key:'t9b', name:'Voidborn Slagstone', color:'#6C645C' },
+    { key:'t9c', name:'Voidborn Ironash', color:'#4B4640' },
+    { key:'t9d', name:'Voidborn Cindertail', color:'#702D10' },
+    { key:'t9e', name:'Voidborn Scorchlord', color:'#742E10' },
+    { key:'t9f', name:'Voidborn Emberstar', color:'#853513' },
   ];
-  const TOXICSWAMP_TIER10_ITYPES = [
-    { key:'t10a', name:'Eternal Bog Lord', color:'#C4CBAA' },
-    { key:'t10b', name:'Eternal Muckstone', color:'#EEE9CA' },
-    { key:'t10c', name:'Eternal Rustfang', color:'#DCCEB2' },
-    { key:'t10d', name:'Eternal Venomtail', color:'#D7E1A6' },
-    { key:'t10e', name:'Eternal Scumlord', color:'#D0D7B2' },
-    { key:'t10f', name:'Eternal Miasmastar', color:'#E7EFA8' },
+  const ASHFALLWASTES_TIER10_ITYPES = [
+    { key:'t10a', name:'Eternal Ashlord', color:'#C0BAB5' },
+    { key:'t10b', name:'Eternal Slagstone', color:'#DFDCD9' },
+    { key:'t10c', name:'Eternal Ironash', color:'#CBC7C3' },
+    { key:'t10d', name:'Eternal Cindertail', color:'#F0B297' },
+    { key:'t10e', name:'Eternal Scorchlord', color:'#F0B399' },
+    { key:'t10f', name:'Eternal Emberstar', color:'#F2BCA5' },
   ];
 
 
@@ -8996,11 +9237,11 @@ const pauseSpace = (function(){
     blackhole: { label:'Black Hole', types: BLACKHOLE_ITYPES, eliteTypes: BLACKHOLE_ELITE_ITYPES, tier2Types: BLACKHOLE_TIER2_ITYPES, tier3Types: BLACKHOLE_TIER3_ITYPES, tier4Types: BLACKHOLE_TIER4_ITYPES, tier5Types: BLACKHOLE_TIER5_ITYPES, tier6Types: BLACKHOLE_TIER6_ITYPES, tier7Types: BLACKHOLE_TIER7_ITYPES, tier8Types: BLACKHOLE_TIER8_ITYPES, tier9Types: BLACKHOLE_TIER9_ITYPES, tier10Types: BLACKHOLE_TIER10_ITYPES, },
     frozencomet: { label:'Frozen Comet Belt', types: FROZENCOMET_ITYPES, eliteTypes: FROZENCOMET_ELITE_ITYPES, tier2Types: FROZENCOMET_TIER2_ITYPES, tier3Types: FROZENCOMET_TIER3_ITYPES, tier4Types: FROZENCOMET_TIER4_ITYPES, tier5Types: FROZENCOMET_TIER5_ITYPES, tier6Types: FROZENCOMET_TIER6_ITYPES, tier7Types: FROZENCOMET_TIER7_ITYPES, tier8Types: FROZENCOMET_TIER8_ITYPES, tier9Types: FROZENCOMET_TIER9_ITYPES, tier10Types: FROZENCOMET_TIER10_ITYPES, },
     moltencore: { label:'Molten Core', types: MOLTENCORE_ITYPES, eliteTypes: MOLTENCORE_ELITE_ITYPES, tier2Types: MOLTENCORE_TIER2_ITYPES, tier3Types: MOLTENCORE_TIER3_ITYPES, tier4Types: MOLTENCORE_TIER4_ITYPES, tier5Types: MOLTENCORE_TIER5_ITYPES, tier6Types: MOLTENCORE_TIER6_ITYPES, tier7Types: MOLTENCORE_TIER7_ITYPES, tier8Types: MOLTENCORE_TIER8_ITYPES, tier9Types: MOLTENCORE_TIER9_ITYPES, tier10Types: MOLTENCORE_TIER10_ITYPES, },
-    deepocean: { label:'Deep Ocean', types: DEEPOCEAN_ITYPES, eliteTypes: DEEPOCEAN_ELITE_ITYPES, tier2Types: DEEPOCEAN_TIER2_ITYPES, tier3Types: DEEPOCEAN_TIER3_ITYPES, tier4Types: DEEPOCEAN_TIER4_ITYPES, tier5Types: DEEPOCEAN_TIER5_ITYPES, tier6Types: DEEPOCEAN_TIER6_ITYPES, tier7Types: DEEPOCEAN_TIER7_ITYPES, tier8Types: DEEPOCEAN_TIER8_ITYPES, tier9Types: DEEPOCEAN_TIER9_ITYPES, tier10Types: DEEPOCEAN_TIER10_ITYPES, },
+    cybergrid: { label:'Cyber Grid', types: CYBERGRID_ITYPES, eliteTypes: CYBERGRID_ELITE_ITYPES, tier2Types: CYBERGRID_TIER2_ITYPES, tier3Types: CYBERGRID_TIER3_ITYPES, tier4Types: CYBERGRID_TIER4_ITYPES, tier5Types: CYBERGRID_TIER5_ITYPES, tier6Types: CYBERGRID_TIER6_ITYPES, tier7Types: CYBERGRID_TIER7_ITYPES, tier8Types: CYBERGRID_TIER8_ITYPES, tier9Types: CYBERGRID_TIER9_ITYPES, tier10Types: CYBERGRID_TIER10_ITYPES, },
     desertwastes: { label:'Desert Wastes', types: DESERTWASTES_ITYPES, eliteTypes: DESERTWASTES_ELITE_ITYPES, tier2Types: DESERTWASTES_TIER2_ITYPES, tier3Types: DESERTWASTES_TIER3_ITYPES, tier4Types: DESERTWASTES_TIER4_ITYPES, tier5Types: DESERTWASTES_TIER5_ITYPES, tier6Types: DESERTWASTES_TIER6_ITYPES, tier7Types: DESERTWASTES_TIER7_ITYPES, tier8Types: DESERTWASTES_TIER8_ITYPES, tier9Types: DESERTWASTES_TIER9_ITYPES, tier10Types: DESERTWASTES_TIER10_ITYPES, },
     stormnebula: { label:'Storm Nebula', types: STORMNEBULA_ITYPES, eliteTypes: STORMNEBULA_ELITE_ITYPES, tier2Types: STORMNEBULA_TIER2_ITYPES, tier3Types: STORMNEBULA_TIER3_ITYPES, tier4Types: STORMNEBULA_TIER4_ITYPES, tier5Types: STORMNEBULA_TIER5_ITYPES, tier6Types: STORMNEBULA_TIER6_ITYPES, tier7Types: STORMNEBULA_TIER7_ITYPES, tier8Types: STORMNEBULA_TIER8_ITYPES, tier9Types: STORMNEBULA_TIER9_ITYPES, tier10Types: STORMNEBULA_TIER10_ITYPES, },
     plutoparadise: { label:'Pluto\'s Paradise', types: PLUTOPARADISE_ITYPES, eliteTypes: PLUTOPARADISE_ELITE_ITYPES, tier2Types: PLUTOPARADISE_TIER2_ITYPES, tier3Types: PLUTOPARADISE_TIER3_ITYPES, tier4Types: PLUTOPARADISE_TIER4_ITYPES, tier5Types: PLUTOPARADISE_TIER5_ITYPES, tier6Types: PLUTOPARADISE_TIER6_ITYPES, tier7Types: PLUTOPARADISE_TIER7_ITYPES, tier8Types: PLUTOPARADISE_TIER8_ITYPES, tier9Types: PLUTOPARADISE_TIER9_ITYPES, tier10Types: PLUTOPARADISE_TIER10_ITYPES, },
-    toxicswamp: { label:'Toxic Swamp', types: TOXICSWAMP_ITYPES, eliteTypes: TOXICSWAMP_ELITE_ITYPES, tier2Types: TOXICSWAMP_TIER2_ITYPES, tier3Types: TOXICSWAMP_TIER3_ITYPES, tier4Types: TOXICSWAMP_TIER4_ITYPES, tier5Types: TOXICSWAMP_TIER5_ITYPES, tier6Types: TOXICSWAMP_TIER6_ITYPES, tier7Types: TOXICSWAMP_TIER7_ITYPES, tier8Types: TOXICSWAMP_TIER8_ITYPES, tier9Types: TOXICSWAMP_TIER9_ITYPES, tier10Types: TOXICSWAMP_TIER10_ITYPES, },
+    ashfallwastes: { label:'Ashfall Wastes', types: ASHFALLWASTES_ITYPES, eliteTypes: ASHFALLWASTES_ELITE_ITYPES, tier2Types: ASHFALLWASTES_TIER2_ITYPES, tier3Types: ASHFALLWASTES_TIER3_ITYPES, tier4Types: ASHFALLWASTES_TIER4_ITYPES, tier5Types: ASHFALLWASTES_TIER5_ITYPES, tier6Types: ASHFALLWASTES_TIER6_ITYPES, tier7Types: ASHFALLWASTES_TIER7_ITYPES, tier8Types: ASHFALLWASTES_TIER8_ITYPES, tier9Types: ASHFALLWASTES_TIER9_ITYPES, tier10Types: ASHFALLWASTES_TIER10_ITYPES, },
     crystalcaverns: { label:'Crystal Caverns', types: CRYSTALCAVERNS_ITYPES, eliteTypes: CRYSTALCAVERNS_ELITE_ITYPES, tier2Types: CRYSTALCAVERNS_TIER2_ITYPES, tier3Types: CRYSTALCAVERNS_TIER3_ITYPES, tier4Types: CRYSTALCAVERNS_TIER4_ITYPES, tier5Types: CRYSTALCAVERNS_TIER5_ITYPES, tier6Types: CRYSTALCAVERNS_TIER6_ITYPES, tier7Types: CRYSTALCAVERNS_TIER7_ITYPES, tier8Types: CRYSTALCAVERNS_TIER8_ITYPES, tier9Types: CRYSTALCAVERNS_TIER9_ITYPES, tier10Types: CRYSTALCAVERNS_TIER10_ITYPES, },
     ruins: { label:'Ancient Ruins', types: RUINS_ITYPES, eliteTypes: RUINS_ELITE_ITYPES, tier2Types: RUINS_TIER2_ITYPES, tier3Types: RUINS_TIER3_ITYPES, tier4Types: RUINS_TIER4_ITYPES, tier5Types: RUINS_TIER5_ITYPES, tier6Types: RUINS_TIER6_ITYPES, tier7Types: RUINS_TIER7_ITYPES, tier8Types: RUINS_TIER8_ITYPES, tier9Types: RUINS_TIER9_ITYPES, tier10Types: RUINS_TIER10_ITYPES, },
     haunted: { label:'Haunted Manor', types: HAUNTED_ITYPES, eliteTypes: HAUNTED_ELITE_ITYPES, tier2Types: HAUNTED_TIER2_ITYPES, tier3Types: HAUNTED_TIER3_ITYPES, tier4Types: HAUNTED_TIER4_ITYPES, tier5Types: HAUNTED_TIER5_ITYPES, tier6Types: HAUNTED_TIER6_ITYPES, tier7Types: HAUNTED_TIER7_ITYPES, tier8Types: HAUNTED_TIER8_ITYPES, tier9Types: HAUNTED_TIER9_ITYPES, tier10Types: HAUNTED_TIER10_ITYPES, },
@@ -9018,8 +9259,8 @@ const pauseSpace = (function(){
   //  - Black Hole / Frozen Comet Belt / Molten Core hit the SHIP itself
   //    (sucked into a void / frozen solid / set alight) — a status effect
   //    plays right on the cannon and typing is blocked.
-  //  - Deep Ocean / Desert Wastes instead hide the INVADERS under a
-  //    water/sand sweep — they keep falling, but the player can't read
+  //  - Cyber Grid / Desert Wastes instead hide the INVADERS under a
+  //    glitch/sand sweep — they keep falling, but the player can't read
   //    their letters, so typing is blocked the same way.
   // How often this fires scales with difficulty (see WORLD_EFFECT_INTERVAL);
   // how long it lasts is fixed at WORLD_EFFECT_MS for every world.
@@ -9031,21 +9272,26 @@ const pauseSpace = (function(){
     hard:   [41000, 45000],
   };
   const WORLD_GIMMICKS = {
-    blackhole:    { kind:'player', statusClass:'status-blackhole', toast:'🕳️ Pulled into a black hole!', tint:'radial-gradient(circle, rgba(124,58,237,0.22), rgba(10,0,24,0.4))' },
-    frozencomet:  { kind:'player', statusClass:'status-frozen',    toast:'🧊 Frozen solid!',             tint:'radial-gradient(circle, rgba(168,232,255,0.22), rgba(46,159,214,0.32))' },
-    moltencore:   { kind:'player', statusClass:'status-burning',   toast:'🔥 Caught fire!',               tint:'radial-gradient(circle, rgba(255,159,69,0.25), rgba(217,41,28,0.3))' },
-    deepocean:    { kind:'cloak',  sweepClass:'water',              toast:'🌊 A wave hides the invaders!' },
-    desertwastes: { kind:'cloak',  sweepClass:'sand',                toast:'🏜️ A sandstorm blinds you!' },
-    stormnebula:  { kind:'player', statusClass:'status-shocked',   toast:'⚡ Zapped! Controls scrambled!', tint:'radial-gradient(circle, rgba(244,224,77,0.22), rgba(20,10,50,0.4))' },
-    plutoparadise: { kind:'cloak',  sweepClass:'aurora',              toast:'✨ An aurora mist blinds you!' },
-    toxicswamp:   { kind:'player', statusClass:'status-poisoned',  toast:'☠️ Poisoned! Vision blurring!', tint:'radial-gradient(circle, rgba(195,216,37,0.22), rgba(50,60,10,0.35))' },
-    crystalcaverns: { kind:'cloak', sweepClass:'crystal',          toast:'💎 A crystal glare blinds you!' },
-    ruins:        { kind:'cloak', sweepClass:'dust',               toast:'🏛️ A dust cloud obscures your view!' },
-    haunted:      { kind:'cloak', sweepClass:'fog',                toast:'👻 A ghostly fog hides the invaders!' },
-    carnival:     { kind:'cloak', sweepClass:'confetti',           toast:'🎪 A confetti cannon blinds you!' },
-    steampunk:    { kind:'cloak', sweepClass:'steam',              toast:'⚙️ A steam cloud fogs your view!' },
-    biocave:      { kind:'cloak', sweepClass:'spores',              toast:'🍄 A cloud of glowing spores blinds you!' },
-    zerog:        { kind:'cloak', sweepClass:'balloons',            toast:'🎈 A burst of balloons blocks your view!' },
+    // durMul scales how long the effect lasts (relative to WORLD_EFFECT_MS),
+    // freqMul scales how often it fires (relative to WORLD_EFFECT_INTERVAL),
+    // shake picks the screenShake intensity. All optional — default is
+    // durMul 1, freqMul 1, shake 'light' — so this only adds per-world feel
+    // on top of the existing player/cloak split, without new branches.
+    blackhole:    { kind:'player', statusClass:'status-blackhole', toast:'🕳️ Pulled into a black hole!', tint:'radial-gradient(circle, rgba(124,58,237,0.22), rgba(10,0,24,0.4))', durMul:1.3, shake:'heavy' },
+    frozencomet:  { kind:'player', statusClass:'status-frozen',    toast:'🧊 Frozen solid!',             tint:'radial-gradient(circle, rgba(168,232,255,0.22), rgba(46,159,214,0.32))', durMul:0.85 },
+    moltencore:   { kind:'player', statusClass:'status-burning',   toast:'🔥 Caught fire!',               tint:'radial-gradient(circle, rgba(255,159,69,0.25), rgba(217,41,28,0.3))', durMul:1.1, shake:'heavy' },
+    cybergrid:    { kind:'cloak',  sweepClass:'glitch',              toast:'🖥️ A glitch scrambles the feed!', durMul:0.8, freqMul:0.85 },
+    desertwastes: { kind:'cloak',  sweepClass:'sand',                toast:'🏜️ A sandstorm blinds you!', freqMul:1.15 },
+    stormnebula:  { kind:'player', statusClass:'status-shocked',   toast:'⚡ Zapped! Controls scrambled!', tint:'radial-gradient(circle, rgba(244,224,77,0.22), rgba(20,10,50,0.4))', durMul:0.75, shake:'heavy' },
+    plutoparadise: { kind:'cloak',  sweepClass:'aurora',              toast:'✨ An aurora mist blinds you!', durMul:1.25 },
+    ashfallwastes:   { kind:'player', statusClass:'status-ashfall',  toast:'🌫️ Choking on ash! Vision blurring!', tint:'radial-gradient(circle, rgba(201,196,188,0.22), rgba(60,50,40,0.35))', durMul:1.4 },
+    crystalcaverns: { kind:'cloak', sweepClass:'crystal',          toast:'💎 A crystal glare blinds you!', durMul:0.85 },
+    ruins:        { kind:'cloak', sweepClass:'dust',               toast:'🏛️ A dust cloud obscures your view!', durMul:1.15 },
+    haunted:      { kind:'cloak', sweepClass:'fog',                toast:'👻 A ghostly fog hides the invaders!', durMul:1.3 },
+    carnival:     { kind:'cloak', sweepClass:'confetti',           toast:'🎪 A confetti cannon blinds you!', durMul:0.75, shake:'heavy' },
+    steampunk:    { kind:'cloak', sweepClass:'steam',              toast:'⚙️ A steam cloud fogs your view!', durMul:1.05 },
+    biocave:      { kind:'cloak', sweepClass:'spores',              toast:'🍄 A cloud of glowing spores blinds you!', durMul:1.1 },
+    zerog:        { kind:'cloak', sweepClass:'balloons',            toast:'🎈 A burst of balloons blocks your view!', durMul:0.8 },
   };
   let worldEffectActive = false;
   let typingBlocked = false;
@@ -9056,11 +9302,12 @@ const pauseSpace = (function(){
     const gimmick = WORLD_GIMMICKS[currentWorld];
     if(!gimmick){ nextWorldEffectAt = Infinity; return; }
     const range = WORLD_EFFECT_INTERVAL[difficulty] || WORLD_EFFECT_INTERVAL.medium;
+    const freqMul = gimmick.freqMul || 1;
     // Give kids a longer, effect-free runway at the very start of a game
     // (roughly 1.5x the normal wait) before the first block ever fires,
     // rather than possibly hitting them within the first few seconds.
     const extra = isFirst ? range[0] * 0.5 : 0;
-    nextWorldEffectAt = performance.now() + extra + range[0] + Math.random()*(range[1]-range[0]);
+    nextWorldEffectAt = performance.now() + extra + (range[0] + Math.random()*(range[1]-range[0])) * freqMul;
   }
 
   function showWorldEffectTint(tint){
@@ -9083,9 +9330,9 @@ const pauseSpace = (function(){
     if(!gimmick) return;
     worldEffectActive = true;
     typingBlocked = true;
-    worldEffectEndsAt = performance.now() + WORLD_EFFECT_MS;
+    worldEffectEndsAt = performance.now() + WORLD_EFFECT_MS * (gimmick.durMul || 1);
     showToast(gimmick.toast);
-    screenShake(game, 'light');
+    screenShake(game, gimmick.shake || 'light');
     ensureAudio();
     playWorldGimmickSting();
     if(gimmick.kind === 'player'){
@@ -9128,7 +9375,7 @@ const pauseSpace = (function(){
     worldEffectActive = false;
     typingBlocked = false;
     nextWorldEffectAt = Infinity;
-    if(cannonEl) cannonEl.classList.remove('status-blackhole','status-frozen','status-burning','status-shocked','status-poisoned');
+    if(cannonEl) cannonEl.classList.remove('status-blackhole','status-frozen','status-burning','status-shocked','status-ashfall');
     hideWorldEffectTint();
     if(game) game.classList.remove('world-cloak-active');
     const sweep = document.getElementById('world-cloak-sweep-sp');
@@ -9143,11 +9390,11 @@ const pauseSpace = (function(){
     blackhole:    { cls:'amb-rise', look:'amb-void',   count:10 },
     frozencomet:  { cls:'amb-fall', look:'amb-snow',   count:14 },
     moltencore:   { cls:'amb-rise', look:'amb-ember',  count:12 },
-    deepocean:    { cls:'amb-rise', look:'amb-bubble', count:10 },
+    cybergrid:    { cls:'amb-rise', look:'amb-pixel', count:12 },
     desertwastes: { cls:'amb-blow', look:'amb-sand',   count:14 },
     stormnebula:  { cls:'amb-fall', look:'amb-spark',  count:8  },
     plutoparadise: { cls:'amb-rise', look:'amb-aurora', count:12 },
-    toxicswamp:   { cls:'amb-rise', look:'amb-goo',    count:10 },
+    ashfallwastes:   { cls:'amb-fall', look:'amb-ash',    count:14 },
     crystalcaverns: { cls:'amb-rise', look:'amb-crystal', count:12 },
     ruins:        { cls:'amb-blow', look:'amb-dust',    count:14 },
     haunted:      { cls:'amb-rise', look:'amb-wisp',    count:10 },
@@ -9159,7 +9406,7 @@ const pauseSpace = (function(){
   // Worlds with parallax layer art defined (see .pfar-<world>/.pnear-<world>
   // CSS). All 9 non-milkyway worlds now have art; milkyway keeps its plain
   // neutral starfield as the baseline "home" world.
-  const WORLD_PARALLAX = ['blackhole', 'frozencomet', 'moltencore', 'deepocean', 'desertwastes', 'stormnebula', 'plutoparadise', 'toxicswamp', 'crystalcaverns', 'ruins', 'haunted', 'carnival', 'steampunk', 'biocave', 'zerog'];
+  const WORLD_PARALLAX = ['blackhole', 'frozencomet', 'moltencore', 'cybergrid', 'desertwastes', 'stormnebula', 'plutoparadise', 'ashfallwastes', 'crystalcaverns', 'ruins', 'haunted', 'carnival', 'steampunk', 'biocave', 'zerog'];
   function clearWorldAmbience(){
     const oldTint = document.getElementById('world-ambience-tint-sp');
     if(oldTint) oldTint.remove();
@@ -9179,11 +9426,11 @@ const pauseSpace = (function(){
     blackhole: '',
     frozencomet: '',
     moltencore: '',
-    deepocean: '',
+    cybergrid: '',
     desertwastes: '',
     stormnebula: '<div class="bolt bolt1"></div><div class="bolt bolt2"></div><div class="bolt bolt3"></div>',
     plutoparadise: '',
-    toxicswamp: '<div class="bub bub1"></div><div class="bub bub2"></div><div class="bub bub3"></div><div class="bub bub4"></div>',
+    ashfallwastes: '<div class="bub bub1"></div><div class="bub bub2"></div><div class="bub bub3"></div><div class="bub bub4"></div>',
     crystalcaverns: '',
     ruins: '',
     haunted: '<div class="bub bub1"></div><div class="bub bub2"></div><div class="bub bub3"></div>',
@@ -9285,7 +9532,7 @@ const pauseSpace = (function(){
       crag: (f,t)=>{ f.style.cssText = `width:18px;height:20px;top:-11px;left:21px;background:${t.color};clip-path:polygon(50% 0%, 90% 30%, 70% 100%, 30% 100%, 10% 30%);box-shadow:0 0 6px ${t.color}aa;`; },
       nebu: (f,t)=>{ f.style.cssText = `width:30px;height:14px;top:-8px;left:15px;background:${t.color};border-radius:40% 60% 50% 50%;opacity:0.65;filter:blur(1px);`; },
     },
-    deepocean: {
+    cybergrid: {
       zorp: (f,t)=>{ f.style.cssText = `width:30px;height:14px;top:-8px;left:15px;`; f.innerHTML = `<div style="position:absolute;left:0;top:0;width:12px;height:12px;background:${t.color};border-radius:50%;opacity:0.6;"></div><div style="position:absolute;left:9px;top:-6px;width:9px;height:9px;background:${t.color};border-radius:50%;opacity:0.7;"></div><div style="position:absolute;left:18px;top:1px;width:7px;height:7px;background:${t.color};border-radius:50%;opacity:0.8;"></div>`; },
       blip: (f,t)=>{ f.style.cssText = `width:20px;height:18px;top:-11px;left:20px;background:${t.color};clip-path:polygon(50% 0%, 100% 70%, 50% 100%, 0% 70%);box-shadow:0 0 6px ${t.color};`; },
       volt: (f,t)=>{ f.style.cssText = `width:34px;height:10px;top:-4px;left:13px;border-top:3px solid ${t.color};border-radius:50%;opacity:0.8;transform:rotate(-4deg);`; },
@@ -9356,8 +9603,8 @@ const pauseSpace = (function(){
   // in-game invaders exactly.
   const WORLD_SHAPE_CLASS = {
     milkyway: 'milky-invader', blackhole: 'void-invader', frozencomet: 'frost-invader',
-    moltencore: 'magma-invader', deepocean: 'tide-invader', desertwastes: 'dune-invader',
-    stormnebula: 'volt-invader', plutoparadise: 'aurora-invader', toxicswamp: 'bog-invader',
+    moltencore: 'magma-invader', cybergrid: 'grid-invader', desertwastes: 'dune-invader',
+    stormnebula: 'volt-invader', plutoparadise: 'aurora-invader', ashfallwastes: 'ash-invader',
     crystalcaverns: 'gem-invader', ruins: 'relic-invader', haunted: 'phantom-invader',
     carnival: 'clown-invader', steampunk: 'gearbot-invader',
     biocave: 'sporecap-invader', zerog: 'astro-invader'
@@ -9506,7 +9753,7 @@ const pauseSpace = (function(){
   // decorative planet) between the different unlocked worlds.
   const worldRowEl = document.getElementById('world-row-sp');
   const planetEl = document.querySelector('#view-space .planet');
-  const WORLD_PLANET_LOOKS = ['blackhole-look', 'frozencomet-look', 'moltencore-look', 'deepocean-look', 'desertwastes-look', 'stormnebula-look', 'plutoparadise-look', 'toxicswamp-look', 'crystalcaverns-look', 'ruins-look', 'haunted-look', 'carnival-look', 'steampunk-look', 'biocave-look', 'zerog-look'];
+  const WORLD_PLANET_LOOKS = ['blackhole-look', 'frozencomet-look', 'moltencore-look', 'cybergrid-look', 'desertwastes-look', 'stormnebula-look', 'plutoparadise-look', 'ashfallwastes-look', 'crystalcaverns-look', 'ruins-look', 'haunted-look', 'carnival-look', 'steampunk-look', 'biocave-look', 'zerog-look'];
   // Two-stop accent gradient per world, reused for the in-game HUD chips
   // (level/streak) so the UI chrome itself feels tied to the current
   // world instead of always being the same neutral blue.
@@ -9515,11 +9762,11 @@ const pauseSpace = (function(){
     blackhole:    ['#C4B5FD', '#7C3AED'],
     frozencomet:  ['#BAE6FD', '#2E9FD6'],
     moltencore:   ['#FFB37A', '#D9291C'],
-    deepocean:    ['#7DE8FF', '#0E7A8C'],
+    cybergrid:    ['#2EFFE8', '#FF2EC4'],
     desertwastes: ['#FFE7A8', '#C98A2E'],
     stormnebula:  ['#F4E04D', '#6B5BFF'],
     plutoparadise:['#7CFFC4', '#FF8FD6'],
-    toxicswamp:   ['#D4F27A', '#5B6E1A'],
+    ashfallwastes:   ['#C9C4BC', '#FF6B35'],
     crystalcaverns: ['#FFB8F0', '#9C4DCC'],
     ruins:        ['#E8C468', '#2E7D6B'],
     haunted:      ['#9AFFC0', '#5B2E8C'],
@@ -9528,7 +9775,7 @@ const pauseSpace = (function(){
     zerog:        ['#FF9ED6', '#4DE0FF'],
     steampunk:    ['#D9A05B', '#4A90A4'],
   };
-  const WORLD_STAR_CLASSES = ['world-blackhole','world-frozencomet','world-moltencore','world-deepocean','world-desertwastes','world-stormnebula','world-plutoparadise','world-toxicswamp','world-crystalcaverns','world-ruins','world-haunted','world-carnival','world-steampunk','world-biocave','world-zerog'];
+  const WORLD_STAR_CLASSES = ['world-blackhole','world-frozencomet','world-moltencore','world-cybergrid','world-desertwastes','world-stormnebula','world-plutoparadise','world-ashfallwastes','world-crystalcaverns','world-ruins','world-haunted','world-carnival','world-steampunk','world-biocave','world-zerog'];
   function applyWorldAccent(world){
     const accent = WORLD_ACCENT[world] || WORLD_ACCENT.milkyway;
     view.style.setProperty('--world-accent-1', accent[0]);
@@ -9549,11 +9796,11 @@ const pauseSpace = (function(){
       if(world === 'blackhole') planetEl.classList.add('blackhole-look');
       else if(world === 'frozencomet') planetEl.classList.add('frozencomet-look');
       else if(world === 'moltencore') planetEl.classList.add('moltencore-look');
-      else if(world === 'deepocean') planetEl.classList.add('deepocean-look');
+      else if(world === 'cybergrid') planetEl.classList.add('cybergrid-look');
       else if(world === 'desertwastes') planetEl.classList.add('desertwastes-look');
       else if(world === 'stormnebula') planetEl.classList.add('stormnebula-look');
       else if(world === 'plutoparadise') planetEl.classList.add('plutoparadise-look');
-      else if(world === 'toxicswamp') planetEl.classList.add('toxicswamp-look');
+      else if(world === 'ashfallwastes') planetEl.classList.add('ashfallwastes-look');
       else if(world === 'crystalcaverns') planetEl.classList.add('crystalcaverns-look');
       else if(world === 'ruins') planetEl.classList.add('ruins-look');
       else if(world === 'haunted') planetEl.classList.add('haunted-look');
@@ -10049,12 +10296,12 @@ const pauseSpace = (function(){
     blackhole:    { wave:'sine',     startMul:1.0, endMul:0.3,  dur:0.26, detune:-14 },        // deep eerie downward glide
     frozencomet:  { wave:'triangle', startMul:2.2, endMul:1.5,  dur:0.14 },                    // bright icy chime, stays high
     moltencore:   { wave:'square',   startMul:1.3, endMul:0.5,  dur:0.15, detune:-18 },        // gritty growl (detuned 2nd layer)
-    deepocean:    { wave:'sine',     startMul:1.2, endMul:0.9,  dur:0.24, wobble:true },       // watery warble/bubble
+    cybergrid:    { wave:'sine',     startMul:1.2, endMul:0.9,  dur:0.24, wobble:true },       // watery warble/bubble
     desertwastes: { wave:'square',   startMul:2.0, endMul:1.8,  dur:0.08 },                    // short dry percussive click
     stormnebula:  { wave:'sawtooth', startMul:2.4, endMul:0.9,  dur:0.10, detune:22 },          // sharp electric crackle
     plutoparadise:{ wave:'sine',     startMul:1.6, endMul:1.1,  dur:0.16 }, // bright airy aurora chime
-    toxicswamp:   { wave:'square',   startMul:1.1, endMul:0.4,  dur:0.18, wobble:true },        // sputtering, uneven drop
-    crystalcaverns: { wave:'triangle', startMul:2.6, endMul:2.0, dur:0.11, detune:16 },          // crisp glassy chime, shimmery
+    ashfallwastes:   { wave:'sawtooth', startMul:1.1, endMul:0.4,  dur:0.18, wobble:true },        // gritty, wind-scoured drop (was square, too close to Molten Core's growl)
+    crystalcaverns: { wave:'sine',     startMul:2.6, endMul:2.0, dur:0.11, detune:16 },          // resonant glassy chime (was triangle, too close to Frozen Comet's icy chime)
     ruins:        { wave:'square',   startMul:1.4, endMul:0.8,  dur:0.13, detune:-8 },           // dry stone-on-stone knock
     haunted:      { wave:'sine',     startMul:0.9, endMul:0.35, dur:0.28, detune:-20, wobble:true }, // eerie moaning warble
     carnival:     { wave:'square',   startMul:2.8, endMul:1.4,  dur:0.09, detune:26 },           // bright honking toy-horn zap
@@ -10148,11 +10395,11 @@ const pauseSpace = (function(){
     blackhole:    { freq:55,  type:'sine',     lfoRate:0.08, lfoDepth:10, vol:0.055 },
     frozencomet:  { freq:300, type:'sine',     lfoRate:0.3,  lfoDepth:20, vol:0.03 },
     moltencore:   { freq:70,  type:'sawtooth', lfoRate:4,    lfoDepth:8,  vol:0.04 },
-    deepocean:    { freq:110, type:'sine',     lfoRate:0.2,  lfoDepth:15, vol:0.045 },
+    cybergrid:    { freq:110, type:'sine',     lfoRate:0.2,  lfoDepth:15, vol:0.045 },
     desertwastes: { freq:130, type:'triangle', lfoRate:0.1,  lfoDepth:5,  vol:0.035 },
     stormnebula:  { freq:180, type:'sawtooth', lfoRate:6,    lfoDepth:30, vol:0.03 },
     plutoparadise:{ freq:220, type:'sine',     lfoRate:0.4,  lfoDepth:15, vol:0.035 },
-    toxicswamp:   { freq:95,  type:'square',   lfoRate:1.2,  lfoDepth:10, vol:0.028 },
+    ashfallwastes:   { freq:95,  type:'square',   lfoRate:1.2,  lfoDepth:10, vol:0.028 },
     crystalcaverns: { freq:340, type:'triangle', lfoRate:0.6, lfoDepth:25, vol:0.028 },
     ruins:        { freq:75,  type:'sine',     lfoRate:0.1,  lfoDepth:5,  vol:0.04 },
     haunted:      { freq:60,  type:'sine',     lfoRate:0.25, lfoDepth:14, vol:0.045 },
@@ -10814,16 +11061,16 @@ const pauseSpace = (function(){
 
   // Each world gives ONE thematically-matching power a longer active
   // duration — Freeze Blast lingers longer in the already-icy Frozen
-  // Comet Belt, Slow Field drags on longer in Deep Ocean's currents, etc.
+  // Comet Belt, Slow Field drags on longer in Cyber Grid's currents, etc.
   // Every other power/world combo runs at its normal base duration.
   const WORLD_POWER_AFFINITY = {
     frozencomet:  { freeze: 1.5 },
-    deepocean:    { slow: 1.4 },
+    cybergrid:    { slow: 1.4 },
     blackhole:    { timewarp: 1.4 },
     stormnebula:  { mirror: 1.3 },
     desertwastes: { tornado: 1.3 },
     plutoparadise:{ magnetpull: 1.3 },
-    toxicswamp:   { rainbowbeam: 1.3 },
+    ashfallwastes:   { rainbowbeam: 1.3 },
     moltencore:   { chainzap: 1.3 },
     crystalcaverns: { explode: 1.3 },
     ruins:        { lifesupport: 1.3 },
@@ -11523,11 +11770,11 @@ const pauseSpace = (function(){
     blackhole:    { speedMult:0.95, drift:0  },
     frozencomet:  { speedMult:0.9,  drift:14 },
     moltencore:   { speedMult:1.15, drift:0  },
-    deepocean:    { speedMult:0.92, drift:10 },
+    cybergrid:    { speedMult:0.92, drift:10 },
     desertwastes: { speedMult:1.05, drift:0  },
     stormnebula:  { speedMult:1.1,  drift:22 },
     plutoparadise:{ speedMult:0.85, drift:10 },
-    toxicswamp:   { speedMult:0.97, drift:6  },
+    ashfallwastes:   { speedMult:0.97, drift:6  },
     crystalcaverns: { speedMult:1.0, drift:12 },
     ruins:        { speedMult:1.02, drift:4  },
     haunted:      { speedMult:0.93, drift:16 },
@@ -11799,7 +12046,7 @@ const pauseSpace = (function(){
   function handleLetter(ch){
     if(!running || paused) return;
     // World gimmick lockout: Black Hole/Frozen Comet Belt/Molten Core stun
-    // the ship, Deep Ocean/Desert Wastes hide the invaders — either way
+    // the ship, Cyber Grid/Desert Wastes hide the invaders — either way
     // the player can't type while it's active.
     if(typingBlocked) return;
     ensureAudio();
