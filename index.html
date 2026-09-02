@@ -10081,7 +10081,7 @@ function QuarterScreen({
     const [generatingIds, setGeneratingIds] = useState({});
     const [genLesson, setGenLesson] = useState(null); // lesson currently being configured for AI generation
     const [genCount, setGenCount] = useState(6);
-    const [genTypes, setGenTypes] = useState(new Set(GENERATE_TYPE_ORDER));
+    const [genTypes, setGenTypes] = useState(new Set());
     const [genTopic, setGenTopic] = useState("");
     const [genTopicTag, setGenTopicTag] = useState("");
     const [genDifficulty, setGenDifficulty] = useState("medium");
@@ -10159,7 +10159,7 @@ function QuarterScreen({
         e.stopPropagation();
       }
       if (generatingIds[l.id]) return;
-      const defaultTypes = new Set(GENERATE_TYPE_ORDER);
+      const defaultTypes = new Set();
       setGenLesson(l);
       setGenTypes(defaultTypes);
       setGenCount(getGenerateCountRange(defaultTypes).min);
@@ -10171,7 +10171,7 @@ function QuarterScreen({
       setGenTypes(prev => {
         const next = new Set(prev);
         if (next.has(t)) {
-          if (next.size > 1) next.delete(t);
+          next.delete(t);
         } else {
           next.add(t);
         }
@@ -10184,6 +10184,10 @@ function QuarterScreen({
     async function runGenerateQuestions() {
       const l = genLesson;
       if (!l) return;
+      if (!genTypes.size) {
+        alert("Pick at least one question type before generating.");
+        return;
+      }
       let apiKey = loadGeminiApiKey();
       if (!apiKey) {
         apiKey = window.prompt("Paste a free Gemini API key to generate quiz questions (get one at aistudio.google.com/apikey). It's saved on this device only, and also reused for story narration.");
@@ -10774,8 +10778,11 @@ function QuarterScreen({
     }, "Cancel"), /*#__PURE__*/React.createElement("button", {
       className: "btn btn-primary",
       style: {
-        background: quarter.color
+        background: quarter.color,
+        opacity: genTypes.size ? 1 : 0.5,
+        cursor: genTypes.size ? "pointer" : "not-allowed"
       },
+      disabled: !genTypes.size,
       onClick: runGenerateQuestions
     }, "\u2728 Generate \u2192")))));
   }
