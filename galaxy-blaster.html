@@ -1924,12 +1924,46 @@
     background:var(--panel);
     backdrop-filter:blur(6px);
     border-top:2px solid #ffffffaa;
+  }
+  /* The actual key rows stay capped at the original 460px and centered —
+     this is the on-screen keyboard itself and is unchanged. The
+     .keyboard-wrap around it is now full-width so the leftover space to
+     its left/right (previously just flat background) can carry the
+     current world's look instead. */
+  .kb-rows{
     max-width:460px;
     margin:0 auto;
   }
   #view-space .keyboard-wrap{
     background:rgba(11,23,64,0.85);
     border-top:2px solid #4DE8FF44;
+  }
+  /* World-matching side panels: soft glows in the current world's two
+     accent colors (see --world-accent-1/2, set per world on #view-space)
+     bleed in from each edge and fade out well before the key rows, so
+     the keyboard itself always sits on its plain dark panel, unchanged
+     and fully legible. */
+  #view-space .keyboard-wrap::before,
+  #view-space .keyboard-wrap::after{
+    content:'';
+    position:absolute;
+    top:0; bottom:0;
+    width:34%;
+    pointer-events:none;
+    opacity:0.55;
+    z-index:-1;
+  }
+  #view-space .keyboard-wrap::before{
+    left:0;
+    background:
+      radial-gradient(circle at 0% 50%, var(--world-accent-2,#223066), transparent 72%),
+      radial-gradient(circle at 22% 15%, var(--world-accent-1,#223066), transparent 60%);
+  }
+  #view-space .keyboard-wrap::after{
+    right:0;
+    background:
+      radial-gradient(circle at 100% 50%, var(--world-accent-1,#223066), transparent 72%),
+      radial-gradient(circle at 78% 85%, var(--world-accent-2,#223066), transparent 60%);
   }
   .kb-row{
     display:flex;
@@ -3065,23 +3099,23 @@
   }
   .star-tw{
     position:absolute;
-    background:#fff;
+    background:var(--star-color,#fff);
     border-radius:50%;
     pointer-events:none;
     animation: star-twinkle 2.4s ease-in-out infinite;
   }
   @keyframes star-twinkle{
     0%,100%{ opacity:0.25; transform:scale(0.8); }
-    50%{ opacity:1; transform:scale(1.3); box-shadow:0 0 6px #fff; }
+    50%{ opacity:1; transform:scale(1.3); box-shadow:0 0 6px var(--star-color,#fff); }
   }
   .shooting-star{
     position:absolute;
     top:12%; left:-10%;
     width:3px; height:3px;
-    background:#fff;
+    background:var(--star-color,#fff);
     border-radius:50%;
     pointer-events:none;
-    box-shadow:0 0 6px 2px #fff;
+    box-shadow:0 0 6px 2px var(--star-color,#fff);
     animation: shoot 5s linear infinite 2s;
     opacity:0;
   }
@@ -3090,7 +3124,7 @@
     position:absolute;
     right:2px; top:1px;
     width:60px; height:1.5px;
-    background:linear-gradient(90deg, #fff, transparent);
+    background:linear-gradient(90deg, var(--star-color,#fff), transparent);
     transform-origin:right center;
   }
   @keyframes shoot{
@@ -3098,6 +3132,19 @@
     3%{ opacity:1; }
     18%{ transform:translate(60vw,26vh); opacity:0; }
     100%{ transform:translate(60vw,26vh); opacity:0; }
+  }
+  /* One-shot version triggered from JS during actual gameplay (the loop
+     animation above is only used for the decorative intro screen) — plays
+     once across a random lane and is removed by its own timer, since each
+     gameplay shooting star is a fresh element rather than a fixed looper. */
+  .shooting-star.gameplay-shoot{
+    animation: shoot-once 1.8s linear forwards;
+  }
+  @keyframes shoot-once{
+    0%{ transform:translate(0,0); opacity:0; }
+    6%{ opacity:1; }
+    85%{ opacity:0.85; }
+    100%{ transform:translate(70vw,32vh); opacity:0; }
   }
   #game-space{
     --star-color:#fff;
@@ -3282,6 +3329,53 @@
   @keyframes parallax-drift-close{
     0%{ transform:translate(0,0); }
     100%{ transform:translate(-260px,480px); }
+  }
+  /* ---------- Universal atmosphere upgrade: every world (including
+     milkyway) now also gets a soft, slowly breathing colour-wash built
+     straight from its own --world-accent-1/2 tokens — no per-world art
+     needed — plus a scattering of genuinely twinkling stars placed
+     directly in the live play field. Previously the actual game view's
+     starfield was one flat, static background-image; twinkling stars
+     only existed as decoration on the intro screen. Both sit at the very
+     back, behind the hand-authored per-world parallax/terrain/signature
+     layers above. ---------- */
+  .world-nebula-wash{
+    position:absolute; inset:-20%;
+    pointer-events:none; z-index:0;
+    mix-blend-mode:screen;
+    opacity:0.5;
+    background:
+      radial-gradient(38% 30% at 18% 22%, var(--world-accent-1,#4DE8FF), transparent 70%),
+      radial-gradient(42% 34% at 82% 78%, var(--world-accent-2,#3A6DFF), transparent 70%);
+    filter:blur(26px);
+    animation: nebula-breathe 15s ease-in-out infinite;
+  }
+  @keyframes nebula-breathe{
+    0%,100%{ transform:translate(0,0) scale(1); opacity:0.4; }
+    50%{ transform:translate(-2%,2%) scale(1.08); opacity:0.58; }
+  }
+  .world-sparkle-layer{
+    position:absolute; inset:0;
+    pointer-events:none; z-index:0;
+  }
+  /* Extra shimmer on the two slowest parallax layers: a gentle blur
+     breathe layered on top of the existing drift, so the deep dust reads
+     as soft atmosphere rather than a crisp, static image scrolling past.
+     (Added as a separate rule further down the cascade so it only takes
+     over the `animation` property — the base opacity above still applies.) */
+  .world-parallax-layer.layer-far{
+    animation: parallax-drift-far 100s linear infinite, layer-shimmer-far 9s ease-in-out infinite;
+  }
+  .world-parallax-layer.layer-close{
+    animation: parallax-drift-close 26s linear infinite, layer-shimmer-close 7s ease-in-out infinite 1s;
+  }
+  @keyframes layer-shimmer-far{
+    0%,100%{ filter:blur(0px); opacity:0.55; }
+    50%{ filter:blur(0.8px); opacity:0.7; }
+  }
+  @keyframes layer-shimmer-close{
+    0%,100%{ filter:blur(0px); opacity:0.5; }
+    50%{ filter:blur(0.6px); opacity:0.62; }
   }
   /* Black Hole world: far layer = faint drifting violet nebula wisps;
      near layer = bigger, sparser debris chunks with a purple rim-light,
@@ -3982,6 +4076,150 @@
     20%{ opacity:0.7; }
     60%{ transform:translateY(-90px) scale(1.3); opacity:0.5; }
     100%{ transform:translateY(-170px) scale(1.9); opacity:0; }
+  }
+  /* ---------- World terrain silhouettes: a low horizon-band shape per
+     world, giving each one distinct ground/structure/formation identity
+     beyond dust + one centerpiece, so it stops reading as "generic space
+     with drifting particles". Kept deliberately low-contrast (flat fills,
+     no glow, no eyes/faces) and confined to a shallow band along an edge
+     so invaders — bright, saturated, glowing — always read clearly on
+     top of it. Sits at z-index 0, same layer as the signature/parallax
+     art, well below the invaders themselves. ---------- */
+  .world-terrain, .world-terrain-top, .world-terrain-float{
+    position:absolute;
+    pointer-events:none;
+    z-index:0;
+  }
+  .world-terrain{ left:0; right:0; bottom:0; }
+  .world-terrain-top{ left:0; right:0; top:0; }
+  /* Black Hole: a low jagged ridge of rubble caught at the event
+     horizon's edge. */
+  .world-terrain.terr-blackhole{
+    height:16%;
+    clip-path: polygon(0% 100%,0% 70%,6% 55%,13% 68%,20% 40%,28% 62%,36% 35%,44% 58%,52% 30%,60% 55%,68% 38%,76% 60%,84% 42%,92% 58%,100% 45%,100% 100%);
+    background: linear-gradient(180deg, rgba(124,58,237,0) 0%, rgba(58,30,110,0.5) 45%, rgba(18,10,32,0.72) 100%);
+  }
+  /* Frozen Comet Belt: a jagged pale ice-shelf horizon. */
+  .world-terrain.terr-frozencomet{
+    height:18%;
+    clip-path: polygon(0% 100%,0% 60%,8% 78%,16% 45%,24% 70%,33% 30%,42% 65%,50% 20%,58% 58%,67% 25%,76% 62%,85% 35%,93% 68%,100% 40%,100% 100%);
+    background: linear-gradient(180deg, rgba(186,230,253,0) 0%, rgba(120,190,230,0.45) 45%, rgba(24,58,92,0.68) 100%);
+  }
+  /* Molten Core: dark volcanic spires jutting up through the lava glow
+     already provided by the signature centerpiece. */
+  .world-terrain.terr-moltencore{
+    height:22%;
+    clip-path: polygon(0% 100%,0% 80%,5% 50%,11% 82%,18% 35%,26% 78%,33% 20%,40% 72%,48% 15%,56% 68%,64% 25%,72% 75%,80% 18%,88% 70%,95% 40%,100% 75%,100% 100%);
+    background: linear-gradient(180deg, rgba(217,41,28,0) 0%, rgba(110,20,10,0.55) 40%, rgba(18,4,0,0.8) 100%);
+  }
+  /* Cyber Grid: a blocky digital city skyline. */
+  .world-terrain.terr-cybergrid{
+    height:24%;
+    clip-path: polygon(0% 100%,0% 55%,6% 55%,6% 40%,12% 40%,12% 62%,18% 62%,18% 30%,25% 30%,25% 50%,31% 50%,31% 20%,38% 20%,38% 58%,44% 58%,44% 35%,50% 35%,50% 65%,57% 65%,57% 25%,63% 25%,63% 48%,70% 48%,70% 18%,76% 18%,76% 55%,83% 55%,83% 38%,89% 38%,89% 60%,95% 60%,95% 28%,100% 28%,100% 100%);
+    background: linear-gradient(180deg, rgba(46,255,232,0) 0%, rgba(14,14,42,0.5) 30%, rgba(4,4,18,0.8) 100%);
+    box-shadow: inset 0 1px 0 0 rgba(46,255,232,0.35);
+  }
+  /* Desert Wastes: rolling dune ridges. */
+  .world-terrain.terr-desertwastes{
+    height:16%;
+    clip-path: polygon(0% 100%,0% 75%,10% 60%,20% 70%,30% 50%,38% 42%,42% 55%,50% 30%,58% 55%,66% 42%,74% 65%,84% 55%,92% 68%,100% 58%,100% 100%);
+    background: linear-gradient(180deg, rgba(255,231,168,0) 0%, rgba(201,138,46,0.5) 45%, rgba(84,54,18,0.7) 100%);
+  }
+  /* Storm Nebula: soft bulging storm-cloud bank, not sharp peaks — reads
+     as cloud rather than mountain. */
+  .world-terrain.terr-stormnebula{
+    height:20%;
+    background:
+      radial-gradient(70px 44px at 8% 100%, rgba(107,91,255,0.5), transparent 70%),
+      radial-gradient(90px 54px at 27% 100%, rgba(60,50,120,0.55), transparent 70%),
+      radial-gradient(75px 46px at 47% 100%, rgba(107,91,255,0.48), transparent 70%),
+      radial-gradient(95px 56px at 68% 100%, rgba(60,50,120,0.55), transparent 70%),
+      radial-gradient(72px 45px at 88% 100%, rgba(107,91,255,0.48), transparent 70%);
+  }
+  /* Pluto's Paradise: a pastel crystalline-ice ridge, echoing Frozen
+     Comet's jaggedness but in the aurora world's own palette. */
+  .world-terrain.terr-plutoparadise{
+    height:16%;
+    clip-path: polygon(0% 100%,0% 65%,9% 45%,18% 68%,27% 35%,36% 60%,45% 25%,54% 58%,63% 32%,72% 62%,81% 40%,90% 65%,100% 48%,100% 100%);
+    background: linear-gradient(180deg, rgba(124,255,196,0) 0%, rgba(150,110,190,0.42) 45%, rgba(50,32,80,0.65) 100%);
+  }
+  /* Ashfall Wastes: a broken, uneven ruined-tower skyline with an
+     ember-lit horizon behind it. */
+  .world-terrain.terr-ashfallwastes{
+    height:22%;
+    clip-path: polygon(0% 100%,0% 60%,4% 60%,4% 40%,9% 40%,9% 72%,15% 72%,15% 30%,20% 30%,20% 55%,26% 55%,26% 45%,32% 45%,32% 68%,39% 68%,39% 35%,45% 35%,45% 58%,52% 58%,52% 25%,58% 25%,58% 50%,65% 50%,65% 15%,71% 15%,71% 62%,78% 62%,78% 32%,85% 32%,85% 55%,92% 55%,92% 22%,100% 22%,100% 100%);
+    background: linear-gradient(180deg, rgba(201,196,188,0) 0%, rgba(90,80,70,0.45) 35%, rgba(255,107,53,0.2) 70%, rgba(26,18,14,0.82) 100%);
+  }
+  /* Crystal Caverns: the cave closes in from both top and bottom —
+     stalagmites rising, stalactites hanging. */
+  .world-terrain.terr-crystalcaverns{
+    height:20%;
+    clip-path: polygon(0% 100%,0% 70%,5% 40%,10% 75%,16% 30%,22% 68%,28% 20%,34% 62%,40% 15%,46% 58%,52% 25%,58% 65%,64% 18%,70% 60%,76% 30%,82% 68%,88% 22%,94% 55%,100% 35%,100% 100%);
+    background: linear-gradient(180deg, rgba(255,214,245,0) 0%, rgba(156,77,204,0.4) 45%, rgba(52,14,68,0.68) 100%);
+    filter: drop-shadow(0 0 10px rgba(255,184,240,0.2));
+  }
+  .world-terrain-top.terr-top-crystalcaverns{
+    height:18%;
+    clip-path: polygon(0% 0%,0% 30%,5% 60%,10% 25%,16% 70%,22% 32%,28% 80%,34% 38%,40% 85%,46% 42%,52% 75%,58% 35%,64% 82%,70% 40%,76% 70%,82% 32%,88% 78%,94% 45%,100% 65%,100% 0%);
+    background: linear-gradient(0deg, rgba(255,214,245,0) 0%, rgba(156,77,204,0.4) 45%, rgba(52,14,68,0.68) 100%);
+    filter: drop-shadow(0 0 10px rgba(255,184,240,0.2));
+  }
+  /* Ancient Ruins: a temple pediment silhouette over a row of columns. */
+  .world-terrain.terr-ruins{
+    height:20%;
+    clip-path: polygon(0% 100%,0% 55%,50% 20%,100% 55%,100% 100%);
+    background:
+      repeating-linear-gradient(90deg, rgba(232,196,104,0.5) 0 10px, transparent 10px 26px),
+      linear-gradient(180deg, rgba(232,196,104,0) 0%, rgba(120,90,40,0.55) 100%);
+  }
+  /* Haunted Manor: a crooked gothic rooftop line with bare thin trees. */
+  .world-terrain.terr-haunted{
+    height:20%;
+    clip-path: polygon(0% 100%,0% 60%,5% 45%,9% 60%,9% 25%,11% 25%,11% 60%,18% 60%,18% 40%,26% 40%,26% 55%,26% 30%,30% 30%,30% 55%,38% 55%,38% 20%,40% 20%,40% 55%,48% 55%,48% 45%,56% 45%,56% 60%,64% 60%,64% 35%,66% 35%,66% 60%,74% 60%,74% 42%,82% 42%,82% 58%,90% 58%,90% 38%,100% 38%,100% 100%);
+    background: linear-gradient(180deg, rgba(154,255,192,0) 0%, rgba(58,38,86,0.5) 40%, rgba(16,8,28,0.75) 100%);
+  }
+  /* Carnival Nightmare: a row of striped big-top tent peaks. */
+  .world-terrain.terr-carnival{
+    height:18%;
+    clip-path: polygon(0% 100%,0% 55%,6% 30%,12% 55%,18% 25%,24% 55%,30% 32%,36% 55%,42% 22%,48% 55%,54% 30%,60% 55%,66% 25%,72% 55%,78% 32%,84% 55%,90% 22%,96% 55%,100% 40%,100% 100%);
+    background:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 8px, transparent 8px 16px),
+      linear-gradient(180deg, rgba(255,209,102,0) 0%, rgba(255,92,138,0.45) 45%, rgba(110,20,55,0.7) 100%);
+  }
+  /* Steampunk Skyworks: boxy factory blocks with tall thin chimneys. */
+  .world-terrain.terr-steampunk{
+    height:22%;
+    clip-path: polygon(0% 100%,0% 55%,5% 55%,5% 30%,8% 30%,8% 55%,14% 55%,14% 45%,20% 45%,20% 60%,26% 60%,26% 20%,29% 20%,29% 60%,35% 60%,35% 40%,42% 40%,42% 58%,48% 58%,48% 25%,51% 25%,51% 58%,58% 58%,58% 35%,65% 35%,65% 55%,71% 55%,71% 18%,74% 18%,74% 55%,80% 55%,80% 42%,87% 42%,87% 60%,93% 60%,93% 28%,100% 28%,100% 100%);
+    background: linear-gradient(180deg, rgba(217,160,91,0) 0%, rgba(74,90,94,0.5) 35%, rgba(24,26,28,0.8) 100%);
+  }
+  /* Bioluminescent Cave: a cluster of glowing mushroom-cap domes. */
+  .world-terrain.terr-biocave{
+    height:18%;
+    background:
+      radial-gradient(52px 56px at 10% 100%, rgba(107,255,192,0.5), transparent 70%),
+      radial-gradient(72px 64px at 30% 100%, rgba(46,217,195,0.55), transparent 70%),
+      radial-gradient(46px 50px at 50% 100%, rgba(107,255,192,0.45), transparent 70%),
+      radial-gradient(66px 60px at 72% 100%, rgba(46,217,195,0.5), transparent 70%),
+      radial-gradient(56px 58px at 92% 100%, rgba(107,255,192,0.5), transparent 70%);
+    filter: drop-shadow(0 0 8px rgba(107,255,192,0.25));
+  }
+  /* Zero-G Playground: no ground at all — instead a couple of floating
+     playground shapes (a monkey-bar ring, a drifting platform bar)
+     tucked near the edges so the middle stays clear for gameplay. */
+  .world-terrain-float.terr-float-zerog{ inset:0; }
+  .world-terrain-float.terr-float-zerog .zg-ring{
+    position:absolute; top:38%; left:4%;
+    width:min(16vw,90px); height:min(16vw,90px);
+    border-radius:50%;
+    border:7px solid rgba(255,158,214,0.32);
+    animation: sig-zero-bob 6.5s ease-in-out infinite;
+  }
+  .world-terrain-float.terr-float-zerog .zg-bar{
+    position:absolute; top:62%; right:6%;
+    width:min(20vw,120px); height:14px;
+    border-radius:7px;
+    background: rgba(77,224,255,0.3);
+    animation: sig-zero-bob 5.5s ease-in-out 1s infinite;
   }
   .world-ambience-tint{
     position:absolute; inset:0;
@@ -5200,10 +5438,12 @@
       </div>
 
       <div class="keyboard-wrap" id="keyboard-wrap-sp">
-        <div class="kb-row" id="row-num-sp"></div>
-        <div class="kb-row" id="row1-sp"></div>
-        <div class="kb-row" id="row2-sp"></div>
-        <div class="kb-row" id="row3-sp"></div>
+        <div class="kb-rows">
+          <div class="kb-row" id="row-num-sp"></div>
+          <div class="kb-row" id="row1-sp"></div>
+          <div class="kb-row" id="row2-sp"></div>
+          <div class="kb-row" id="row3-sp"></div>
+        </div>
       </div>
     </div>
 
@@ -9312,6 +9552,26 @@ const pauseSpace = (function(){
     nextWorldEffectAt = performance.now() + extra + (range[0] + Math.random()*(range[1]-range[0])) * freqMul;
   }
 
+  // Roaming shooting star: purely decorative, fires on a random interval
+  // through an active round in every world. Routed through schedule() (see
+  // gameTimers above) so quitting or ending the game automatically cancels
+  // any pending one instead of needing its own cleanup path.
+  function scheduleNextShootingStar(){
+    schedule(()=>{
+      spawnShootingStar();
+      scheduleNextShootingStar();
+    }, 7000 + Math.random()*8000);
+  }
+  function spawnShootingStar(){
+    if(!game) return;
+    const star = document.createElement('div');
+    star.className = 'shooting-star gameplay-shoot';
+    star.style.top = (4 + Math.random()*34).toFixed(1)+'%';
+    star.style.left = '-8%';
+    game.appendChild(star);
+    schedule(()=>star.remove(), 2000);
+  }
+
   function showWorldEffectTint(tint){
     const ov = document.createElement('div');
     ov.className = 'power-screen-overlay';
@@ -9409,6 +9669,12 @@ const pauseSpace = (function(){
   // CSS). All 9 non-milkyway worlds now have art; milkyway keeps its plain
   // neutral starfield as the baseline "home" world.
   const WORLD_PARALLAX = ['blackhole', 'frozencomet', 'moltencore', 'cybergrid', 'desertwastes', 'stormnebula', 'plutoparadise', 'ashfallwastes', 'crystalcaverns', 'ruins', 'haunted', 'carnival', 'steampunk', 'biocave', 'zerog'];
+  // Worlds with a ground/structure terrain silhouette (see .terr-<world>
+  // CSS) along the bottom edge. Zero-G has no ground by theme — it gets
+  // floating shapes instead (see WORLD_TERRAIN_FLOAT below). Milkyway
+  // stays the plain baseline world, same as WORLD_PARALLAX.
+  const WORLD_TERRAIN = ['blackhole', 'frozencomet', 'moltencore', 'cybergrid', 'desertwastes', 'stormnebula', 'plutoparadise', 'ashfallwastes', 'crystalcaverns', 'ruins', 'haunted', 'carnival', 'steampunk', 'biocave'];
+  const WORLD_TERRAIN_FLOAT = ['zerog'];
   function clearWorldAmbience(){
     const oldTint = document.getElementById('world-ambience-tint-sp');
     if(oldTint) oldTint.remove();
@@ -9418,6 +9684,14 @@ const pauseSpace = (function(){
     if(oldParallax) oldParallax.remove();
     const oldSignature = document.getElementById('world-signature-sp');
     if(oldSignature) oldSignature.remove();
+    const oldSparkle = document.getElementById('world-sparkle-sp');
+    if(oldSparkle) oldSparkle.remove();
+    const oldNebula = document.getElementById('world-nebula-sp');
+    if(oldNebula) oldNebula.remove();
+    const oldTerrain = document.getElementById('world-terrain-sp');
+    if(oldTerrain) oldTerrain.remove();
+    const oldTerrainTop = document.getElementById('world-terrain-top-sp');
+    if(oldTerrainTop) oldTerrainTop.remove();
     stopWorldAmbientAudio();
   }
   // Per-world signature centerpiece markup. Most worlds are a single
@@ -9463,10 +9737,56 @@ const pauseSpace = (function(){
       sig.innerHTML = WORLD_SIGNATURE_HTML[world];
       game.insertBefore(sig, game.firstChild);
     }
+    if(WORLD_TERRAIN.includes(world)){
+      const terr = document.createElement('div');
+      terr.id = 'world-terrain-sp';
+      terr.className = 'world-terrain terr-' + world;
+      game.insertBefore(terr, game.firstChild);
+      if(world === 'crystalcaverns'){
+        const terrTop = document.createElement('div');
+        terrTop.id = 'world-terrain-top-sp';
+        terrTop.className = 'world-terrain-top terr-top-crystalcaverns';
+        game.insertBefore(terrTop, game.firstChild);
+      }
+    } else if(WORLD_TERRAIN_FLOAT.includes(world)){
+      const float = document.createElement('div');
+      float.id = 'world-terrain-sp';
+      float.className = 'world-terrain-float terr-float-' + world;
+      float.innerHTML = '<div class="zg-ring"></div><div class="zg-bar"></div>';
+      game.insertBefore(float, game.firstChild);
+    }
     const tint = document.createElement('div');
     tint.id = 'world-ambience-tint-sp';
     tint.className = 'world-ambience-tint env-' + world;
     game.insertBefore(tint, game.firstChild);
+
+    // Universal backdrop upgrade, applied to every world (milkyway
+    // included) since neither piece relies on per-world hand-drawn art:
+    // a handful of twinkling stars scattered through the live play field,
+    // plus a slow breathing colour-wash beneath everything else. Inserted
+    // last so they land at the very back of the stack.
+    const sparkle = document.createElement('div');
+    sparkle.id = 'world-sparkle-sp';
+    sparkle.className = 'world-sparkle-layer';
+    for(let i=0;i<9;i++){
+      const s = document.createElement('div');
+      s.className = 'star-tw';
+      const size = (Math.random()*2.5+1.5).toFixed(1);
+      s.style.width = size+'px';
+      s.style.height = size+'px';
+      s.style.top = (Math.random()*70+4).toFixed(1)+'%';
+      s.style.left = (Math.random()*94+3).toFixed(1)+'%';
+      s.style.animationDuration = (1.8+Math.random()*1.8).toFixed(2)+'s';
+      s.style.animationDelay = (-Math.random()*3).toFixed(2)+'s';
+      sparkle.appendChild(s);
+    }
+    game.insertBefore(sparkle, game.firstChild);
+
+    const nebula = document.createElement('div');
+    nebula.id = 'world-nebula-sp';
+    nebula.className = 'world-nebula-wash';
+    game.insertBefore(nebula, game.firstChild);
+
     const cfg = WORLD_AMBIENCE[world];
     if(!cfg) return;
     const wrap = document.createElement('div');
@@ -12358,6 +12678,7 @@ const pauseSpace = (function(){
     resetWorldEffect();
     scheduleNextWorldEffect(true);
     applyWorldAmbience(currentWorld);
+    scheduleNextShootingStar();
     hidePowerOverlay();
     powerCharges = 0;
     updatePowerBadge();
