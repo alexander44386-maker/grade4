@@ -1717,8 +1717,97 @@
     gap:10px;
     background:radial-gradient(circle at 50% 40%, rgba(40,10,10,0.72), rgba(10,4,4,0.86));
     animation: level-popup-fade 0.3s ease;
+    overflow:hidden;
   }
   .boss-overlay.leaving{ animation: level-popup-fade-out 0.35s ease forwards; }
+  /* Slow-rotating energy swirl behind everything, purely atmospheric —
+     makes the arena feel alive instead of a flat gradient sitting still. */
+  .boss-overlay::before{
+    content:'';
+    position:absolute; inset:-40%;
+    z-index:-2;
+    background:conic-gradient(from 0deg, var(--boss-glow-color, rgba(255,148,102,0.75)) 0deg, transparent 60deg, transparent 300deg, var(--boss-glow-color, rgba(255,148,102,0.75)) 360deg);
+    opacity:0.16;
+    mix-blend-mode:screen;
+    animation: boss-swirl-spin 14s linear infinite;
+    pointer-events:none;
+  }
+  .boss-overlay.rage::before{
+    opacity:0.32;
+    animation-duration:6s;
+  }
+  @keyframes boss-swirl-spin{
+    from{ transform:rotate(0deg); }
+    to{ transform:rotate(360deg); }
+  }
+  /* Full-bleed flash used for hit-impact and defeat punctuation — a single
+     shared div toggled by JS, never affects layout/hit-detection. */
+  .boss-flash-screen{
+    position:absolute; inset:0; z-index:15;
+    background:#fff;
+    opacity:0;
+    pointer-events:none;
+  }
+  .boss-flash-screen.flash-hit{ animation: boss-flash-hit 0.18s ease-out; }
+  .boss-flash-screen.flash-defeat{ animation: boss-flash-defeat 0.5s ease-out; }
+  @keyframes boss-flash-hit{
+    0%{ opacity:0.28; }
+    100%{ opacity:0; }
+  }
+  @keyframes boss-flash-defeat{
+    0%{ opacity:0.9; }
+    100%{ opacity:0; }
+  }
+  /* Diagonal alert stripes that sweep in during the boss's intro, then
+     fade to a faint idle scan — purely decorative "warning klaxon" read. */
+  .boss-warning-stripes{
+    position:absolute; inset:-10% -10%;
+    z-index:-1;
+    background:repeating-linear-gradient(45deg, rgba(255,209,102,0.16) 0 22px, transparent 22px 44px);
+    opacity:0;
+    pointer-events:none;
+  }
+  .boss-overlay.taunt-phase .boss-warning-stripes{
+    animation: boss-stripes-sweep 2.6s linear both;
+  }
+  @keyframes boss-stripes-sweep{
+    0%{ opacity:0; transform:translateX(-6%); }
+    12%{ opacity:1; }
+    88%{ opacity:1; }
+    100%{ opacity:0; transform:translateX(6%); }
+  }
+  /* Expanding shockwave ring fired once on boss defeat. */
+  .boss-shockwave{
+    position:absolute; left:50%; top:50%; z-index:2;
+    width:40px; height:40px;
+    border-radius:50%;
+    border:6px solid #fff;
+    transform:translate(-50%,-50%) scale(0);
+    opacity:0;
+    pointer-events:none;
+    animation: boss-shockwave-burst 0.7s cubic-bezier(.15,.8,.4,1) forwards;
+  }
+  @keyframes boss-shockwave-burst{
+    0%{ transform:translate(-50%,-50%) scale(0); opacity:0.9; border-width:10px; }
+    100%{ transform:translate(-50%,-50%) scale(9); opacity:0; border-width:0px; }
+  }
+  /* Little hype word ("NICE!", "POW!"...) that pops up near the boss on
+     a hit and floats away — purely decorative juice, no gameplay effect. */
+  .boss-hype-text{
+    position:absolute; z-index:3;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:800;
+    font-size:clamp(16px,3vw,22px);
+    color:#FFD166;
+    text-shadow:0 2px 8px rgba(0,0,0,0.6);
+    pointer-events:none;
+    animation: boss-hype-float 0.7s ease-out forwards;
+  }
+  @keyframes boss-hype-float{
+    0%{ transform:translate(-50%,-50%) scale(0.5); opacity:0; }
+    25%{ transform:translate(-50%,-120%) scale(1.15); opacity:1; }
+    100%{ transform:translate(-50%,-220%) scale(1); opacity:0; }
+  }
   .boss-intro{
     font-family:'Baloo 2', sans-serif;
     font-weight:800;
@@ -1733,30 +1822,60 @@
     50%{ transform:scale(1.06); }
   }
   .boss-figure{
+    position:relative; z-index:1;
     font-size:clamp(70px,14vw,120px);
     line-height:1;
     filter:drop-shadow(0 10px 18px rgba(0,0,0,0.5));
     animation: boss-idle 1.6s ease-in-out infinite;
   }
   @keyframes boss-idle{
-    0%,100%{ transform:translateY(0) rotate(-2deg) scale(1); }
-    35%{ transform:translateY(-5px) rotate(1deg) scale(1.015); }
-    50%{ transform:translateY(-9px) rotate(2deg) scale(1.03); }
-    75%{ transform:translateY(-4px) rotate(0.5deg) scale(1.01); }
+    0%,100%{ transform:translateY(0) rotate(-2deg) scale(1,1); }
+    35%{ transform:translateY(-5px) rotate(1deg) scale(1.015,0.985); }
+    50%{ transform:translateY(-9px) rotate(2deg) scale(1.03,0.97); }
+    75%{ transform:translateY(-4px) rotate(0.5deg) scale(1.01,0.99); }
+  }
+  /* Rage idle: once HP drops low, the boss stops calmly bobbing and
+     starts visibly seething — faster, bigger, twitchier. Swapped in by
+     JS toggling this class alongside .boss-overlay.rage. */
+  .boss-figure.rage{
+    animation: boss-idle-rage 0.55s ease-in-out infinite;
+  }
+  @keyframes boss-idle-rage{
+    0%,100%{ transform:translateY(0) rotate(-4deg) scale(1.04,0.97); }
+    50%{ transform:translateY(-12px) rotate(5deg) scale(1.1,0.94); }
+  }
+  /* Entrance: plays once when the boss first appears (bigger, punchier
+     motion than the idle bob), then boss-idle takes over once the JS
+     removes this class a beat later. Same specificity trick as the
+     other .boss-figure.X rules: while this class is present it fully
+     replaces the idle animation instead of layering on top of it. */
+  .boss-figure.boss-enter{
+    animation: boss-entrance 0.65s cubic-bezier(.22,1.4,.36,1) both;
+  }
+  @keyframes boss-entrance{
+    0%{ transform:translateY(-150px) scale(0.4) rotate(-10deg); opacity:0; }
+    55%{ transform:translateY(16px) scale(1.15) rotate(4deg); opacity:1; }
+    75%{ transform:translateY(-8px) scale(0.96) rotate(-2deg); opacity:1; }
+    100%{ transform:translateY(0) scale(1) rotate(0deg); opacity:1; }
   }
   .boss-figure.boss-shake{ animation: shake 0.28s ease; }
-  .boss-figure.boss-hit{ animation: boss-hit-flash 0.25s ease; }
+  .boss-figure.boss-hit{ animation: boss-hit-flash 0.32s cubic-bezier(.36,.07,.19,.97); }
   @keyframes boss-hit-flash{
-    0%{ filter:brightness(2.4) drop-shadow(0 10px 18px rgba(255,80,80,0.8)); transform:scale(0.9) rotate(-4deg); }
-    100%{ filter:brightness(1) drop-shadow(0 10px 18px rgba(0,0,0,0.5)); transform:scale(1) rotate(0deg); }
+    0%{ filter:brightness(1) drop-shadow(0 10px 18px rgba(0,0,0,0.5)); transform:scale(1) rotate(0deg); }
+    15%{ filter:brightness(2.6) drop-shadow(0 10px 22px rgba(255,80,80,0.9)); transform:scale(0.82,1.12) rotate(-6deg) translateX(-10px); }
+    40%{ filter:brightness(1.6) drop-shadow(0 10px 18px rgba(255,120,80,0.7)); transform:scale(1.08,0.94) rotate(4deg) translateX(6px); }
+    70%{ filter:brightness(1.1); transform:scale(0.97,1.02) rotate(-1deg) translateX(-2px); }
+    100%{ filter:brightness(1) drop-shadow(0 10px 18px rgba(0,0,0,0.5)); transform:scale(1) rotate(0deg) translateX(0); }
   }
   .boss-figure.boss-defeated{
-    animation: boss-defeat-spin 0.9s ease forwards;
+    animation: boss-defeat-spin 1.1s cubic-bezier(.36,.07,.19,.97) forwards;
   }
   @keyframes boss-defeat-spin{
-    0%{ transform:scale(1) rotate(0deg); opacity:1; }
-    60%{ transform:scale(1.3) rotate(20deg); opacity:1; }
-    100%{ transform:scale(0) rotate(60deg); opacity:0; }
+    0%{ transform:scale(1) rotate(0deg); opacity:1; filter:brightness(1) saturate(1); }
+    18%{ transform:scale(1.35,0.75) rotate(-8deg); opacity:1; filter:brightness(2.2) saturate(1.4); }
+    38%{ transform:scale(0.85,1.2) rotate(10deg); opacity:1; filter:brightness(2.6) saturate(1.6); }
+    60%{ transform:scale(1.4) rotate(30deg); opacity:1; filter:brightness(3) saturate(0.4); }
+    100%{ transform:scale(0) rotate(80deg); opacity:0; filter:brightness(3) saturate(0.2); }
   }
   .boss-hud-panel{
     width:min(70vw,320px);
@@ -1775,6 +1894,13 @@
     content:'';
     position:absolute; top:0; left:0; right:0; height:2px;
     background:linear-gradient(90deg, #FF6F5A, #FFD166, #FF6F5A);
+  }
+  .boss-hud-panel.rage{
+    animation: boss-hud-rage-pulse 0.6s ease-in-out infinite;
+  }
+  @keyframes boss-hud-rage-pulse{
+    0%,100%{ box-shadow:0 0 0 rgba(255,80,80,0); }
+    50%{ box-shadow:0 0 18px 2px rgba(255,80,80,0.55); }
   }
   .boss-hpbar{
     width:100%;
@@ -1904,6 +2030,61 @@
   .boss-overlay.taunt-phase .boss-timer,
   .boss-overlay.taunt-phase .boss-hint{
     display:none;
+  }
+
+  /* ---------- Boss ambient effects: pulsing energy rings behind the
+     figure plus a slow drift of little sparkles — pure background motion
+     so the fight never sits dead-still between keystrokes. Purely
+     decorative: doesn't touch timing, hit detection, or difficulty. ---------- */
+  .boss-figure-wrap{
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+    transition: transform 1.05s cubic-bezier(.45,.05,.55,.95);
+    will-change: transform;
+  }
+  .boss-aura-ring{
+    position:absolute; left:50%; top:50%; z-index:0;
+    width:70px; height:70px;
+    border-radius:50%;
+    border:3px solid var(--boss-glow-color, rgba(255,209,102,0.6));
+    transform:translate(-50%,-50%) scale(0.5);
+    pointer-events:none;
+    animation: boss-aura-pulse 2.4s ease-out infinite;
+  }
+  .boss-aura-ring.ring2{ animation-delay:1.2s; }
+  @keyframes boss-aura-pulse{
+    0%{ transform:translate(-50%,-50%) scale(0.45); opacity:0.6; }
+    100%{ transform:translate(-50%,-50%) scale(2.8); opacity:0; }
+  }
+  /* Rage: rings pulse faster, brighter, and a touch wider — reads as the
+     boss's energy spiking once its HP gets low. */
+  .boss-figure-wrap.rage .boss-aura-ring{
+    border-width:4px;
+    animation-duration:1.1s;
+    animation-name: boss-aura-pulse-rage;
+  }
+  @keyframes boss-aura-pulse-rage{
+    0%{ transform:translate(-50%,-50%) scale(0.4); opacity:0.85; }
+    100%{ transform:translate(-50%,-50%) scale(3.2); opacity:0; }
+  }
+  .boss-bg-particles{ position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:-1; }
+  .boss-bg-particle{
+    position:absolute; bottom:8%;
+    animation: boss-particle-float 3.2s linear forwards;
+  }
+  @keyframes boss-particle-float{
+    0%{ transform:translateY(0) scale(0.6) rotate(0deg); opacity:0; }
+    15%{ opacity:0.9; }
+    100%{ transform:translateY(-180px) scale(1.1) rotate(60deg); opacity:0; }
+  }
+  /* A quick bouncy "pop" the instant a letter is correctly typed, on top
+     of the existing hit/active color swap — gives each keystroke a little
+     more punch without changing what the letter shows or when. */
+  .boss-letter.letter-pop{ animation: boss-letter-pop 0.32s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes boss-letter-pop{
+    0%{ transform:scale(1); }
+    40%{ transform:scale(1.35) rotate(-6deg); }
+    100%{ transform:scale(1) rotate(0deg); }
   }
 
   /* ---------- Hearts (lives) HUD ---------- */
@@ -7658,9 +7839,16 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
   overlay.className = 'boss-overlay taunt-phase';
   overlay.style.background = theme.overlayBg;
   overlay.innerHTML =
+    '<div class="boss-warning-stripes"></div>' +
+    '<div class="boss-flash-screen"></div>' +
+    '<div class="boss-bg-particles"></div>' +
     '<div class="boss-intro">BOSS BATTLE!</div>' +
     '<div class="boss-name">' + bossInfo.name + '</div>' +
-    '<div class="boss-figure">' + (bossPhotoPM ? ('<img src="'+bossPhotoPM+'" style="width:min(220px,42vw);height:min(220px,42vw);object-fit:contain;filter:drop-shadow(0 10px 18px rgba(0,0,0,0.5));">') : bossEmoji) + '</div>' +
+    '<div class="boss-figure-wrap">' +
+      '<div class="boss-aura-ring ring1"></div>' +
+      '<div class="boss-aura-ring ring2"></div>' +
+      '<div class="boss-figure boss-enter">' + (bossPhotoPM ? ('<img src="'+bossPhotoPM+'" style="width:min(220px,42vw);height:min(220px,42vw);object-fit:contain;filter:drop-shadow(0 10px 18px rgba(0,0,0,0.5));">') : bossEmoji) + '</div>' +
+    '</div>' +
     '<div class="boss-taunt-bubble">' + tauntText + '</div>' +
     '<div class="boss-hud-panel">' +
       '<div class="boss-hpbar"><div class="boss-hpfill"></div></div>' +
@@ -7675,8 +7863,136 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
   const hpFill = overlay.querySelector('.boss-hpfill');
   const bossFigure = overlay.querySelector('.boss-figure');
   const timerEl = overlay.querySelector('.boss-timer');
+  const bgParticles = overlay.querySelector('.boss-bg-particles');
+  const flashScreen = overlay.querySelector('.boss-flash-screen');
+  const hudPanel = overlay.querySelector('.boss-hud-panel');
   hpFill.style.background = theme.hpGradient;
   bossFigure.style.filter = `drop-shadow(0 10px 18px ${theme.glow})`;
+  overlay.style.setProperty('--boss-glow-color', theme.glow);
+  overlay.querySelectorAll('.boss-aura-ring').forEach(r=>{ r.style.setProperty('--boss-glow-color', theme.glow); });
+
+  // Rage mode: once the boss drops to (or below) this much HP it visibly
+  // gets angrier — faster idle animation, brighter/faster aura pulses, a
+  // pulsing HUD glow, and a quicker ambient particle/spark cadence. Purely
+  // visual escalation; word length, timer, and hit detection don't change.
+  const RAGE_HP_PERCENT = 45;
+  let raging = false;
+  function maybeEnterRage(hpPercent){
+    if(raging || hpPercent > RAGE_HP_PERCENT) return;
+    raging = true;
+    overlay.classList.add('rage');
+    bossFigure.classList.add('rage');
+    figureWrap.classList.add('rage');
+    hudPanel.classList.add('rage');
+    const prevText = introEl.textContent;
+    introEl.textContent = 'WATCH OUT!';
+    schedule(()=>{ if(!finished) introEl.textContent = prevText; }, 1000);
+    speak('Watch out!');
+  }
+
+  // Little hype word ("NICE!", "POW!"...) popped up near the boss on a
+  // hit — purely decorative, doesn't touch scoring or hit detection.
+  const HYPE_WORDS = ['NICE!','POW!','ZAP!','WHAM!','BOOM!'];
+  function spawnHypeText(){
+    const or = overlay.getBoundingClientRect();
+    const fr = bossFigure.getBoundingClientRect();
+    const t = document.createElement('div');
+    t.className = 'boss-hype-text';
+    t.textContent = HYPE_WORDS[Math.floor(Math.random()*HYPE_WORDS.length)];
+    t.style.left = (fr.left - or.left + fr.width * (0.3 + Math.random()*0.4)) + 'px';
+    t.style.top = (fr.top - or.top + fr.height * 0.2) + 'px';
+    overlay.appendChild(t);
+    schedule(()=>t.remove(), 720);
+  }
+  function flashScreenPulse(cls, ms){
+    flashScreen.classList.remove('flash-hit','flash-defeat');
+    void flashScreen.offsetWidth;
+    flashScreen.classList.add(cls);
+    schedule(()=>flashScreen.classList.remove(cls), ms);
+  }
+
+  // Drop the entrance-only class once its animation has played so the
+  // regular idle bob (already defined on .boss-figure) takes back over.
+  schedule(()=>{ bossFigure.classList.remove('boss-enter'); }, 660);
+
+  // Boss patrol: the whole figure drifts side to side AND toward/away from
+  // camera throughout the fight (zoom + a matching vertical shift, plus a
+  // slight lean into the direction of travel) so it reads as an actual
+  // creature prowling around instead of just bobbing in one spot. This is
+  // on the wrapper, separate from boss-figure's own bob/rotate/hit
+  // animations, and never touches the word/timer/hit-detection logic —
+  // those all live in the HUD panel below, not on the boss itself.
+  const figureWrap = overlay.querySelector('.boss-figure-wrap');
+  let moveTimer = null;
+  function scheduleBossMove(){
+    const overlayW = overlay.getBoundingClientRect().width || 300;
+    const maxOffset = Math.min(70, overlayW*0.16);
+    const nextX = (Math.random()*2 - 1) * maxOffset;
+    const lean = nextX > 0 ? 3 : (nextX < 0 ? -3 : 0);
+    // Zoom range widens a bit once raging, so the charge-forward reads as
+    // more aggressive. Scaling up is paired with a small downward shift
+    // (and scaling down with a small upward shift) so it reads as the
+    // boss physically stepping closer/further, not just growing in place.
+    const zoomRange = raging ? 0.34 : 0.22;
+    const nextScale = 1 + (Math.random()*2 - 1) * zoomRange;
+    const nextY = (nextScale - 1) * 60;
+    const moveMs = raging ? (650 + Math.random()*550) : (1300 + Math.random()*1100);
+    figureWrap.style.transitionDuration = (moveMs/1000).toFixed(2) + 's';
+    figureWrap.style.transform = `translate(${nextX.toFixed(1)}px, ${nextY.toFixed(1)}px) scale(${nextScale.toFixed(2)}) rotate(${lean}deg)`;
+    moveTimer = schedule(scheduleBossMove, moveMs);
+  }
+  scheduleBossMove();
+
+  // Ambient sparkle drift behind the boss for the whole fight — quiet
+  // background motion, purely decorative, never touches gameplay.
+  const AMBIENT_PARTICLE_EMOJIS = ['✨','⭐'];
+  let ambientTimer = schedule(spawnAmbient, 300);
+  function spawnAmbient(){
+    const p = document.createElement('div');
+    p.className = 'boss-bg-particle';
+    p.textContent = AMBIENT_PARTICLE_EMOJIS[Math.floor(Math.random()*AMBIENT_PARTICLE_EMOJIS.length)];
+    p.style.left = (6 + Math.random()*88) + '%';
+    p.style.fontSize = (10 + Math.random()*10) + 'px';
+    p.style.animationDuration = (2.6 + Math.random()*1.6) + 's';
+    bgParticles.appendChild(p);
+    schedule(()=>p.remove(), 4400);
+    ambientTimer = schedule(spawnAmbient, (raging ? 130 : 260) + Math.random()*220);
+  }
+
+  // Small burst of sparks at the boss's current on-screen position —
+  // used on every correct hit and (bigger) on defeat. Self-contained here
+  // since startBossFight is shared across all 4 games and has no access
+  // to any single game's own particle helpers.
+  function bossSparkBurst(count, colors){
+    const or = overlay.getBoundingClientRect();
+    const fr = bossFigure.getBoundingClientRect();
+    const x = fr.left - or.left + fr.width/2;
+    const y = fr.top - or.top + fr.height/2;
+    const shapes = ['shape-circle','shape-star','shape-diamond'];
+    for(let i=0;i<count;i++){
+      const spawnDelay = Math.random()*70;
+      schedule(()=>{
+        const p = document.createElement('div');
+        p.className = 'confetti-piece ' + shapes[Math.floor(Math.random()*shapes.length)];
+        const sz = 5 + Math.random()*6;
+        p.style.width = sz+'px'; p.style.height = sz+'px';
+        p.style.left = x+'px'; p.style.top = y+'px';
+        const color = colors[Math.floor(Math.random()*colors.length)];
+        p.style.background = color;
+        p.style.boxShadow = `0 0 8px ${color}`;
+        const angle = Math.random()*Math.PI*2;
+        const dist = 35 + Math.random()*50;
+        const fx = Math.cos(angle)*dist;
+        const fy = Math.sin(angle)*dist - 18;
+        p.style.setProperty('--fx', fx+'px');
+        p.style.setProperty('--fy', fy+'px');
+        p.style.setProperty('--spin', (Math.random()<0.5?-1:1)*(260+Math.random()*260)+'deg');
+        p.style.setProperty('--fly', `translate(${fx}px, ${fy}px)`);
+        overlay.appendChild(p);
+        schedule(()=>p.remove(), 760);
+      }, spawnDelay);
+    }
+  }
   const letterEls = word.split('').map((ch, i)=>{
     const s = document.createElement('span');
     s.className = 'boss-letter' + (i===0 ? ' active' : '');
@@ -7713,10 +8029,21 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
     if(finished) return;
     finished = true;
     clearTimeout(tauntTimeout);
+    clearTimeout(ambientTimer);
+    clearTimeout(moveTimer);
     if(timerId) clearInterval(timerId);
     document.removeEventListener('keydown', onKey);
+    figureWrap.style.transitionDuration = '0.3s';
+    figureWrap.style.transform = 'translate(0px, 0px) scale(1) rotate(0deg)';
     if(won){
       hitStop(gameEl, 100);
+      flashScreenPulse('flash-defeat', 480);
+      const shockwave = document.createElement('div');
+      shockwave.className = 'boss-shockwave';
+      overlay.appendChild(shockwave);
+      schedule(()=>shockwave.remove(), 720);
+      bossSparkBurst(26, [theme.glow, '#FFD166', '#ffffff']);
+      schedule(()=>bossSparkBurst(18, [theme.glow, '#ffffff']), 180);
       bossFigure.classList.add('boss-defeated');
       introEl.textContent = 'BOSS DEFEATED!';
       screenShake(gameEl, 'heavy');
@@ -7748,14 +8075,21 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
       bossFigure.classList.add('boss-shake');
       return;
     }
-    letterEls[pointer].classList.remove('active');
-    letterEls[pointer].classList.add('hit');
+    const hitIdx = pointer;
+    letterEls[hitIdx].classList.remove('active');
+    letterEls[hitIdx].classList.add('hit', 'letter-pop');
+    schedule(()=>letterEls[hitIdx].classList.remove('letter-pop'), 340);
     pointer += 1;
-    hpFill.style.width = Math.max(0, 100 - Math.round((pointer/word.length)*100)) + '%';
+    const hpPercent = Math.max(0, 100 - Math.round((pointer/word.length)*100));
+    hpFill.style.width = hpPercent + '%';
     bossFigure.classList.remove('boss-hit');
     void bossFigure.offsetWidth;
     bossFigure.classList.add('boss-hit');
+    flashScreenPulse('flash-hit', 200);
+    bossSparkBurst(raging ? 10 : 6, [theme.glow, '#FFD166']);
+    if(hitIdx > 0 && hitIdx % 2 === 0) spawnHypeText();
     screenShake(gameEl, 'light');
+    maybeEnterRage(hpPercent);
     if(pointer < word.length){
       letterEls[pointer].classList.add('active');
     } else {
