@@ -7306,6 +7306,9 @@ const QUESTION_TYPES = [{
   id: "mcq",
   label: "🔤 Multiple Choice"
 }, {
+  id: "sva",
+  label: "🅰️🅱️ Subject-Verb Agreement"
+}, {
   id: "tf",
   label: "✅ True / False"
 }, {
@@ -7348,6 +7351,9 @@ const QUIZ_TYPE_OPTIONS = [{
 }, {
   id: "mcq",
   label: "🔤 Multiple Choice"
+}, {
+  id: "sva",
+  label: "🅰️🅱️ Subject-Verb Agreement"
 }, {
   id: "tf",
   label: "✅ True / False"
@@ -7653,6 +7659,16 @@ function normalizeQuestionsJSON(parsed, fallbackTopicRaw, forcedTopicRaw) {
         topic
       };
     }
+    if (t === "sva") {
+      return {
+        type: "sva",
+        q: String(p.q),
+        options: p.options.map(o => String(o)),
+        correct: Number.isInteger(p.correct) ? p.correct : 0,
+        explain: p.explain ? String(p.explain) : "",
+        topic
+      };
+    }
     return {
       type: "mcq",
       q: String(p.q),
@@ -7722,6 +7738,7 @@ function buildLessonContext(lesson) {
 }
 const GENERATE_TYPE_LIBRARY = {
   mcq: `- Multiple Choice: {"type":"mcq","q":"...","options":["A","B","C","D"],"correct":0,"explain":"...","topic":"..."} — "correct" is the 0-based index of the right option in "options". Distractors must be plausible wrong answers (common misconceptions, near-misses), not silly or obviously wrong.`,
+  sva: `- Subject-Verb Agreement (English grammar — choosing the verb form that agrees with the subject): {"type":"sva","q":"The team ___ practicing every afternoon.","options":["is","are"],"correct":0,"explain":"...","topic":"..."} — "q" is the sentence shown to the student with a blank written as "___" where the verb goes (do NOT add a separate instruction sentence like "Choose the correct verb" — the blanked sentence itself is the question). "options" must contain exactly 2 verb-form choices (e.g. singular vs. plural, like "is"/"are", "run"/"runs", "was"/"were") that could both plausibly fill the blank. "correct" is the 0-based index of the option that correctly agrees with the subject — base this on the subject's number/type (singular/plural noun, mass/count/collective noun, personal/indefinite/possessive/demonstrative pronoun, etc.) per the lesson content. Only use this type for Subject-Verb Agreement lessons.`,
   tf: `- True / False: {"type":"tf","q":"...","correct":true,"explain":"...","topic":"..."} — "correct" must be the JSON boolean true if the statement in "q" is factually TRUE, or false if the statement is factually FALSE. Judge this only from whether the statement itself is correct — never write a numeric index here, and never flip it to mean something else.`,
   emoji: `- Happy / Sad (agree-or-disagree with a statement): {"type":"emoji","q":"...","correct":true,"explain":"...","topic":"..."} — "correct" must be the JSON boolean true if a student should react 😊 Happy because the statement is correct/true, or false if they should react 😢 Sad because the statement is incorrect/false.`,
   tama: `- Tama o Mali (Filipino True/False — only use this for Filipino-language lessons): {"type":"tama","q":"...","correct":true,"explain":"...","topic":"..."} — "q" must be a Filipino statement (pangungusap). "correct" must be the JSON boolean true if the statement is "Tama" (tama/totoo), or false if it is "Mali" (mali/hindi tama).`,
@@ -7733,6 +7750,7 @@ const GENERATE_TYPE_LIBRARY = {
 };
 const GENERATE_TYPE_LABELS = {
   mcq: "Multiple Choice",
+  sva: "Subject-Verb Agreement",
   tf: "True / False",
   emoji: "Happy / Sad",
   tama: "Tama o Mali",
@@ -7742,10 +7760,11 @@ const GENERATE_TYPE_LABELS = {
   order: "Ordering",
   underline: "Underline / Circle"
 };
-const GENERATE_TYPE_ORDER = ["mcq", "tf", "emoji", "tama", "fill", "match", "dragdrop", "order", "underline"];
+const GENERATE_TYPE_ORDER = ["mcq", "sva", "tf", "emoji", "tama", "fill", "match", "dragdrop", "order", "underline"];
 // Short labels for every question type (used in the chapter-list "Qs in bank" breakdown pill).
 const QUESTION_TYPE_SHORT_LABELS = {
   mcq: "MC",
+  sva: "SVA",
   tf: "T/F",
   emoji: "Happy/Sad",
   tama: "Tama/Mali",
@@ -7958,7 +7977,7 @@ function QuestionBankManager({
       return;
     }
     const t = draft.type || "mcq";
-    if (t === "mcq" || t === "tf" || t === "tama" || t === "emoji") {
+    if (t === "mcq" || t === "sva" || t === "tf" || t === "tama" || t === "emoji") {
       if (!draft.options || draft.options.some(o => !String(o).trim())) {
         alert("All choices need text.");
         return;
@@ -8600,6 +8619,10 @@ function QuestionBankManager({
       label: "\uD83D\uDD24 Multiple Choice",
       json: '[{"q":"...","options":["A","B","C","D"],"correct":0,"explain":"...","topic":"Comparing"}]'
     }), /*#__PURE__*/React.createElement(CopyableJson, {
+      label: "🅰️🅱️ Subject-Verb Agreement",
+      json: '[{"type":"sva","q":"The team ___ practicing every afternoon.","options":["is","are"],"correct":0,"explain":"...","topic":"Subject-Verb Agreement"}]',
+      note: 'Write the blank as "___" right inside "q" \u2014 give exactly 2 verb-form choices in "options" (e.g. singular vs. plural).'
+    }), /*#__PURE__*/React.createElement(CopyableJson, {
       label: "\u2705 True / False",
       json: '[{"type":"tf","q":"...","correct":0,"explain":"...","topic":"Ordering"}]',
       note: "correct: 0 = True, 1 = False"
@@ -8861,7 +8884,7 @@ function QuestionBankManager({
     }, "\uD83D\uDDD1\uFE0F Delete All")));
   })), questions.map((q, i) => {
     const t = q.type || "mcq";
-    const typeLabel = t === "fill" ? "✍️ Fill in the Blank" : t === "tf" ? "✅ True / False" : t === "emoji" ? "😊 Happy / Sad" : t === "tama" ? "🇵🇭 Tama o Mali" : t === "match" ? "🔗 Matching" : t === "matchimg" ? "🖼️ Image Matching" : t === "dragdrop" ? "🧩 Drag and Drop" : t === "order" ? "📋 Ordering / Sequencing" : t === "label" ? "🖼️ Label the Parts" : t === "pattern" ? "🔢 Number Pattern" : t === "underline" ? "🖊️ Underline / Circle" : "🔤 Multiple Choice";
+    const typeLabel = t === "fill" ? "✍️ Fill in the Blank" : t === "tf" ? "✅ True / False" : t === "emoji" ? "😊 Happy / Sad" : t === "tama" ? "🇵🇭 Tama o Mali" : t === "match" ? "🔗 Matching" : t === "matchimg" ? "🖼️ Image Matching" : t === "dragdrop" ? "🧩 Drag and Drop" : t === "order" ? "📋 Ordering / Sequencing" : t === "label" ? "🖼️ Label the Parts" : t === "pattern" ? "🔢 Number Pattern" : t === "underline" ? "🖊️ Underline / Circle" : t === "sva" ? "🅰️🅱️ Subject-Verb Agreement" : "🔤 Multiple Choice";
     const isEditing = editingIndex === i;
     if (isEditing) {
       const dt = draft.type || "mcq";
@@ -8896,7 +8919,7 @@ function QuestionBankManager({
         name: "correct-" + i,
         checked: draft.correct === oi,
         onChange: () => updateDraft("correct", oi)
-      }), /*#__PURE__*/React.createElement("span", null, o))))), dt === "mcq" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
+      }), /*#__PURE__*/React.createElement("span", null, o))))), (dt === "mcq" || dt === "sva") && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
         className: "field-label"
       }, "Choices (pick the correct one)"), /*#__PURE__*/React.createElement("div", {
         className: "bank-edit-opts"
@@ -9227,7 +9250,7 @@ function QuestionBankManager({
       className: "bank-item-opts"
     }, /*#__PURE__*/React.createElement("span", {
       className: "bank-opt bank-opt-correct"
-    }, "\uD83D\uDD8A\uFE0F ", q.sentence, " \u2014 underline: ", (q.underline || []).join(", "), (q.circle || []).some(w => String(w || "").trim()) && "; circle: " + q.circle.join(", "))), (t === "mcq" || t === "tf" || t === "tama" || t === "emoji") && /*#__PURE__*/React.createElement("div", {
+    }, "\uD83D\uDD8A\uFE0F ", q.sentence, " \u2014 underline: ", (q.underline || []).join(", "), (q.circle || []).some(w => String(w || "").trim()) && "; circle: " + q.circle.join(", "))), (t === "mcq" || t === "sva" || t === "tf" || t === "tama" || t === "emoji") && /*#__PURE__*/React.createElement("div", {
       className: "bank-item-opts"
     }, q.options.map((o, oi) => /*#__PURE__*/React.createElement("span", {
       key: oi,
