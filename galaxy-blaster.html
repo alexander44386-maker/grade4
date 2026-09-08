@@ -1750,8 +1750,13 @@
   }
   .boss-flash-screen.flash-hit{ animation: boss-flash-hit 0.18s ease-out; }
   .boss-flash-screen.flash-defeat{ animation: boss-flash-defeat 0.5s ease-out; }
+  .boss-flash-screen.flash-hurt{ background:#FF3B3B; animation: boss-flash-hurt 0.32s ease-out; }
   @keyframes boss-flash-hit{
     0%{ opacity:0.28; }
+    100%{ opacity:0; }
+  }
+  @keyframes boss-flash-hurt{
+    0%{ opacity:0.45; }
     100%{ opacity:0; }
   }
   @keyframes boss-flash-defeat{
@@ -2087,11 +2092,139 @@
     100%{ transform:scale(1) rotate(0deg); }
   }
 
+  /* ---------- Boss power attack: letters raining from all over the
+     arena (not just the target word above). Each one is typed on sight
+     to zap it before it reaches the danger zone at the bottom — letting
+     one through costs a heart, same as an invader hitting the ground in
+     normal play. Purely an extra layer on top of the word-typing fight:
+     doesn't touch pointer/word/timer logic. ---------- */
+  .boss-danger-zone{
+    position:absolute; left:0; right:0; bottom:0;
+    height:16%;
+    min-height:46px;
+    z-index:3;
+    background:linear-gradient(0deg, rgba(255,70,70,0.32), transparent);
+    pointer-events:none;
+  }
+  .boss-overlay.rage .boss-danger-zone{
+    background:linear-gradient(0deg, rgba(255,70,70,0.5), transparent);
+    animation: boss-danger-pulse 0.7s ease-in-out infinite;
+  }
+  @keyframes boss-danger-pulse{
+    0%,100%{ opacity:0.7; }
+    50%{ opacity:1; }
+  }
+  .boss-power-letter{
+    position:absolute;
+    top:-46px;
+    z-index:4;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:800;
+    font-size:clamp(19px,3.8vw,28px);
+    color:#fff;
+    background:radial-gradient(circle at 32% 30%, #ffffff66, var(--boss-glow-color,#FF6F5A));
+    border:2px solid #ffffffcc;
+    border-radius:10px;
+    padding:3px 9px;
+    min-width:1.3em;
+    text-align:center;
+    box-shadow:0 0 14px var(--boss-glow-color,#FF6F5A);
+    pointer-events:none;
+    transform:translateX(-50%) scale(1);
+    animation: boss-power-spawn 0.22s ease;
+  }
+  @keyframes boss-power-spawn{
+    0%{ transform:translateX(-50%) scale(0.3); opacity:0; }
+    100%{ transform:translateX(-50%) scale(1); opacity:1; }
+  }
+  .boss-power-letter.boss-power-blocked{
+    animation: boss-power-blocked 0.26s ease forwards !important;
+  }
+  @keyframes boss-power-blocked{
+    0%{ transform:translateX(-50%) scale(1); opacity:1; }
+    100%{ transform:translateX(-50%) scale(1.7); opacity:0; }
+  }
+  .boss-power-letter.boss-power-impact{
+    animation: boss-power-impact 0.28s ease forwards !important;
+  }
+  @keyframes boss-power-impact{
+    0%{ transform:translateX(-50%) scale(1); opacity:1; }
+    45%{ transform:translateX(-50%) scale(1.35) rotate(14deg); opacity:1; }
+    100%{ transform:translateX(-50%) scale(0.3) rotate(-24deg); opacity:0; }
+  }
+
+  /* ---------- Boss-fight ship ----------
+     The player's own ship, rendered inside the boss overlay (the real
+     cannon sits behind the overlay and is otherwise invisible during the
+     fight) so the whole thing reads as ship-vs-boss rather than just a
+     typing challenge with a boss floating over it. It fires back on every
+     hit/block and flinches when a power letter gets through. */
+  .boss-ship-wrap{
+    position:absolute; left:50%; bottom:5%; z-index:5;
+    transform:translateX(-50%);
+    pointer-events:none;
+  }
+  .boss-ship{
+    display:inline-block;
+    font-size:clamp(32px,6.5vw,46px);
+    line-height:1;
+    filter:drop-shadow(0 8px 10px rgba(0,0,0,0.55)) drop-shadow(0 0 10px var(--ship-glow-color, rgba(120,200,255,0.55)));
+    animation: boss-ship-idle 1.7s ease-in-out infinite;
+  }
+  @keyframes boss-ship-idle{
+    0%,100%{ transform:translateY(0) rotate(-2deg); }
+    50%{ transform:translateY(-7px) rotate(2deg); }
+  }
+  .boss-ship.ship-fire{ animation: boss-ship-fire 0.22s ease; }
+  @keyframes boss-ship-fire{
+    0%{ transform:translateY(0) scale(1,1); }
+    35%{ transform:translateY(6px) scale(0.9,1.1); }
+    100%{ transform:translateY(0) scale(1,1); }
+  }
+  .boss-ship.ship-hurt{ animation: boss-ship-hurt 0.4s ease; }
+  @keyframes boss-ship-hurt{
+    0%{ transform:translateX(0) rotate(0deg); filter:brightness(1) drop-shadow(0 8px 10px rgba(0,0,0,0.55)); }
+    20%{ transform:translateX(-11px) rotate(-15deg); filter:brightness(2.6) drop-shadow(0 0 16px rgba(255,60,60,0.9)); }
+    55%{ transform:translateX(9px) rotate(11deg); filter:brightness(1.7) drop-shadow(0 0 10px rgba(255,60,60,0.6)); }
+    100%{ transform:translateX(0) rotate(0deg); filter:brightness(1) drop-shadow(0 8px 10px rgba(0,0,0,0.55)); }
+  }
+  /* Thin beam fired between the ship and whatever it just shot — the
+     boss figure on a landed word-hit, or an incoming power letter it
+     just zapped. Positioned/rotated entirely from JS per-shot. */
+  .boss-ship-beam{
+    position:absolute;
+    width:5px;
+    z-index:4;
+    border-radius:4px;
+    transform-origin:50% 100%;
+    pointer-events:none;
+    box-shadow:0 0 10px currentColor;
+    animation: boss-ship-beam-fade 0.2s ease-out forwards;
+  }
+  @keyframes boss-ship-beam-fade{
+    0%{ opacity:1; }
+    100%{ opacity:0; }
+  }
+  /* Quick jolt on the boss itself the instant it flings a power letter,
+     so the attack visibly comes FROM the boss rather than letters just
+     appearing out of thin air. */
+  .boss-figure.boss-cast{ animation: boss-cast-jolt 0.3s ease; }
+  @keyframes boss-cast-jolt{
+    0%{ transform:scale(1) rotate(0deg); }
+    30%{ transform:scale(1.12,0.88) rotate(-6deg); }
+    62%{ transform:scale(0.94,1.08) rotate(4deg); }
+    100%{ transform:scale(1) rotate(0deg); }
+  }
+
   /* ---------- Hearts (lives) HUD ---------- */
   .hearts-chip{ display:flex; align-items:center; gap:2px; }
   .heart-icon{ font-size:15px; line-height:1; transition: transform 0.2s ease, opacity 0.2s ease; }
   .heart-icon.lost{ opacity:0.35; filter:grayscale(1); transform:scale(0.9); }
   .heart-icon.just-lost{ animation: heart-pop 0.4s ease; }
+  /* Blue hearts stand in for extra life beyond the 4-red cap — each is
+     worth 2 lives, so it can also sit "half" full (1 of its 2 lives
+     spent) before it fully empties like a red heart does. */
+  .heart-icon.blue.blue-full{ text-shadow:0 0 5px rgba(77,144,255,0.7); }
   @keyframes heart-pop{
     0%{ transform:scale(1.6); }
     100%{ transform:scale(0.9); }
@@ -5465,62 +5598,62 @@
                 </button>
                 <button class="char-btn locked-char rare-char" data-char="blaze" data-cost="70" data-name="Blaze Fighter">
                   <span class="char-emoji">🔥</span>Blaze Fighter
-                  <span class="char-hearts">❤️❤️❤️</span>
+                  <span class="char-hearts">❤️❤️❤️❤️</span>
                   <span class="char-lock">🔒 70</span>
                 </button>
                 <button class="char-btn locked-char rare-char" data-char="ice" data-cost="70" data-name="Glacier Reaper">
                   <span class="char-emoji">🥶</span>Glacier Reaper
-                  <span class="char-hearts">❤️❤️❤️</span>
+                  <span class="char-hearts">❤️❤️❤️❤️</span>
                   <span class="char-lock">🔒 70</span>
                 </button>
                 <button class="char-btn locked-char rare-char" data-char="star" data-cost="70" data-name="Meteor Striker">
                   <span class="char-emoji">🌠</span>Meteor Striker
-                  <span class="char-hearts">❤️❤️❤️</span>
+                  <span class="char-hearts">❤️❤️❤️❤️</span>
                   <span class="char-lock">🔒 70</span>
                 </button>
                 <button class="char-btn locked-char epic-char" data-char="volt" data-cost="100" data-name="Thunder Talon">
                   <span class="char-emoji">🤽</span>Thunder Talon
-                  <span class="char-hearts">❤️❤️❤️</span>
+                  <span class="char-hearts">❤️❤️❤️❤️</span>
                   <span class="char-lock">🔒 100</span>
                 </button>
                 <button class="char-btn locked-char epic-char" data-char="terra" data-cost="100" data-name="Quake Crusher">
                   <span class="char-emoji">🌋</span>Quake Crusher
-                  <span class="char-hearts">❤️❤️❤️</span>
+                  <span class="char-hearts">❤️❤️❤️❤️</span>
                   <span class="char-lock">🔒 100</span>
                 </button>
                 <button class="char-btn locked-char epic-char" data-char="alien" data-cost="100" data-name="Nebula Phantom">
                   <span class="char-emoji">🦎</span>Nebula Phantom
-                  <span class="char-hearts">❤️❤️❤️</span>
+                  <span class="char-hearts">❤️❤️❤️❤️</span>
                   <span class="char-lock">🔒 100</span>
                 </button>
                 <button class="char-btn locked-char legendary-char" data-char="dragon" data-cost="140" data-name="Dragon Ace">
                   <span class="char-emoji">🐉</span>Dragon Ace
-                  <span class="char-hearts">❤️❤️❤️</span>
+                  <span class="char-hearts">❤️❤️❤️💙</span>
                   <span class="char-lock">🔒 140</span>
                 </button>
                 <button class="char-btn locked-char legendary-char" data-char="shadow" data-cost="140" data-name="Void Stalker">
                   <span class="char-emoji">🦍</span>Void Stalker
-                  <span class="char-hearts">❤️❤️❤️</span>
+                  <span class="char-hearts">❤️❤️❤️💙</span>
                   <span class="char-lock">🔒 140</span>
                 </button>
                 <button class="char-btn locked-char legendary-char" data-char="storm" data-cost="140" data-name="Tempest Raider">
                   <span class="char-emoji">🐞</span>Tempest Raider
-                  <span class="char-hearts">❤️❤️❤️</span>
+                  <span class="char-hearts">❤️❤️❤️💙</span>
                   <span class="char-lock">🔒 140</span>
                 </button>
                 <button class="char-btn locked-char ultra-char" data-char="chrono" data-cost="220" data-name="Chrono Blazer">
                   <span class="char-emoji">⏰</span>Chrono Blazer
-                  <span class="char-hearts">❤️❤️❤️❤️</span>
+                  <span class="char-hearts">❤️❤️❤️💙</span>
                   <span class="char-lock">🔒 220</span>
                 </button>
                 <button class="char-btn locked-char ultra-char" data-char="vortex" data-cost="220" data-name="Warp Specter">
                   <span class="char-emoji">🌀</span>Warp Specter
-                  <span class="char-hearts">❤️❤️❤️❤️</span>
+                  <span class="char-hearts">❤️❤️❤️💙</span>
                   <span class="char-lock">🔒 220</span>
                 </button>
                 <button class="char-btn locked-char mythic-char" data-char="cosmic" data-cost="350" data-name="Galaxy Sovereign">
                   <span class="char-emoji">👾</span>Galaxy Sovereign
-                  <span class="char-hearts">❤️❤️❤️❤️❤️</span>
+                  <span class="char-hearts">❤️❤️💙💙</span>
                   <span class="char-lock">🔒 350</span>
                 </button>
               </div>
@@ -7820,7 +7953,7 @@ function pickWordInvaderWord(unlockedLetters, len){
 // and timer take over and the actual typing challenge begins.
 const BOSS_TAUNT_MS = 2600;
 
-function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKey, onDefeat, onTimeout){
+function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKey, onDefeat, onTimeout, onPowerHit, shipVisual){
   const theme = BOSS_THEMES[worldKey] || BOSS_THEMES.milkyway;
   const targetLen = BOSS_TARGET_LENGTHS[Math.min(bossNumber-1, BOSS_TARGET_LENGTHS.length-1)];
   const word = pickBossWord(unlockedLetters, targetLen);
@@ -7843,6 +7976,8 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
     '<div class="boss-warning-stripes"></div>' +
     '<div class="boss-flash-screen"></div>' +
     '<div class="boss-bg-particles"></div>' +
+    '<div class="boss-danger-zone"></div>' +
+    '<div class="boss-ship-wrap"><div class="boss-ship"></div></div>' +
     '<div class="boss-intro">BOSS BATTLE!</div>' +
     '<div class="boss-name">' + bossInfo.name + '</div>' +
     '<div class="boss-figure-wrap">' +
@@ -7867,6 +8002,16 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
   const bgParticles = overlay.querySelector('.boss-bg-particles');
   const flashScreen = overlay.querySelector('.boss-flash-screen');
   const hudPanel = overlay.querySelector('.boss-hud-panel');
+  const dangerZone = overlay.querySelector('.boss-danger-zone');
+  const shipWrap = overlay.querySelector('.boss-ship-wrap');
+  const shipEl = overlay.querySelector('.boss-ship');
+  // Mirrors whichever ship the player actually has equipped, so the fight
+  // reads as "your ship vs. this boss" rather than a generic stand-in.
+  // Falls back to the classic rocket if the caller didn't pass one along.
+  const shipEmoji = (shipVisual && shipVisual.emoji) || '🚀';
+  const shipColor = (shipVisual && shipVisual.color) || '#4DE8FF';
+  shipEl.textContent = shipEmoji;
+  overlay.style.setProperty('--ship-glow-color', shipColor);
   hpFill.style.background = theme.hpGradient;
   bossFigure.style.filter = `drop-shadow(0 10px 18px ${theme.glow})`;
   overlay.style.setProperty('--boss-glow-color', theme.glow);
@@ -7906,7 +8051,7 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
     schedule(()=>t.remove(), 720);
   }
   function flashScreenPulse(cls, ms){
-    flashScreen.classList.remove('flash-hit','flash-defeat');
+    flashScreen.classList.remove('flash-hit','flash-defeat','flash-hurt');
     void flashScreen.offsetWidth;
     flashScreen.classList.add(cls);
     schedule(()=>flashScreen.classList.remove(cls), ms);
@@ -8002,6 +8147,221 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
     return s;
   });
 
+  // ---------- Boss power attack ----------
+  // While the fight is on, the boss also flings loose letters from random
+  // spots across the whole arena (not just the target word above). Typing
+  // one zaps it out of the air; letting it drift into the glowing danger
+  // zone at the bottom costs a heart via onPowerHit, same as an invader
+  // reaching the ground in normal play. This runs entirely independently
+  // of the word/pointer/timer logic above — it never advances or resets
+  // the word, and typing to defend against it never costs a boss-shake
+  // even if the same key doesn't match the word's current letter.
+  const powerPool = (unlockedLetters && unlockedLetters.length) ? unlockedLetters : word.split('');
+  let powerLetters = [];
+  let powerIdSeq = 0;
+  let powerSpawnTimer = null;
+
+  // Position of an element's center, relative to the overlay's own
+  // top-left — the common coordinate space every beam/spawn/impact in
+  // this fight is computed in.
+  function relCenter(el){
+    const or = overlay.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    return { x: r.left - or.left + r.width/2, y: r.top - or.top + r.height/2 };
+  }
+
+  // A quick beam between the ship and wherever it just fired — the boss
+  // figure on a landed word-hit, or an incoming power letter it just
+  // zapped. This is what sells "the ship is fighting back" instead of
+  // hits just happening silently near the boss.
+  function fireShipBeam(toX, toY, color){
+    const from = relCenter(shipEl);
+    const dx = toX - from.x, dy = toY - from.y;
+    const length = Math.max(Math.sqrt(dx*dx + dy*dy), 10);
+    const angleDeg = Math.atan2(dx, -dy) * (180/Math.PI);
+    const beam = document.createElement('div');
+    beam.className = 'boss-ship-beam';
+    beam.style.left = (from.x - 2.5) + 'px';
+    beam.style.top = (from.y - length) + 'px';
+    beam.style.height = length + 'px';
+    beam.style.transformOrigin = '50% 100%';
+    beam.style.transform = `rotate(${angleDeg}deg)`;
+    beam.style.background = `linear-gradient(180deg, #fff, ${color} 45%, transparent)`;
+    beam.style.color = color;
+    overlay.appendChild(beam);
+    schedule(()=>beam.remove(), 200);
+    shipEl.classList.remove('ship-fire');
+    void shipEl.offsetWidth;
+    shipEl.classList.add('ship-fire');
+  }
+
+  function spawnPowerLetter(){
+    if(finished) return;
+    const gw = overlay.clientWidth || gameEl.clientWidth || 300;
+    const gh = overlay.clientHeight || gameEl.clientHeight || 500;
+    const ch = powerPool[Math.floor(Math.random()*powerPool.length)];
+    const el = document.createElement('div');
+    el.className = 'boss-power-letter';
+    el.textContent = ch === ';' ? ';' : ch.toUpperCase();
+
+    // Launch from wherever the boss currently is (it's constantly
+    // drifting via scheduleBossMove) rather than a fixed offscreen point,
+    // so every letter visibly comes FROM the boss instead of just
+    // appearing at the top of the screen.
+    const bossPos = relCenter(bossFigure);
+    const startX = bossPos.x + (Math.random()*36 - 18);
+    const startY = bossPos.y;
+    el.style.left = startX + 'px';
+    el.style.top = startY + 'px';
+    overlay.appendChild(el);
+
+    // The boss visibly flings it — a quick jolt on the boss figure plus
+    // a small burst right at the launch point.
+    bossFigure.classList.remove('boss-cast');
+    void bossFigure.offsetWidth;
+    bossFigure.classList.add('boss-cast');
+    bossSparkBurstAt(el, 4, [theme.glow, '#ffffff']);
+
+    // Aim roughly at the ship's position (with spread) rather than a
+    // fully random landing spot, so it reads as the boss actually
+    // targeting the player instead of letters raining arbitrarily.
+    const shipPos = relCenter(shipEl);
+    const spread = gw * 0.34;
+    const targetX = Math.min(gw*0.92, Math.max(gw*0.08, shipPos.x + (Math.random()*2-1)*spread));
+    const targetY = Math.max(40, gh - 58);
+
+    const durMs = raging ? (1150 + Math.random()*450) : (1950 + Math.random()*650);
+    requestAnimationFrame(()=>{
+      if(!powerLetters.includes(obj)) return;
+      const durSec = (durMs/1000).toFixed(2) + 's';
+      el.style.transition = 'left ' + durSec + ' ease-in, top ' + durSec + ' ease-in';
+      el.style.left = targetX + 'px';
+      el.style.top = targetY + 'px';
+    });
+    const obj = { id: powerIdSeq++, el, ch };
+    powerLetters.push(obj);
+    obj.hitTimer = schedule(()=>{
+      if(powerLetters.includes(obj)) landPowerLetter(obj);
+    }, durMs + 40);
+  }
+
+  function removePowerLetter(obj){
+    const idx = powerLetters.indexOf(obj);
+    if(idx !== -1) powerLetters.splice(idx, 1);
+    clearTimeout(obj.hitTimer);
+  }
+
+  // Player typed a matching key in time — the ship zaps it before it lands.
+  function blockPowerLetter(obj){
+    const pos = relCenter(obj.el);
+    removePowerLetter(obj);
+    obj.el.style.transition = 'none';
+    obj.el.classList.add('boss-power-blocked');
+    bossSparkBurstAt(obj.el, 8, [theme.glow, '#ffffff']);
+    fireShipBeam(pos.x, pos.y, shipColor);
+    schedule(()=>obj.el.remove(), 280);
+  }
+
+  // Reached the danger zone untouched — it hits the ship.
+  function landPowerLetter(obj){
+    removePowerLetter(obj);
+    obj.el.style.transition = 'none';
+    obj.el.classList.add('boss-power-impact');
+    schedule(()=>obj.el.remove(), 300);
+    flashScreenPulse('flash-hurt', 320);
+    shipEl.classList.remove('ship-hurt');
+    void shipEl.offsetWidth;
+    shipEl.classList.add('ship-hurt');
+    if(shipWrap){
+      shipWrap.style.transition = 'none';
+      shipWrap.style.transform = 'translateX(-50%) translateX(' + ((Math.random()<0.5?-1:1)*8) + 'px)';
+      schedule(()=>{
+        shipWrap.style.transition = 'transform 0.25s ease';
+        shipWrap.style.transform = 'translateX(-50%)';
+      }, 40);
+    }
+    if(dangerZone){
+      dangerZone.style.transition = 'none';
+      dangerZone.style.opacity = '1';
+      void dangerZone.offsetWidth;
+      dangerZone.style.transition = 'opacity 0.4s ease';
+      dangerZone.style.opacity = '';
+    }
+    screenShake(gameEl, 'light');
+    if(typeof onPowerHit === 'function'){
+      const outOfHearts = onPowerHit();
+      if(outOfHearts) abortFight();
+    }
+  }
+
+  // Small spark burst anchored to a specific element's current position,
+  // rather than the boss figure — used when a power letter is launched
+  // or zapped wherever on screen it happens to be.
+  function bossSparkBurstAt(anchorEl, count, colors){
+    const pos = relCenter(anchorEl);
+    const x = pos.x, y = pos.y;
+    const shapes = ['shape-circle','shape-star','shape-diamond'];
+    for(let i=0;i<count;i++){
+      const spawnDelay = Math.random()*50;
+      schedule(()=>{
+        const p = document.createElement('div');
+        p.className = 'confetti-piece ' + shapes[Math.floor(Math.random()*shapes.length)];
+        const sz = 4 + Math.random()*5;
+        p.style.width = sz+'px'; p.style.height = sz+'px';
+        p.style.left = x+'px'; p.style.top = y+'px';
+        const color = colors[Math.floor(Math.random()*colors.length)];
+        p.style.background = color;
+        p.style.boxShadow = `0 0 8px ${color}`;
+        const angle = Math.random()*Math.PI*2;
+        const dist = 24 + Math.random()*36;
+        const fx = Math.cos(angle)*dist;
+        const fy = Math.sin(angle)*dist - 12;
+        p.style.setProperty('--fx', fx+'px');
+        p.style.setProperty('--fy', fy+'px');
+        p.style.setProperty('--spin', (Math.random()<0.5?-1:1)*(200+Math.random()*220)+'deg');
+        p.style.setProperty('--fly', `translate(${fx}px, ${fy}px)`);
+        overlay.appendChild(p);
+        schedule(()=>p.remove(), 700);
+      }, spawnDelay);
+    }
+  }
+
+  function schedulePowerSpawn(){
+    if(finished) return;
+    const delay = raging ? (850 + Math.random()*650) : (1600 + Math.random()*900);
+    powerSpawnTimer = schedule(()=>{
+      spawnPowerLetter();
+      schedulePowerSpawn();
+    }, delay);
+  }
+
+  function clearAllPowerLetters(){
+    clearTimeout(powerSpawnTimer);
+    powerLetters.forEach(o=>{
+      clearTimeout(o.hitTimer);
+      o.el.remove();
+    });
+    powerLetters = [];
+  }
+
+  // Ends the fight immediately with no defeat/timeout screen of its own —
+  // used only when a power-letter hit brings hearts to zero, since the
+  // outer game's triggerGameOver() already takes over the screen at that
+  // point and the boss overlay just needs to get out of the way.
+  function abortFight(){
+    if(finished) return;
+    finished = true;
+    clearTimeout(tauntTimeout);
+    clearTimeout(ambientTimer);
+    clearTimeout(moveTimer);
+    clearAllPowerLetters();
+    if(timerId) clearInterval(timerId);
+    document.removeEventListener('keydown', onKey);
+    figureWrap.style.transitionDuration = '0.3s';
+    figureWrap.style.transform = 'translate(0px, 0px) scale(1) rotate(0deg)';
+    overlay.remove();
+  }
+
   function renderTimer(){
     timerEl.textContent = '⏱ ' + Math.max(0, timeLeft) + 's';
     timerEl.classList.toggle('boss-timer-low', timeLeft <= 5);
@@ -8024,6 +8384,9 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
       if(timeLeft <= 0) finish(false);
     }, 1000);
     document.addEventListener('keydown', onKey);
+    // Grace period before the boss starts flinging letters, so there's a
+    // beat to read the target word before also having to watch the skies.
+    powerSpawnTimer = schedule(schedulePowerSpawn, 900);
   }
 
   function finish(won){
@@ -8032,6 +8395,7 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
     clearTimeout(tauntTimeout);
     clearTimeout(ambientTimer);
     clearTimeout(moveTimer);
+    clearAllPowerLetters();
     if(timerId) clearInterval(timerId);
     document.removeEventListener('keydown', onKey);
     figureWrap.style.transitionDuration = '0.3s';
@@ -8070,10 +8434,22 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
   function onKey(e){
     let ch = e.key.toLowerCase();
     if(ch.length !== 1) return;
+    // Defend against an incoming power letter first, if this key matches
+    // one — this never costs a boss-shake and never touches the word
+    // pointer, so defending is always "free" even when the key isn't the
+    // word's next letter.
+    let defended = false;
+    const powerMatch = powerLetters.find(o=>o.ch===ch);
+    if(powerMatch){
+      defended = true;
+      blockPowerLetter(powerMatch);
+    }
     if(ch !== word[pointer]){
-      bossFigure.classList.remove('boss-shake');
-      void bossFigure.offsetWidth;
-      bossFigure.classList.add('boss-shake');
+      if(!defended){
+        bossFigure.classList.remove('boss-shake');
+        void bossFigure.offsetWidth;
+        bossFigure.classList.add('boss-shake');
+      }
       return;
     }
     const hitIdx = pointer;
@@ -8083,6 +8459,8 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
     pointer += 1;
     const hpPercent = Math.max(0, 100 - Math.round((pointer/word.length)*100));
     hpFill.style.width = hpPercent + '%';
+    const bossPos = relCenter(bossFigure);
+    fireShipBeam(bossPos.x, bossPos.y, shipColor);
     bossFigure.classList.remove('boss-hit');
     void bossFigure.offsetWidth;
     bossFigure.classList.add('boss-hit');
@@ -8205,29 +8583,73 @@ const pauseSpace = (function(){
   // Ships are now purely cosmetic + hearts (HP) — no ship carries a
   // free power anymore. Every power lives in the Power Shop and can be
   // bought and equipped independently of which ship is selected.
-  // "hearts" is how many hits a ship can take before game over:
-  //  - 3 hearts: every common/uncommon/rare/epic/legendary ship (normal).
-  //  - 4 hearts: the 'ultra' tier (Chrono Blazer, Warp Specter).
-  //  - 5 hearts: the 'mythic' tier (Galaxy Sovereign) — the toughest ship
-  //    in the game.
+  // "hearts" is how many hits a ship can take before game over, scaled
+  // to what a kid actually paid for it (see the heart-display block
+  // right below for how this becomes red + blue hearts on screen):
+  //  - 3 hearts: 0-40 coin ships (common/uncommon) — the everyday fleet.
+  //  - 4 hearts: 70-100 coin ships (rare/epic) — all red, no blue yet.
+  //  - 5 hearts: 140-220 coin ships (legendary/ultra) — 3 red + 1 blue.
+  //  - 6 hearts: the 350-coin mythic ship (Galaxy Sovereign) — 2 red +
+  //    2 blue, the toughest ship and the max the game supports.
   const CHAR_DEFS = {
   rocket: {"emoji":"🚀","color":"#4DE8FF","rotate":-45,"tier":"common","hearts":3},
   ufo: {"emoji":"🛸","color":"#5CFF8F","rotate":0,"tier":"uncommon","hearts":3},
   robot: {"emoji":"🤖","color":"#C0C0C0","rotate":0,"tier":"uncommon","hearts":3},
   comet: {"emoji":"🗽","color":"#FFE066","rotate":-45,"tier":"uncommon","hearts":3},
-  blaze: {"emoji":"🔥","color":"#FF5E3A","rotate":-45,"tier":"rare","hearts":3},
-  ice: {"emoji":"🥶","color":"#7BE8FF","rotate":0,"tier":"rare","hearts":3},
-  star: {"emoji":"🌠","color":"#FFD966","rotate":0,"tier":"rare","hearts":3},
-  volt: {"emoji":"🤽","color":"#FFE93B","rotate":0,"tier":"epic","hearts":3},
-  terra: {"emoji":"🌋","color":"#FF7043","rotate":0,"tier":"epic","hearts":3},
-  alien: {"emoji":"🦎","color":"#9B5DE5","rotate":0,"tier":"epic","hearts":3},
-  dragon: {"emoji":"🐉","color":"#FF4DE0","rotate":0,"tier":"legendary","legendary":true,"hearts":3},
-  shadow: {"emoji":"🦍","color":"#7A3FD1","rotate":0,"tier":"legendary","legendary":true,"hearts":3},
-  storm: {"emoji":"🐞","color":"#5C7CFA","rotate":0,"tier":"legendary","legendary":true,"hearts":3},
-  chrono: {"emoji":"⏰","color":"#38F9D7","rotate":0,"tier":"ultra","hearts":4},
-  vortex: {"emoji":"🌀","color":"#6C4DFF","rotate":0,"tier":"ultra","hearts":4},
-  cosmic: {"emoji":"👾","color":"#B84DFF","rotate":0,"tier":"mythic","mythic":true,"hearts":5}
+  blaze: {"emoji":"🔥","color":"#FF5E3A","rotate":-45,"tier":"rare","hearts":4},
+  ice: {"emoji":"🥶","color":"#7BE8FF","rotate":0,"tier":"rare","hearts":4},
+  star: {"emoji":"🌠","color":"#FFD966","rotate":0,"tier":"rare","hearts":4},
+  volt: {"emoji":"🤽","color":"#FFE93B","rotate":0,"tier":"epic","hearts":4},
+  terra: {"emoji":"🌋","color":"#FF7043","rotate":0,"tier":"epic","hearts":4},
+  alien: {"emoji":"🦎","color":"#9B5DE5","rotate":0,"tier":"epic","hearts":4},
+  dragon: {"emoji":"🐉","color":"#FF4DE0","rotate":0,"tier":"legendary","legendary":true,"hearts":5},
+  shadow: {"emoji":"🦍","color":"#7A3FD1","rotate":0,"tier":"legendary","legendary":true,"hearts":5},
+  storm: {"emoji":"🐞","color":"#5C7CFA","rotate":0,"tier":"legendary","legendary":true,"hearts":5},
+  chrono: {"emoji":"⏰","color":"#38F9D7","rotate":0,"tier":"ultra","hearts":5},
+  vortex: {"emoji":"🌀","color":"#6C4DFF","rotate":0,"tier":"ultra","hearts":5},
+  cosmic: {"emoji":"👾","color":"#B84DFF","rotate":0,"tier":"mythic","mythic":true,"hearts":6}
 };
+  // ---------- Heart display: red + blue hearts ----------
+  // The heart row stays at exactly 4 icons no matter how tough a ship
+  // is — extra life past the 4-heart baseline is added by upgrading an
+  // existing RED heart into a BLUE one (worth 2 lives instead of 1)
+  // rather than tacking on a 5th or 6th icon. Each red-to-blue swap adds
+  // exactly +1 life:
+  //  - 3 hearts: 3 red (below the baseline, no conversion yet).
+  //  - 4 hearts: 4 red (the baseline — still no blue).
+  //  - 5 hearts: 3 red + 1 blue (one swap: 3 + 2 = 5).
+  //  - 6 hearts: 2 red + 2 blue (two swaps: 2 + 4 = 6) — the max the
+  //    game supports, still just 4 icons.
+  // A blue heart only shows as blue (💙) while it's at its full 2 lives —
+  // once it takes one hit, its last remaining life reads as a plain red
+  // heart (❤️), same as any other heart down to its final point, before
+  // finally going dark (🖤).
+  const MAX_RED_HEARTS = 4;
+  function heartSlotsFor(total){
+    const slots = [];
+    if(total <= MAX_RED_HEARTS){
+      for(let i=0;i<total;i++) slots.push({ type:'red', cap:1 });
+      return slots;
+    }
+    // Every life past the baseline converts one more red heart into a
+    // blue one — capped at converting all 4, which represents 8 lives
+    // (4 blue hearts) as the ceiling this 4-icon row can express.
+    const blueCount = Math.min(total - MAX_RED_HEARTS, MAX_RED_HEARTS);
+    const redCount = MAX_RED_HEARTS - blueCount;
+    for(let i=0;i<redCount;i++) slots.push({ type:'red', cap:1 });
+    for(let i=0;i<blueCount;i++) slots.push({ type:'blue', cap:2 });
+    return slots;
+  }
+  // Distributes a current life count across those slots in order, so
+  // each slot knows how "full" it currently is (0, half, or full).
+  function fillHeartSlots(slots, currentLives){
+    let left = currentLives;
+    return slots.map(slot=>{
+      const filled = Math.max(0, Math.min(slot.cap, left));
+      left -= filled;
+      return { type:slot.type, cap:slot.cap, filled };
+    });
+  }
   function getMaxHearts(){
     const def = CHAR_DEFS[selectedChar];
     return (def && def.hearts) || 3;
@@ -12252,8 +12674,16 @@ const pauseSpace = (function(){
   // ---- Life Support: activating it instantly grants 1 heart and closes —
   // no waiting window, just a quick top-up. ----
   function gainHeart(){
+    const total = Math.max(hearts + 1, getMaxHearts());
+    const slots = heartSlotsFor(total);
+    const before = fillHeartSlots(slots, hearts);
     hearts += 1;
-    renderHearts();
+    const after = fillHeartSlots(slots, hearts);
+    let changedIdx = -1;
+    for(let i=0;i<after.length;i++){
+      if(before[i] && before[i].filled !== after[i].filled){ changedIdx = i; break; }
+    }
+    renderHearts(changedIdx);
     game.classList.toggle('hearts-critical', hearts === 1);
     showToast('💚 +1 Heart!');
     speak('Extra heart!');
@@ -12878,21 +13308,47 @@ const pauseSpace = (function(){
   // clickable, so a mouse/touch tap can't fire the cannon the way a
   // real keypress does. Hard mode hides it entirely (see startGame).
 
-  function renderHearts(justLostIdx){
+  function renderHearts(justChangedIdx){
     heartsVal.innerHTML = '';
-    const totalToShow = Math.max(hearts, getMaxHearts());
-    for(let i=0;i<totalToShow;i++){
+    const total = Math.max(hearts, getMaxHearts());
+    const slots = fillHeartSlots(heartSlotsFor(total), hearts);
+    slots.forEach((slot, i)=>{
       const span = document.createElement('span');
-      const lost = i >= hearts;
-      span.className = 'heart-icon' + (lost ? ' lost' : '') + (i===justLostIdx ? ' just-lost' : '');
-      span.textContent = lost ? '🖤' : '❤️';
+      const isBlue = slot.type === 'blue';
+      let cls = 'heart-icon', icon;
+      if(!isBlue){
+        icon = slot.filled > 0 ? '❤️' : '🖤';
+        if(slot.filled === 0) cls += ' lost';
+      } else if(slot.filled >= 2){
+        icon = '💙'; cls += ' blue blue-full';
+      } else if(slot.filled === 1){
+        // Down to its last life, a blue heart reads as an ordinary red
+        // heart — the blue-only look is reserved for "still worth 2".
+        icon = '❤️'; cls += ' blue-spent';
+      } else {
+        icon = '🖤'; cls += ' lost';
+      }
+      if(i === justChangedIdx) cls += ' just-lost';
+      span.className = cls;
+      span.textContent = icon;
       heartsVal.appendChild(span);
-    }
+    });
   }
   function loseHeart(){
     if(hearts <= 0) return;
+    // Figure out which heart slot this point of damage actually empties
+    // or half-empties, so the pop animation lands on the right icon
+    // instead of always assuming a 1-heart-per-life mapping.
+    const total = Math.max(hearts, getMaxHearts());
+    const slots = heartSlotsFor(total);
+    const before = fillHeartSlots(slots, hearts);
     hearts -= 1;
-    renderHearts(hearts);
+    const after = fillHeartSlots(slots, hearts);
+    let changedIdx = -1;
+    for(let i=0;i<before.length;i++){
+      if(before[i].filled !== after[i].filled){ changedIdx = i; break; }
+    }
+    renderHearts(changedIdx);
     // Losing a heart previously had zero audio — a dull descending buzz
     // makes the moment register instead of only being visible via the
     // fading heart icon, which is easy to miss mid-gameplay.
@@ -12984,7 +13440,13 @@ const pauseSpace = (function(){
       startBossFight(game, bossNumber, LEVELS[level].letters, difficulty, currentWorld, onAllDone, ()=>{
         loseHeart();
         if(hearts > 0) attempt();
-      });
+      }, ()=>{
+        // Called each time one of the boss's flung letters gets past the
+        // player untyped. Returns whether that just ran the player out of
+        // hearts, so the boss fight knows to end itself immediately.
+        loseHeart();
+        return hearts <= 0;
+      }, CHAR_DEFS[selectedChar]);
     }
     attempt();
   }
