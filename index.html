@@ -449,6 +449,10 @@ function(a,b,c){if(!Vd(b))throw Error(n(200));return Wd(null,a,b,!1,c)};Q.unmoun
   #root{max-width:960px;margin:0 auto;padding:20px 16px 60px;}
   @media(min-width:1100px){ #root{max-width:1080px;padding:28px 24px 70px;} }
   @media(min-width:1440px){ #root{max-width:1180px;} }
+  /* Typing Galaxy: the game canvas wants more room than the normal reading
+     column, so this screen widens #root while it's open — still centered
+     with margin either side, never edge-to-edge/full-screen. */
+  body.game-wide #root{max-width:1400px;}
   h1,h2,h3,.display{font-family:'Fredoka', sans-serif;}
   .mono{font-family:'Space Mono', monospace;}
   button{font-family:'Nunito', sans-serif;cursor:pointer;color:var(--ink);}
@@ -1384,11 +1388,11 @@ function(a,b,c){if(!Vd(b))throw Error(n(200));return Wd(null,a,b,!1,c)};Q.unmoun
   .bank-topic-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:8px 0;border-top:1.5px dashed var(--line);}
   .bank-topic-row:first-of-type{border-top:none;}
   .bank-topic-name{font-weight:800;font-size:14px;}
-  .lq-block-list{border:2.5px solid var(--line);border-radius:var(--radius-sm);padding:4px 14px;margin-bottom:16px;background:var(--card);}
+  .lq-block-list{border:2.5px solid var(--line);border-radius:var(--radius-sm);padding:4px 14px;margin-bottom:16px;background:var(--card);color:var(--ink);}
   .lq-block-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1.5px dashed var(--line);}
   .lq-block-row:first-child{border-top:none;}
   .lq-block-info{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12.5px;}
-  .lq-block-chip{background:var(--bg2, rgba(0,0,0,0.05));border-radius:20px;padding:3px 10px;font-weight:700;}
+  .lq-block-chip{background:var(--bg2, rgba(0,0,0,0.05));border-radius:20px;padding:3px 10px;font-weight:700;color:var(--ink);}
   .lq-block-sep{color:var(--ink-soft);font-weight:700;}
   .lq-block-count{font-family:'Fredoka';font-weight:700;font-size:12.5px;color:var(--night);white-space:nowrap;}
   .lq-block-remove{flex:none;background:none;border:none;color:var(--bad);font-weight:800;font-size:16px;box-shadow:none;padding:2px 6px;cursor:pointer;}
@@ -3092,6 +3096,7 @@ const HIDDEN_LESSONS_KEY = "gs4_hidden_lessons_v1";
 const SETTINGS_KEY = "gs4_settings_v1";
 const NOTES_KEY = "gs4_notes_v1";
 const ACTIVITY_KEY = "gs4_activity_log_v1";
+const LONG_QUIZ_SAVED_KEY = "gs4_long_quiz_saved_v1"; // long quizzes generated then "Saved for Later" instead of started right away
 function loadProgress() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -3234,6 +3239,22 @@ function loadActivity() {
 function saveActivity(a) {
   try {
     localStorage.setItem(ACTIVITY_KEY, JSON.stringify(a));
+  } catch (e) {}
+  queueCloudSync();
+}
+// Long quizzes that were generated (a specific set of questions was rolled)
+// but saved for later instead of starting immediately. Each entry keeps the
+// exact question set so the same test can be started — or printed — later.
+function loadSavedLongQuizzes() {
+  try {
+    const raw = localStorage.getItem(LONG_QUIZ_SAVED_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return [];
+}
+function saveSavedLongQuizzes(list) {
+  try {
+    localStorage.setItem(LONG_QUIZ_SAVED_KEY, JSON.stringify(list));
   } catch (e) {}
   queueCloudSync();
 }
@@ -6018,7 +6039,8 @@ function ResultsView({
   accent,
   onRetry,
   onDone,
-  title
+  title,
+  onExportWord
 }) {
   const total = answers.length;
   const correct = answers.filter(a => a.isCorrect).length;
@@ -6103,7 +6125,10 @@ function ResultsView({
     a: a
   })))), /*#__PURE__*/React.createElement("div", {
     className: "results-actions"
-  }, /*#__PURE__*/React.createElement("button", {
+  }, onExportWord && /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-ghost",
+    onClick: onExportWord
+  }, "\uD83D\uDCC4 Export to Word"), /*#__PURE__*/React.createElement("button", {
     className: "btn btn-ghost",
     onClick: onRetry
   }, "\u21BB Try Again"), /*#__PURE__*/React.createElement("button", {
@@ -6113,6 +6138,117 @@ function ResultsView({
     },
     onClick: onDone
   }, "Done")));
+}
+
+/* =========================================================
+   LONG QUIZ — MS Word export (printable). Works two ways:
+   - exportLongQuizBlankToWord: a not-yet-taken (saved) quiz —
+     prints numbered questions with lettered choices / blank
+     lines, followed by a separate Answer Key page.
+   - exportLongQuizAttemptToWord: a finished attempt — prints
+     each question with the student's own answer marked ✓/✗
+     and the correct answer shown for anything missed.
+   Both build a Word-compatible HTML document (not a real
+   .docx) so this stays a single self-contained HTML file with
+   no server or CDN dependency — Word opens it directly and it
+   prints like any other document.
+   ========================================================= */
+function escDoc(s) {
+  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+// The correct-answer display text for one question — works on a raw bank
+// question (before it's taken) or a finished answer record (same field
+// names are used in both: type/options/correct/answer/pairs/items/etc).
+function docCorrectAnswerText(q) {
+  const type = q.type || "mcq";
+  if (type === "fill") return String(q.answer || "").split("|")[0].trim();
+  if (type === "match" || type === "matchimg") return (q.pairs || []).map(p => p.left + " \u2192 " + p.right).join("; ");
+  if (type === "dragdrop") return (q.items || []).map(it => it.label + " \u2192 " + it.category).join("; ");
+  if (type === "order") return (q.items || []).join(" \u2192 ");
+  if (type === "label") return (q.points || []).map((p, pi) => (pi + 1) + ". " + p.label).join("; ");
+  if (type === "pattern") return (q.items || []).map(it => it.kind === "blank" ? String(it.answer || "").split("|")[0].trim() : it.value).join(", ");
+  if (type === "underline") return "Underline: " + (q.underline || []).join(", ") + ((q.circle || []).some(w => String(w || "").trim()) ? " \u00B7 Circle: " + q.circle.join(", ") : "");
+  return q.options && q.correct != null ? q.options[q.correct] : "";
+}
+// The student's own answer as plain text, for a finished answer record.
+// Returns null for question types whose review is a pass/fail line only
+// (matching, sorting, labeling, pattern, underline — see AnswerReviewBody).
+function docYourAnswerText(a) {
+  const type = a.type || "mcq";
+  if (type === "fill") return a.chosen || "(blank)";
+  if (type === "order") return (a.chosen || []).join(" \u2192 ");
+  if (type === "match" || type === "matchimg" || type === "dragdrop" || type === "label" || type === "pattern" || type === "underline") return null;
+  return a.options ? a.options[a.chosen] : String(a.chosen == null ? "" : a.chosen);
+}
+// One question's printable body for a BLANK (not-yet-taken) quiz — lettered
+// choices for multiple choice, a blank line for fill-in, and a short plain-
+// language instruction for the interactive types that can't print blank.
+function docQuestionBody(q) {
+  const type = q.type || "mcq";
+  if (type === "fill") return '<p style="margin:2px 0 12px 22px;">Answer: ________________________________</p>';
+  if (q.options && q.options.length) {
+    const letters = q.options.map((o, oi) => String.fromCharCode(65 + oi) + ". " + escDoc(o)).join("&nbsp;&nbsp;&nbsp;&nbsp;");
+    return '<p style="margin:2px 0 12px 22px;">' + letters + "</p>";
+  }
+  if (type === "order") return '<p style="margin:2px 0 12px 22px;"><i>Write these in the correct order: ' + escDoc((q.items || []).join(", ")) + "</i></p>";
+  if (type === "match" || type === "matchimg") return '<p style="margin:2px 0 12px 22px;"><i>Match each item on the left to its answer on the right.</i></p>';
+  if (type === "dragdrop") return '<p style="margin:2px 0 12px 22px;"><i>Sort each item into its category.</i></p>';
+  if (type === "label") return '<p style="margin:2px 0 12px 22px;"><i>Label each numbered part.</i></p>';
+  if (type === "pattern") return '<p style="margin:2px 0 12px 22px;"><i>Fill in the missing part of the pattern.</i></p>';
+  if (type === "underline") return '<p style="margin:2px 0 12px 22px;"><i>' + escDoc(q.sentence || "") + "</i><br/>(Underline / circle the indicated words.)</p>";
+  return '<p style="margin:2px 0 12px 22px;">Answer: ________________________________</p>';
+}
+function downloadWordDoc(filenameBase, title, bodyHtml) {
+  const html = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>" + "<head><meta charset='utf-8'><title>" + escDoc(title) + "</title>" + "<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->" + "<style>body{font-family:Calibri,Arial,sans-serif;font-size:12pt;color:#111;} h1{font-size:18pt;margin-bottom:4px;} h2{font-size:15pt;} .tag{font-size:10pt;color:#666;font-style:italic;}</style>" + "</head><body>" + bodyHtml + "</body></html>";
+  const blob = new Blob(["\ufeff", html], {
+    type: "application/msword"
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filenameBase.replace(/[^\w\-]+/g, "_") + ".doc";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+// Blank printable test + a separate Answer Key page — for a saved
+// (not-yet-taken) long quiz, so it can be handed out on paper.
+function exportLongQuizBlankToWord(title, questions) {
+  let body = "<h1>" + escDoc(title) + "</h1>";
+  body += '<p>Name: _______________________________ &nbsp;&nbsp; Date: ______________ &nbsp;&nbsp; Score: _______ / ' + questions.length + "</p><hr/>";
+  questions.forEach((q, i) => {
+    body += '<p style="font-weight:bold;margin:14px 0 0;">' + (i + 1) + ". " + escDoc(q.q) + (q.tag ? ' <span class="tag">(' + escDoc(q.tag) + ")</span>" : "") + "</p>";
+    body += docQuestionBody(q);
+  });
+  body += '<br clear="all" style="page-break-before:always" />';
+  body += "<h2>Answer Key \u2014 " + escDoc(title) + "</h2><ol>";
+  questions.forEach(q => {
+    body += "<li>" + escDoc(docCorrectAnswerText(q)) + "</li>";
+  });
+  body += "</ol>";
+  downloadWordDoc(title, title, body);
+}
+// A completed attempt — same layout, but each question shows the student's
+// own answer marked \u2713/\u2717, with the correct answer for anything missed.
+function exportLongQuizAttemptToWord(title, answers) {
+  const correct = answers.filter(a => a.isCorrect).length;
+  let body = "<h1>" + escDoc(title) + "</h1>";
+  body += "<p>Score: " + correct + " / " + answers.length + "</p><hr/>";
+  answers.forEach((a, i) => {
+    body += '<p style="font-weight:bold;margin:14px 0 0;">' + (i + 1) + ". " + escDoc(a.question) + (a.tag ? ' <span class="tag">(' + escDoc(a.tag) + ")</span>" : "") + "</p>";
+    const your = docYourAnswerText(a);
+    const mark = a.isCorrect ? "\u2713" : "\u2717";
+    if (your != null) {
+      body += '<p style="margin:2px 0 4px 22px;">Your answer: ' + escDoc(your) + " " + mark + "</p>";
+    } else {
+      body += '<p style="margin:2px 0 4px 22px;">' + (a.isCorrect ? "Correct " + mark : "Incorrect " + mark) + "</p>";
+    }
+    if (!a.isCorrect) {
+      body += '<p style="margin:2px 0 12px 22px;color:#1a7a1a;">Correct answer: ' + escDoc(docCorrectAnswerText(a)) + "</p>";
+    }
+  });
+  downloadWordDoc(title, title, body);
 }
 
 /* =========================================================
@@ -7516,7 +7652,7 @@ function normalizeQuestionsJSON(parsed, fallbackTopicRaw, forcedTopicRaw) {
     }
     if (t === "tf" || t === "truefalse" || t === "true_false") {
       let correct = 0;
-      if (typeof p.correct === "boolean") correct = p.correct ? 0 : 1;else if (Number.isInteger(p.correct)) correct = p.correct;else if (typeof p.correct === "string") correct = /^false$/i.test(p.correct.trim()) ? 1 : 0;
+      if (typeof p.correct === "boolean") correct = p.correct ? 0 : 1;else if (Number.isInteger(p.correct)) correct = p.correct;else if (typeof p.correct === "string") correct = /^false\b/i.test(p.correct.trim()) ? 1 : 0;
       return {
         type: "tf",
         q: String(p.q),
@@ -7528,7 +7664,7 @@ function normalizeQuestionsJSON(parsed, fallbackTopicRaw, forcedTopicRaw) {
     }
     if (t === "emoji" || t === "happysad" || t === "happy_sad" || t === "emojitf") {
       let correct = 0;
-      if (typeof p.correct === "boolean") correct = p.correct ? 0 : 1;else if (Number.isInteger(p.correct)) correct = p.correct;else if (typeof p.correct === "string") correct = /^(sad|false)$/i.test(p.correct.trim()) ? 1 : 0;
+      if (typeof p.correct === "boolean") correct = p.correct ? 0 : 1;else if (Number.isInteger(p.correct)) correct = p.correct;else if (typeof p.correct === "string") correct = /^(sad|false)\b/i.test(p.correct.trim()) ? 1 : 0;
       return {
         type: "emoji",
         q: String(p.q),
@@ -7540,7 +7676,7 @@ function normalizeQuestionsJSON(parsed, fallbackTopicRaw, forcedTopicRaw) {
     }
     if (t === "tama" || t === "tamaomali" || t === "tama_o_mali" || t === "tama o mali") {
       let correct = 0;
-      if (typeof p.correct === "boolean") correct = p.correct ? 0 : 1;else if (Number.isInteger(p.correct)) correct = p.correct;else if (typeof p.correct === "string") correct = /^(mali|false)$/i.test(p.correct.trim()) ? 1 : 0;
+      if (typeof p.correct === "boolean") correct = p.correct ? 0 : 1;else if (Number.isInteger(p.correct)) correct = p.correct;else if (typeof p.correct === "string") correct = /^(mali|false)\b/i.test(p.correct.trim()) ? 1 : 0;
       return {
         type: "tama",
         q: String(p.q),
@@ -7686,10 +7822,10 @@ function normalizeQuestionsJSON(parsed, fallbackTopicRaw, forcedTopicRaw) {
 // GEMINI_KEY_STORAGE / loadGeminiApiKey / saveGeminiApiKey above) so the
 // student's family only has to paste one free Gemini key for the whole app.
 // ============================================================
-// Aug 2026: Gemini 3.6 Flash is the current free-tier Flash model. Note that
+// Sep 2026: Gemini 3.8 Flash is the current recommended Flash model. Note that
 // starting with 3.6 Flash, Google deprecated the temperature/top_p/top_k
 // sampling params — generationConfig below intentionally omits them.
-const GEMINI_TEXT_MODEL = "gemini-3.6-flash";
+const GEMINI_TEXT_MODEL = "gemini-3.8-flash";
 const GEMINI_TEXT_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TEXT_MODEL}:generateContent`;
 const GEMINI_DIFFICULTY_PHRASING = {
   easy: "Keep it EASY: short sentences, the most basic recall-level facts straight from the notes, and obviously-different wrong answers.",
@@ -7739,9 +7875,9 @@ function buildLessonContext(lesson) {
 const GENERATE_TYPE_LIBRARY = {
   mcq: `- Multiple Choice: {"type":"mcq","q":"...","options":["A","B","C","D"],"correct":0,"explain":"...","topic":"..."} — "correct" is the 0-based index of the right option in "options". Distractors must be plausible wrong answers (common misconceptions, near-misses), not silly or obviously wrong.`,
   sva: `- Subject-Verb Agreement (English grammar — choosing the verb form that agrees with the subject): {"type":"sva","q":"The team ___ practicing every afternoon.","options":["is","are"],"correct":0,"explain":"...","topic":"..."} — "q" is the sentence shown to the student with a blank written as "___" where the verb goes (do NOT add a separate instruction sentence like "Choose the correct verb" — the blanked sentence itself is the question). "options" must contain exactly 2 verb-form choices (e.g. singular vs. plural, like "is"/"are", "run"/"runs", "was"/"were") that could both plausibly fill the blank. "correct" is the 0-based index of the option that correctly agrees with the subject — base this on the subject's number/type (singular/plural noun, mass/count/collective noun, personal/indefinite/possessive/demonstrative pronoun, etc.) per the lesson content. Only use this type for Subject-Verb Agreement lessons.`,
-  tf: `- True / False: {"type":"tf","q":"...","correct":true,"explain":"...","topic":"..."} — "correct" must be the JSON boolean true if the statement in "q" is factually TRUE, or false if the statement is factually FALSE. Judge this only from whether the statement itself is correct — never write a numeric index here, and never flip it to mean something else.`,
-  emoji: `- Happy / Sad (agree-or-disagree with a statement): {"type":"emoji","q":"...","correct":true,"explain":"...","topic":"..."} — "correct" must be the JSON boolean true if a student should react 😊 Happy because the statement is correct/true, or false if they should react 😢 Sad because the statement is incorrect/false.`,
-  tama: `- Tama o Mali (Filipino True/False — only use this for Filipino-language lessons): {"type":"tama","q":"...","correct":true,"explain":"...","topic":"..."} — "q" must be a Filipino statement (pangungusap). "correct" must be the JSON boolean true if the statement is "Tama" (tama/totoo), or false if it is "Mali" (mali/hindi tama).`,
+  tf: `- True / False: {"type":"tf","q":"...","correct":"True","explain":"...","topic":"..."} — "correct" must be the literal word "True" if the statement in "q" is factually TRUE, or the literal word "False" if the statement is factually FALSE. Write the word "True" or "False" — never a boolean and never a number (0/1); a plain word can't get flipped by an off-by-one mistake the way an index can.`,
+  emoji: `- Happy / Sad (agree-or-disagree with a statement): {"type":"emoji","q":"...","correct":"Happy","explain":"...","topic":"..."} — "correct" must be the literal word "Happy" if a student should react 😊 Happy because the statement is correct/true, or the literal word "Sad" if they should react 😢 Sad because the statement is incorrect/false. Write the word, never a boolean and never a number.`,
+  tama: `- Tama o Mali (Filipino True/False — only use this for Filipino-language lessons): {"type":"tama","q":"...","correct":"Tama","explain":"...","topic":"..."} — "q" must be a Filipino statement (pangungusap). "correct" must be the literal word "Tama" if the statement is true (tama/totoo), or the literal word "Mali" if it is false (mali/hindi tama). Write the word, never a boolean and never a number.`,
   fill: `- Fill in the Blank: {"type":"fill","q":"... ___ ...","answer":"...","explain":"...","topic":"..."}`,
   match: `- Matching: {"type":"match","q":"...","pairs":[{"left":"...","right":"..."},{"left":"...","right":"..."}],"explain":"...","topic":"..."} — at least 3 pairs.`,
   dragdrop: `- Drag and Drop (sorting into categories): {"type":"dragdrop","q":"...","categories":["Cat A","Cat B"],"items":[{"label":"...","category":"Cat A"},{"label":"...","category":"Cat B"}],"explain":"...","topic":"..."} — at least 4 items across the categories.`,
@@ -8433,7 +8569,7 @@ function QuestionBankManager({
       }
       if (t === "tf" || t === "truefalse" || t === "true_false") {
         let correct = 0;
-        if (typeof p.correct === "boolean") correct = p.correct ? 0 : 1;else if (Number.isInteger(p.correct)) correct = p.correct;else if (typeof p.correct === "string") correct = /^false$/i.test(p.correct.trim()) ? 1 : 0;
+        if (typeof p.correct === "boolean") correct = p.correct ? 0 : 1;else if (Number.isInteger(p.correct)) correct = p.correct;else if (typeof p.correct === "string") correct = /^false\b/i.test(p.correct.trim()) ? 1 : 0;
         return {
           type: "tf",
           q: String(p.q),
@@ -8445,7 +8581,7 @@ function QuestionBankManager({
       }
       if (t === "emoji" || t === "happysad" || t === "happy_sad" || t === "emojitf") {
         let correct = 0;
-        if (typeof p.correct === "boolean") correct = p.correct ? 0 : 1;else if (Number.isInteger(p.correct)) correct = p.correct;else if (typeof p.correct === "string") correct = /^(sad|false)$/i.test(p.correct.trim()) ? 1 : 0;
+        if (typeof p.correct === "boolean") correct = p.correct ? 0 : 1;else if (Number.isInteger(p.correct)) correct = p.correct;else if (typeof p.correct === "string") correct = /^(sad|false)\b/i.test(p.correct.trim()) ? 1 : 0;
         return {
           type: "emoji",
           q: String(p.q),
@@ -8457,7 +8593,7 @@ function QuestionBankManager({
       }
       if (t === "tama" || t === "tamaomali" || t === "tama_o_mali" || t === "tama o mali") {
         let correct = 0;
-        if (typeof p.correct === "boolean") correct = p.correct ? 0 : 1;else if (Number.isInteger(p.correct)) correct = p.correct;else if (typeof p.correct === "string") correct = /^(mali|false)$/i.test(p.correct.trim()) ? 1 : 0;
+        if (typeof p.correct === "boolean") correct = p.correct ? 0 : 1;else if (Number.isInteger(p.correct)) correct = p.correct;else if (typeof p.correct === "string") correct = /^(mali|false)\b/i.test(p.correct.trim()) ? 1 : 0;
         return {
           type: "tama",
           q: String(p.q),
@@ -10022,6 +10158,7 @@ function GradesScreen({
 function LongQuizScreen({
   currentSubject,
   goQuarter,
+  goLongQuizHub,
   handleQuizFinish,
   nav,
   quizSession,
@@ -10036,7 +10173,11 @@ function LongQuizScreen({
     }, /*#__PURE__*/React.createElement("button", {
       className: "backbtn",
       onClick: () => goQuarter(subject.id, quarter.id)
-    }, "\u2190"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    }, "\u2190"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
       className: "qnum",
       style: {
         color: quarter.color
@@ -10046,10 +10187,14 @@ function LongQuizScreen({
         margin: 0,
         fontSize: "20px"
       }
-    }, "\uD83C\uDFC6 ", quarter.title))), quizSession.finalAnswers ? /*#__PURE__*/React.createElement(ResultsView, {
+    }, "\uD83C\uDFC6 ", quarter.title)), goLongQuizHub && /*#__PURE__*/React.createElement("button", {
+      className: "btn btn-ghost btn-sm",
+      onClick: () => goLongQuizHub(subject.id, quarter.id)
+    }, "\uD83D\uDCDC History & Saved")), quizSession.finalAnswers ? /*#__PURE__*/React.createElement(ResultsView, {
       answers: quizSession.finalAnswers,
       accent: quarter.color,
-      title: quarter.title + " Long Quiz",
+      title: quizSession.title || quarter.title + " Long Quiz",
+      onExportWord: () => exportLongQuizAttemptToWord(quizSession.title || quarter.title + " Long Quiz", quizSession.finalAnswers),
       onRetry: () => quizSession.blocks ? startCustomLongQuiz(quarter, quizSession.blocks) : startLongQuiz(quarter),
       onDone: () => {
         setQuizSession(null);
@@ -10066,6 +10211,148 @@ function LongQuizScreen({
     }));
   }
 
+/* ---------------- LONG QUIZ HUB (Saved quizzes to start later + History of past attempts) ---------------- */
+function LongQuizHubScreen({
+  currentSubject,
+  deleteSavedLongQuiz,
+  goQuarter,
+  nav,
+  progress,
+  savedLongQuizzes,
+  startSavedLongQuiz
+}) {
+  const subject = currentSubject();
+  const quarter = subject.quarters.find(q => q.id === nav.quarterId);
+  const [tab, setTab] = useState("saved"); // "saved" | "history"
+  const [expandedId, setExpandedId] = useState(null);
+  const saved = (savedLongQuizzes || []).filter(sq => sq.subjectId === subject.id && sq.quarterId === quarter.id);
+  const history = (progress.longQuiz[quarter.id] && progress.longQuiz[quarter.id].history) || [];
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "backbar"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "backbtn",
+    onClick: () => goQuarter(subject.id, quarter.id)
+  }, "\u2190"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "qnum",
+    style: {
+      color: quarter.color
+    }
+  }, subject.shortName, " \xB7 ", quarter.num, " \xB7 Long Quiz"), /*#__PURE__*/React.createElement("h1", {
+    style: {
+      margin: 0,
+      fontSize: "20px"
+    }
+  }, "\uD83D\uDCDC History & Saved"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      margin: "10px 0 16px"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn " + (tab === "saved" ? "btn-primary" : "btn-ghost"),
+    style: tab === "saved" ? {
+      background: quarter.color
+    } : undefined,
+    onClick: () => setTab("saved")
+  }, "\uD83D\uDCBE Saved (", saved.length, ")"), /*#__PURE__*/React.createElement("button", {
+    className: "btn " + (tab === "history" ? "btn-primary" : "btn-ghost"),
+    style: tab === "history" ? {
+      background: quarter.color
+    } : undefined,
+    onClick: () => setTab("history")
+  }, "\uD83D\uDD52 History (", history.length, ")")), tab === "saved" ? saved.length === 0 ? /*#__PURE__*/React.createElement("p", {
+    className: "sub"
+  }, "No saved quizzes yet. Build one in the Long Quiz setup and tap \u201CSave for Later\u201D instead of \u201CGenerate Quiz.\u201D") : saved.map(sq => /*#__PURE__*/React.createElement("div", {
+    key: sq.id,
+    className: "longquiz-card",
+    style: {
+      flexDirection: "column",
+      alignItems: "stretch"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lqicon"
+  }, "\uD83D\uDCBE"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("h3", null, sq.title), /*#__PURE__*/React.createElement("p", null, sq.questions.length, " question", sq.questions.length === 1 ? "" : "s", " \xB7 saved ", new Date(sq.createdAt).toLocaleString()))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginTop: 12,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary",
+    style: {
+      background: quarter.color
+    },
+    onClick: () => startSavedLongQuiz(quarter, sq)
+  }, "\u25B6 Start"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-ghost",
+    onClick: () => exportLongQuizBlankToWord(sq.title, sq.questions)
+  }, "\uD83D\uDCC4 Export to Word"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-ghost",
+    onClick: () => {
+      if (window.confirm("Delete this saved quiz? This can't be undone.")) deleteSavedLongQuiz(sq.id);
+    }
+  }, "\uD83D\uDDD1 Delete")))) : history.length === 0 ? /*#__PURE__*/React.createElement("p", {
+    className: "sub"
+  }, "No completed long quizzes yet for this quarter.") : history.map(h => /*#__PURE__*/React.createElement("div", {
+    key: h.id,
+    className: "longquiz-card",
+    style: {
+      flexDirection: "column",
+      alignItems: "stretch"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lqicon"
+  }, h.correct / h.total >= 0.7 ? "\uD83C\uDFC6" : "\uD83D\uDD0D"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("h3", null, h.correct, " / ", h.total), /*#__PURE__*/React.createElement("p", null, new Date(h.date).toLocaleString()))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginTop: 12,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-ghost",
+    onClick: () => setExpandedId(expandedId === h.id ? null : h.id)
+  }, expandedId === h.id ? "\u25B4 Hide Answers" : "\uD83D\uDC41 Review Answers"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-ghost",
+    onClick: () => exportLongQuizAttemptToWord(h.title, h.answers)
+  }, "\uD83D\uDCC4 Export to Word")), expandedId === h.id && /*#__PURE__*/React.createElement("div", {
+    className: "review-list",
+    style: {
+      marginTop: 14
+    }
+  }, h.answers.map((a, i) => /*#__PURE__*/React.createElement("div", {
+    className: "review-item",
+    key: i
+  }, a.tag && /*#__PURE__*/React.createElement("div", {
+    className: "rtag"
+  }, a.tag), /*#__PURE__*/React.createElement("div", {
+    className: "rq"
+  }, i + 1, ". ", a.question), /*#__PURE__*/React.createElement(AnswerReviewBody, {
+    a: a
+  })))))));
+}
+
 function QuarterScreen({
   addCustomTopic,
   currentSubject,
@@ -10073,6 +10360,7 @@ function QuarterScreen({
   edits,
   getQuestions,
   goLesson,
+  goLongQuizHub,
   goSubjectHome,
   hiddenLessons,
   hideLesson,
@@ -10082,6 +10370,7 @@ function QuarterScreen({
   progress,
   removeCustomTopic,
   restoreLesson,
+  saveCustomLongQuizForLater,
   setLessonQuestions,
   startLongQuiz,
   startCustomLongQuiz
@@ -10533,7 +10822,11 @@ function QuarterScreen({
       onClick: () => setShowSetup(true)
     }, "Start") : /*#__PURE__*/React.createElement("span", {
       className: "pill todo"
-    }, "No questions yet"))), showSetup && /*#__PURE__*/React.createElement("div", {
+    }, "No questions yet")), !showSetup && goLongQuizHub && /*#__PURE__*/React.createElement("button", {
+      className: "btn btn-ghost btn-sm",
+      title: "Saved quizzes & past attempts",
+      onClick: () => goLongQuizHub(subject.id, quarter.id)
+    }, "\uD83D\uDCDC")), showSetup && /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 14
       }
@@ -10647,7 +10940,15 @@ function QuarterScreen({
         setShowSetup(false);
         setLongBlocks([]);
       }
-    }, "Cancel"), longBlocks.length > 0 && /*#__PURE__*/React.createElement("button", {
+    }, "Cancel"), longBlocks.length > 0 && saveCustomLongQuizForLater && /*#__PURE__*/React.createElement("button", {
+      className: "btn btn-ghost",
+      onClick: () => {
+        saveCustomLongQuizForLater(quarter, longBlocks);
+        setShowSetup(false);
+        setLongBlocks([]);
+        window.alert("\uD83D\uDCBE Saved! Find it under \uD83D\uDCDC History & Saved \u2192 Saved tab.");
+      }
+    }, "\uD83D\uDCBE Save for Later"), longBlocks.length > 0 && /*#__PURE__*/React.createElement("button", {
       className: "btn btn-primary",
       style: {
         background: quarter.color
@@ -12115,6 +12416,14 @@ function TypingGalaxyScreen({
       refresh();
       return () => window.removeEventListener("storage", onStorage);
     }, []);
+    // Widen the page's normal content column just for this screen — the
+    // game wants more room than reading text does — without going full
+    // screen. Removed again on the way out so every other screen keeps
+    // its usual, narrower column.
+    useEffect(() => {
+      document.body.classList.add("game-wide");
+      return () => document.body.classList.remove("game-wide");
+    }, []);
     return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       className: "backbar"
     }, /*#__PURE__*/React.createElement("button", {
@@ -12159,8 +12468,8 @@ function TypingGalaxyScreen({
       src: "./galaxy-blaster.html?grade=4",
       style: {
         width: "100%",
-        height: "78vh",
-        minHeight: 520,
+        height: "88vh",
+        minHeight: 640,
         border: "none",
         display: "block",
         background: "#0A0A1C"
@@ -12431,6 +12740,7 @@ function DashboardScreen({
 function App() {
   const [progress, setProgress] = useState(loadProgress());
   const [edits, setEdits] = useState(loadEdits());
+  const [savedLongQuizzes, setSavedLongQuizzes] = useState(loadSavedLongQuizzes()); // long quizzes generated then "Saved for Later"
   const [bank, setBank] = useState(loadBank());
   const [moves, setMoves] = useState(loadMoves());
   const [customLessons, setCustomLessons] = useState(loadCustomLessons());
@@ -13171,6 +13481,15 @@ function App() {
     });
     setQuizSession(null);
   }
+  function goLongQuizHub(sid, qid) {
+    Sound.nav();
+    setNav({
+      screen: "longQuizHub",
+      subjectId: sid,
+      quarterId: qid
+    });
+    setQuizSession(null);
+  }
   function goLesson(sid, qid, lid, startEdit) {
     Sound.nav();
     setNav({
@@ -13245,10 +13564,10 @@ function App() {
   // each block draws its own random sample, and the samples are combined
   // (and shuffled together) into one test. Because every question keeps its
   // lesson's title as `tag`, the results screen can score each topic on its
-  // own once the quiz is finished.
-  function startCustomLongQuiz(quarter, blocks) {
-    if (!blocks || blocks.length === 0) return;
-    Sound.nav();
+  // own once the quiz is finished. Pulled out of startCustomLongQuiz so
+  // "Save for Later" can build the exact same question set without also
+  // starting the quiz.
+  function buildCustomLongQuizQuestions(quarter, blocks) {
     const subject = currentSubject();
     const lessons = quarterLessons(subject, quarter, moves, customLessons, hiddenLessons);
     let combined = [];
@@ -13264,7 +13583,12 @@ function App() {
       const n = Math.max(1, Math.min(b.count || pool.length, pool.length));
       combined = combined.concat(shuffle(pool).slice(0, n));
     });
-    combined = shuffle(combined);
+    return shuffle(combined);
+  }
+  function startCustomLongQuiz(quarter, blocks) {
+    if (!blocks || blocks.length === 0) return;
+    Sound.nav();
+    const combined = buildCustomLongQuizQuestions(quarter, blocks);
     setQuizSession({
       kind: "long",
       key: quarter.id,
@@ -13272,6 +13596,49 @@ function App() {
       title: quarter.title + " Long Quiz",
       questions: combined,
       blocks
+    });
+  }
+  // Rolls the same question set a "Generate Quiz" would, but stores it
+  // instead of starting it right away — for a quiz to print or start later.
+  function saveCustomLongQuizForLater(quarter, blocks) {
+    if (!blocks || blocks.length === 0) return;
+    Sound.nav();
+    const subject = currentSubject();
+    const combined = buildCustomLongQuizQuestions(quarter, blocks);
+    const entry = {
+      id: "sq" + Date.now() + Math.random().toString(36).slice(2, 7),
+      subjectId: subject.id,
+      quarterId: quarter.id,
+      title: quarter.title + " Long Quiz",
+      questions: combined,
+      blocks,
+      createdAt: Date.now()
+    };
+    setSavedLongQuizzes(prev => {
+      const next = [entry, ...prev];
+      saveSavedLongQuizzes(next);
+      return next;
+    });
+  }
+  // Starts a previously-saved long quiz using its exact stored question set
+  // (not a fresh random sample), so a printed copy matches what's on screen.
+  function startSavedLongQuiz(quarter, entry) {
+    Sound.nav();
+    setQuizSession({
+      kind: "long",
+      key: quarter.id,
+      accent: quarter.color,
+      title: entry.title,
+      questions: entry.questions,
+      blocks: entry.blocks,
+      savedId: entry.id
+    });
+  }
+  function deleteSavedLongQuiz(id) {
+    setSavedLongQuizzes(prev => {
+      const next = prev.filter(sq => sq.id !== id);
+      saveSavedLongQuizzes(next);
+      return next;
     });
   }
   function handleQuizFinish(answers) {
@@ -13314,13 +13681,24 @@ function App() {
           correct,
           total
         };
+        // Keep the last 15 attempts (with full answers) so the Long Quiz
+        // History screen can review wrong answers from any recent try.
+        const historyEntry = {
+          id: "lh" + Date.now() + Math.random().toString(36).slice(2, 7),
+          date: Date.now(),
+          correct,
+          total,
+          title: quizSession.title,
+          answers
+        };
         next.longQuiz[quizSession.key] = {
           ...rec,
           best,
           last: {
             correct,
             total
-          }
+          },
+          history: [historyEntry, ...(rec.history || [])].slice(0, 15)
         };
       }
       return next;
@@ -13373,6 +13751,7 @@ function App() {
     content = /*#__PURE__*/React.createElement(LongQuizScreen, {
       currentSubject,
       goQuarter,
+      goLongQuizHub,
       handleQuizFinish,
       nav,
       quizSession,
@@ -13388,6 +13767,7 @@ function App() {
       edits,
       getQuestions,
       goLesson,
+      goLongQuizHub,
       goSubjectHome,
       hiddenLessons,
       hideLesson,
@@ -13397,9 +13777,20 @@ function App() {
       progress,
       removeCustomTopic,
       restoreLesson,
+      saveCustomLongQuizForLater,
       setLessonQuestions,
       startLongQuiz,
       startCustomLongQuiz
+    });
+  } else if (nav.screen === "longQuizHub") {
+    content = /*#__PURE__*/React.createElement(LongQuizHubScreen, {
+      currentSubject,
+      deleteSavedLongQuiz,
+      goQuarter,
+      nav,
+      progress,
+      savedLongQuizzes,
+      startSavedLongQuiz
     });
   } else if (nav.screen === "lesson") {
     content = /*#__PURE__*/React.createElement(LessonScreen, {
