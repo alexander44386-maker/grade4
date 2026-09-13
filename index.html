@@ -799,7 +799,7 @@ function(a,b,c){if(!Vd(b))throw Error(n(200));return Wd(null,a,b,!1,c)};Q.unmoun
   body.dark-mode .longquiz-card{
     box-shadow: 0 0 0 1.5px rgba(53,242,224,0.3), var(--shadow-lg);
   }
-  .longquiz-card::after{content:"🏆";position:absolute;right:-6px;bottom:-10px;font-size:64px;opacity:.16;filter:drop-shadow(0 0 10px rgba(255,201,60,0.5));}
+  .longquiz-card::after{content:"🏆";position:absolute;right:-6px;bottom:-10px;font-size:64px;opacity:.16;filter:drop-shadow(0 0 10px rgba(255,201,60,0.5));pointer-events:none;}
   .longquiz-card .lqicon{font-size:34px;}
   .longquiz-card h3{margin:0 0 4px;font-size:18px;}
   .longquiz-card p{margin:0;font-size:12.5px;color:#E3E9FA;}
@@ -2441,26 +2441,36 @@ function sgSampleWithoutReplacement(arr, count) {
   }
   return pool.slice(0, count);
 }
-// Builds a fresh set of 3 problems for a given Spelling Tinik level id (1-3)
-// by randomly sampling 3 words from that level's bank.
-function sgGenerateProblems(levelId) {
-  const level = SPELLING_TINIK_LEVELS.find(l => l.id === levelId);
-  const picks = sgSampleWithoutReplacement(level.bank, 3);
-  return picks.map(w => ({
-    text: w.clue,
-    answer: w.word
-  }));
+// Spreads a word bank across `total` slots by concatenating independently
+// shuffled copies of the bank. This guarantees every word is used once per
+// full "lap" through the bank before any word repeats, so slots that are
+// near each other (e.g. set #1 and set #2) essentially never draw the same
+// word — unlike sampling each slot independently at random, which can easily
+// hand two different sets the same (or almost the same) 3 words by chance,
+// especially with a small bank.
+function sgBuildWordCycle(bank, total) {
+  const out = [];
+  while (out.length < total) {
+    out.push(...sgSampleWithoutReplacement(bank, bank.length));
+  }
+  return out.slice(0, total);
 }
-// Builds all 10 sets × 3 levels of Spelling Tinik problems at once.
+// Builds all 10 sets × 3 levels of Spelling Tinik problems at once, spreading
+// each level's word bank evenly across the 10 sets (see sgBuildWordCycle)
+// instead of sampling each set independently.
 function sgGenerateAllSets() {
   const sets = {};
-  for (let setId = 1; setId <= SPELLING_TINIK_SET_COUNT; setId++) {
-    const byLevel = {};
-    SPELLING_TINIK_LEVELS.forEach(l => {
-      byLevel[l.id] = sgGenerateProblems(l.id);
-    });
-    sets[setId] = byLevel;
-  }
+  for (let setId = 1; setId <= SPELLING_TINIK_SET_COUNT; setId++) sets[setId] = {};
+  SPELLING_TINIK_LEVELS.forEach(l => {
+    const cycle = sgBuildWordCycle(l.bank, SPELLING_TINIK_SET_COUNT * 3);
+    for (let setId = 1; setId <= SPELLING_TINIK_SET_COUNT; setId++) {
+      const picks = cycle.slice((setId - 1) * 3, setId * 3);
+      sets[setId][l.id] = picks.map(w => ({
+        text: w.clue,
+        answer: w.word
+      }));
+    }
+  });
   return sets;
 }
 const STORAGE_KEY_SPELLING_TINIK_PROBLEMS = "gs4_spelling_tinik_problems_v1";
@@ -2625,25 +2635,22 @@ function saveMoneyTinikProblems(m) {
    ========================================================= */
 const FIL_SPELLING_TINIK_SET_COUNT = 10;
 const FIL_SPELLING_TINIK_LEVELS = CONTENT_DATA.filSpellingTinikLevels;
-// Builds a fresh set of 3 problems for a given Filipino Spelling Tinik level id (1-3).
-function fsGenerateProblems(levelId) {
-  const level = FIL_SPELLING_TINIK_LEVELS.find(l => l.id === levelId);
-  const picks = sgSampleWithoutReplacement(level.bank, 3);
-  return picks.map(w => ({
-    text: w.clue,
-    answer: w.word
-  }));
-}
-// Builds all 10 sets × 3 levels of Filipino Spelling Tinik problems at once.
+// Builds all 10 sets × 3 levels of Filipino Spelling Tinik problems at once,
+// spreading each level's word bank evenly across the 10 sets (see
+// sgBuildWordCycle above) instead of sampling each set independently.
 function fsGenerateAllSets() {
   const sets = {};
-  for (let setId = 1; setId <= FIL_SPELLING_TINIK_SET_COUNT; setId++) {
-    const byLevel = {};
-    FIL_SPELLING_TINIK_LEVELS.forEach(l => {
-      byLevel[l.id] = fsGenerateProblems(l.id);
-    });
-    sets[setId] = byLevel;
-  }
+  for (let setId = 1; setId <= FIL_SPELLING_TINIK_SET_COUNT; setId++) sets[setId] = {};
+  FIL_SPELLING_TINIK_LEVELS.forEach(l => {
+    const cycle = sgBuildWordCycle(l.bank, FIL_SPELLING_TINIK_SET_COUNT * 3);
+    for (let setId = 1; setId <= FIL_SPELLING_TINIK_SET_COUNT; setId++) {
+      const picks = cycle.slice((setId - 1) * 3, setId * 3);
+      sets[setId][l.id] = picks.map(w => ({
+        text: w.clue,
+        answer: w.word
+      }));
+    }
+  });
   return sets;
 }
 const STORAGE_KEY_FIL_SPELLING_TINIK_PROBLEMS = "gs4_fil_spelling_tinik_problems_v1";
@@ -4901,6 +4908,19 @@ function QuizRunner({
   // Underline / Circle (tap a word to cycle it through none -> underline -> circle -> none)
   const [underlineMarks, setUnderlineMarks] = useState({}); // tokenIdx -> "underline" | "circle"
   const [underlineChecked, setUnderlineChecked] = useState(false);
+
+  // "Prank" Stop Quiz confirmation: the Yes button dodges the cursor so it's basically unclickable.
+  const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
+  const [yesBtnPos, setYesBtnPos] = useState({ x: 170, y: 92 });
+  function dodgeYesButton() {
+    const minX = 12, maxX = 210, minY = 46, maxY = 130;
+    let nx, ny;
+    do {
+      nx = minX + Math.random() * (maxX - minX);
+      ny = minY + Math.random() * (maxY - minY);
+    } while (Math.abs(nx - yesBtnPos.x) < 40 && Math.abs(ny - yesBtnPos.y) < 30);
+    setYesBtnPos({ x: nx, y: ny });
+  }
   const q = questions[idx];
   // Only a genuinely-reviewed past question (idx < furthestIdx) renders as read-only.
   // The current, still-in-progress question keeps its live interactive/feedback view even
@@ -5457,7 +5477,18 @@ function QuizRunner({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "quiz-progress"
-  }, /*#__PURE__*/React.createElement("span", null, "QUESTION ", idx + 1, " / ", questions.length), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("span", {
+    onClick: () => {
+      if (!(showStopInline && onStop)) return;
+      if (window.confirm("Stop this quiz? Your progress on this attempt won't be saved.")) {
+        Sound.back();
+        onStop();
+      }
+    },
+    style: showStopInline && onStop ? {
+      cursor: "pointer"
+    } : undefined
+  }, "QUESTION ", idx + 1, " / ", questions.length), /*#__PURE__*/React.createElement("div", {
     className: "quiz-dots"
   }, questions.map((_, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
@@ -5477,10 +5508,8 @@ function QuizRunner({
     className: "btn btn-ghost btn-sm",
     title: "Stop this quiz",
     onClick: () => {
-      if (window.confirm("Stop this quiz? Your progress on this attempt won't be saved.")) {
-        Sound.back();
-        onStop();
-      }
+      setYesBtnPos({ x: 170, y: 92 });
+      setStopConfirmOpen(true);
     }
   }, "\u2715 Stop Quiz"), record ? /*#__PURE__*/React.createElement("button", {
     className: "btn btn-primary btn-sm",
@@ -5856,7 +5885,63 @@ function QuizRunner({
     onClick: handleUnderlineCheck
   }, "\u2713 Check Answer"))), answered && /*#__PURE__*/React.createElement("div", {
     className: "feedback-box " + ((isFill ? fillIsCorrect : isMatch ? matchIsCorrect : isDragDrop ? ddIsCorrect : isOrder ? orderIsCorrect : isLabel ? labelIsCorrect : isPattern ? patternIsCorrect : isUnderline ? underlineIsCorrect : selected === q.correct) ? "good" : "bad")
-  }, (isFill ? fillIsCorrect : isMatch ? matchIsCorrect : isDragDrop ? ddIsCorrect : isOrder ? orderIsCorrect : isLabel ? labelIsCorrect : isPattern ? patternIsCorrect : isUnderline ? underlineIsCorrect : selected === q.correct) ? "✅ Correct! " : "❌ Not quite. ", isFill && !fillIsCorrect && "Correct answer: " + acceptable[0] + ". ", isOrder && !orderIsCorrect && "Correct order: " + q.items.join(" → ") + ". ", isLabel && !labelIsCorrect && "Correct labels: " + (q.points || []).map(p => p.label).join(", ") + ". ", isPattern && !patternIsCorrect && "Correct numbers: " + (q.items || []).map(it => it.kind === "blank" ? String(it.answer || "").split("|")[0].trim() : it.value).join(", ") + ". ", isUnderline && !underlineIsCorrect && "Correct: underline " + (q.underline || []).join(", ") + (underlineHasCircle ? "; circle " + (q.circle || []).join(", ") : "") + ". ", q.explain))));
+  }, (isFill ? fillIsCorrect : isMatch ? matchIsCorrect : isDragDrop ? ddIsCorrect : isOrder ? orderIsCorrect : isLabel ? labelIsCorrect : isPattern ? patternIsCorrect : isUnderline ? underlineIsCorrect : selected === q.correct) ? "✅ Correct! " : "❌ Not quite. ", isFill && !fillIsCorrect && "Correct answer: " + acceptable[0] + ". ", isOrder && !orderIsCorrect && "Correct order: " + q.items.join(" → ") + ". ", isLabel && !labelIsCorrect && "Correct labels: " + (q.points || []).map(p => p.label).join(", ") + ". ", isPattern && !patternIsCorrect && "Correct numbers: " + (q.items || []).map(it => it.kind === "blank" ? String(it.answer || "").split("|")[0].trim() : it.value).join(", ") + ". ", isUnderline && !underlineIsCorrect && "Correct: underline " + (q.underline || []).join(", ") + (underlineHasCircle ? "; circle " + (q.circle || []).join(", ") : "") + ". ", q.explain))), stopConfirmOpen && ReactDOM.createPortal(/*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      zIndex: 9999,
+      background: "rgba(20,18,30,0.6)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 24
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "relative",
+      width: 300,
+      height: 190,
+      background: "var(--card-bg, #fff)",
+      borderRadius: 16,
+      padding: "20px 18px",
+      boxShadow: "0 10px 40px rgba(0,0,0,0.4)",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    style: {
+      margin: "0 0 10px",
+      fontWeight: 600,
+      fontSize: 14.5,
+      lineHeight: 1.4
+    }
+  }, "Stop this quiz? Your progress on this attempt won't be saved."), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-ghost btn-sm",
+    style: {
+      position: "absolute",
+      left: 14,
+      bottom: 16
+    },
+    onClick: () => setStopConfirmOpen(false)
+  }, "No"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary btn-sm",
+    style: {
+      position: "absolute",
+      left: yesBtnPos.x,
+      top: yesBtnPos.y,
+      transition: "left 0.12s ease-out, top 0.12s ease-out"
+    },
+    onMouseEnter: dodgeYesButton,
+    onMouseMove: dodgeYesButton,
+    onTouchStart: e => {
+      e.preventDefault();
+      dodgeYesButton();
+    },
+    onClick: () => {
+      setStopConfirmOpen(false);
+      Sound.back();
+      onStop();
+    }
+  }, "Yes"))), document.body))
 }
 const CONFETTI_COLORS = ["var(--q1)", "var(--q2)", "var(--q3)", "var(--q4)", "var(--gold)"];
 const REWARD_CONFETTI_COLORS = ["var(--aw-cyan)", "var(--aw-magenta)", "var(--aw-purple)", "var(--gold)", "#ffffff"];
@@ -10214,19 +10299,66 @@ function LongQuizScreen({
 /* ---------------- LONG QUIZ HUB (Saved quizzes to start later + History of past attempts) ---------------- */
 function LongQuizHubScreen({
   currentSubject,
+  customLessons,
   deleteSavedLongQuiz,
+  edits,
+  getQuestions,
   goQuarter,
+  hiddenLessons,
+  moves,
   nav,
   progress,
   savedLongQuizzes,
-  startSavedLongQuiz
+  startSavedLongQuiz,
+  updateSavedLongQuizQuestions
 }) {
   const subject = currentSubject();
   const quarter = subject.quarters.find(q => q.id === nav.quarterId);
   const [tab, setTab] = useState("saved"); // "saved" | "history"
   const [expandedId, setExpandedId] = useState(null);
+  const [editingId, setEditingId] = useState(null); // saved quiz currently open in the Edit panel
+  const [editQuestions, setEditQuestions] = useState([]); // working copy of that quiz's questions
   const saved = (savedLongQuizzes || []).filter(sq => sq.subjectId === subject.id && sq.quarterId === quarter.id);
   const history = (progress.longQuiz[quarter.id] && progress.longQuiz[quarter.id].history) || [];
+  // All lessons in this quarter, keyed by the same title string stored as
+  // each question's `tag` — lets a "Replace" tap find that lesson's full
+  // question bank again to draw a fresh, not-yet-used question from.
+  const lessonsByTag = {};
+  quarterLessons(subject, quarter, moves, customLessons, hiddenLessons).forEach(l => {
+    lessonsByTag[mergeLesson(l, edits).title] = l;
+  });
+  function openEdit(sq) {
+    setEditingId(sq.id);
+    setEditQuestions(sq.questions.slice());
+  }
+  function cancelEdit() {
+    setEditingId(null);
+    setEditQuestions([]);
+  }
+  function replaceQuestionAt(idx) {
+    const current = editQuestions[idx];
+    const lesson = lessonsByTag[current.tag];
+    if (!lesson) {
+      window.alert("Can't find that topic's question bank anymore.");
+      return;
+    }
+    const used = new Set(editQuestions.map(q => q.q));
+    const candidates = getQuestions(lesson.id).filter(q => !used.has(q.q));
+    if (candidates.length === 0) {
+      window.alert("No more unused questions for \"" + current.tag + "\" in the question bank.");
+      return;
+    }
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    setEditQuestions(prev => prev.map((q, i) => i === idx ? {
+      ...pick,
+      tag: current.tag
+    } : q));
+  }
+  function saveEdit() {
+    updateSavedLongQuizQuestions(editingId, editQuestions);
+    setEditingId(null);
+    setEditQuestions([]);
+  }
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "backbar"
   }, /*#__PURE__*/React.createElement("button", {
@@ -10295,6 +10427,12 @@ function LongQuizHubScreen({
     },
     onClick: () => startSavedLongQuiz(quarter, sq)
   }, "\u25B6 Start"), /*#__PURE__*/React.createElement("button", {
+    className: "btn " + (editingId === sq.id ? "btn-primary" : "btn-ghost"),
+    style: editingId === sq.id ? {
+      background: quarter.color
+    } : undefined,
+    onClick: () => editingId === sq.id ? cancelEdit() : openEdit(sq)
+  }, editingId === sq.id ? "\u2715 Cancel Edit" : "\u270F\uFE0F Edit"), /*#__PURE__*/React.createElement("button", {
     className: "btn btn-ghost",
     onClick: () => exportLongQuizBlankToWord(sq.title, sq.questions)
   }, "\uD83D\uDCC4 Export to Word"), /*#__PURE__*/React.createElement("button", {
@@ -10302,7 +10440,58 @@ function LongQuizHubScreen({
     onClick: () => {
       if (window.confirm("Delete this saved quiz? This can't be undone.")) deleteSavedLongQuiz(sq.id);
     }
-  }, "\uD83D\uDDD1 Delete")))) : history.length === 0 ? /*#__PURE__*/React.createElement("p", {
+  }, "\uD83D\uDDD1 Delete")), editingId === sq.id && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 14
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "sub",
+    style: {
+      marginBottom: 10
+    }
+  }, "Tap \uD83D\uDD01 Replace to swap a question for a fresh one from that topic's question bank, then Save Changes."), /*#__PURE__*/React.createElement("div", {
+    className: "review-list",
+    style: {
+      marginTop: 0
+    }
+  }, editQuestions.map((q, i) => /*#__PURE__*/React.createElement("div", {
+    className: "review-item",
+    key: i
+  }, q.tag && /*#__PURE__*/React.createElement("div", {
+    className: "rtag"
+  }, q.tag), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "rq",
+    style: {
+      marginBottom: 0,
+      flex: 1
+    }
+  }, i + 1, ". ", q.q || q.sentence || "(question)"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-ghost btn-sm",
+    onClick: () => replaceQuestionAt(i)
+  }, "\uD83D\uDD01 Replace"))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginTop: 12,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary",
+    style: {
+      background: quarter.color
+    },
+    onClick: saveEdit
+  }, "\uD83D\uDCBE Save Changes"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-ghost",
+    onClick: cancelEdit
+  }, "Cancel"))))) : history.length === 0 ? /*#__PURE__*/React.createElement("p", {
     className: "sub"
   }, "No completed long quizzes yet for this quarter.") : history.map(h => /*#__PURE__*/React.createElement("div", {
     key: h.id,
@@ -13641,6 +13830,18 @@ function App() {
       return next;
     });
   }
+  // Overwrites a saved long quiz's question set — used by the Edit panel in
+  // the History & Saved hub after one or more questions were replaced.
+  function updateSavedLongQuizQuestions(id, newQuestions) {
+    setSavedLongQuizzes(prev => {
+      const next = prev.map(sq => sq.id === id ? {
+        ...sq,
+        questions: newQuestions
+      } : sq);
+      saveSavedLongQuizzes(next);
+      return next;
+    });
+  }
   function handleQuizFinish(answers) {
     const correct = answers.filter(a => a.isCorrect).length;
     const total = answers.length;
@@ -13785,12 +13986,18 @@ function App() {
   } else if (nav.screen === "longQuizHub") {
     content = /*#__PURE__*/React.createElement(LongQuizHubScreen, {
       currentSubject,
+      customLessons,
       deleteSavedLongQuiz,
+      edits,
+      getQuestions,
       goQuarter,
+      hiddenLessons,
+      moves,
       nav,
       progress,
       savedLongQuizzes,
-      startSavedLongQuiz
+      startSavedLongQuiz,
+      updateSavedLongQuizQuestions
     });
   } else if (nav.screen === "lesson") {
     content = /*#__PURE__*/React.createElement(LessonScreen, {
