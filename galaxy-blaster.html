@@ -343,6 +343,7 @@
   /* ---------- Critter entity ---------- */
   .critter{
     position:absolute;
+    z-index:2;
     width:64px;height:64px;
     border-radius:50% 50% 46% 46%;
     display:flex;
@@ -407,6 +408,7 @@
   /* ---------- Invader entity (space game) ---------- */
   .invader{
     position:absolute;
+    z-index:2;
     width:60px;height:56px;
     border-radius:50% 50% 42% 42% / 62% 62% 38% 38%;
     display:flex;
@@ -1388,6 +1390,18 @@
     border-radius:3px;
     pointer-events:none;
     transform-origin:50% 100%;
+    /* Aim angle lives in a custom property (set from JS per-shot) rather
+       than a plain inline `transform`, because `laser-draw` below also
+       animates `transform` for the scale-in pop. A CSS animation on a
+       property always fully replaces its value for the animated
+       elements, so a bare inline `rotate(Xdeg)` would get silently
+       clobbered back to "no rotation" the instant laser-draw runs —
+       that was the bug making some ships' beams fire straight up
+       instead of toward the target. Routing the angle through
+       --laser-angle lets both the static rule and every keyframe below
+       include the same rotation, so it survives regardless of which
+       animation list a given ship's laser class uses. */
+    transform: rotate(var(--laser-angle, 0deg));
     /* Two glow layers: the beam's own color (tight, currentColor) plus a
        wider halo in the world's ambient glow token — ties every ship's
        laser back to the world it's flying through. */
@@ -1396,10 +1410,11 @@
   }
   /* Draw-in: the beam snaps from the cannon outward instead of the full
      bar just appearing already-formed, so firing reads as a fast shot
-     rather than a bar fading into view in place. */
+     rather than a bar fading into view in place. Must include the same
+     rotate(var(--laser-angle)) as the base rule above — see note there. */
   @keyframes laser-draw{
-    0%{ transform:scaleY(0.05); opacity:0.6; }
-    100%{ transform:scaleY(1); opacity:1; }
+    0%{ transform: rotate(var(--laser-angle, 0deg)) scaleY(0.05); opacity:0.6; }
+    100%{ transform: rotate(var(--laser-angle, 0deg)) scaleY(1); opacity:1; }
   }
   /* Bright core: a thin near-white line down the center of every beam,
      on top of the colored gradient, so shots read as energy with a hot
@@ -1920,39 +1935,6 @@
     background:linear-gradient(90deg, #FF6F5A, #FF9466);
     transition: width 0.25s ease;
   }
-  .boss-word{
-    display:flex;
-    gap:6px;
-    flex-wrap:wrap;
-    justify-content:center;
-    max-width:80vw;
-  }
-  .boss-letter{
-    font-family:'Baloo 2', sans-serif;
-    font-weight:800;
-    font-size:clamp(18px,3.2vw,28px);
-    color:#fff;
-    background:#ffffff22;
-    border:2px solid #ffffff44;
-    border-radius:10px;
-    padding:4px 10px;
-    min-width:1.4em;
-    text-align:center;
-    transition: all 0.2s ease;
-  }
-  .boss-letter.active{
-    background:var(--sun);
-    color:#4a2f00;
-    border-color:#fff;
-    box-shadow:0 0 14px rgba(255,209,102,0.8);
-    transform:scale(1.12);
-  }
-  .boss-letter.hit{
-    background:#ffffff11;
-    color:#ffffff66;
-    border-color:#ffffff22;
-    text-decoration:line-through;
-  }
   .boss-hint{
     font-family:'Quicksand', sans-serif;
     font-weight:600;
@@ -2031,7 +2013,6 @@
   /* Battle UI (hp bar / word / timer / hint) stays hidden until the taunt
      phase finishes and the actual typing challenge begins. */
   .boss-overlay.taunt-phase .boss-hpbar,
-  .boss-overlay.taunt-phase .boss-word,
   .boss-overlay.taunt-phase .boss-timer,
   .boss-overlay.taunt-phase .boss-hint{
     display:none;
@@ -2082,14 +2063,55 @@
     15%{ opacity:0.9; }
     100%{ transform:translateY(-180px) scale(1.1) rotate(60deg); opacity:0; }
   }
-  /* A quick bouncy "pop" the instant a letter is correctly typed, on top
-     of the existing hit/active color swap — gives each keystroke a little
-     more punch without changing what the letter shows or when. */
-  .boss-letter.letter-pop{ animation: boss-letter-pop 0.32s cubic-bezier(.34,1.56,.64,1); }
-  @keyframes boss-letter-pop{
-    0%{ transform:scale(1); }
-    40%{ transform:scale(1.35) rotate(-6deg); }
-    100%{ transform:scale(1) rotate(0deg); }
+  /* ---------- Boss word letters: the target word no longer sits spelled
+     out in a static row — each letter of it is flung at the player one at
+     a time, same as the boss's power attack, but bigger and gold-glowing
+     so it always reads as "the important one" among any power letters
+     also in the air. Typing it plays the same hit/pointer/hp logic the
+     old static row drove; missing it just fades out and the boss throws
+     it again a beat later — only the overall timer punishes being slow,
+     so difficulty is unchanged from the old typed-word version. ---------- */
+  .boss-word-letter{
+    position:absolute;
+    top:-52px;
+    z-index:5;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:800;
+    font-size:clamp(24px,5vw,36px);
+    color:#4a2f00;
+    background:radial-gradient(circle at 32% 30%, #fff8e0, var(--sun,#FFD166));
+    border:3px solid #ffffff;
+    border-radius:12px;
+    padding:4px 12px;
+    min-width:1.3em;
+    text-align:center;
+    box-shadow:0 0 22px rgba(255,209,102,0.85);
+    pointer-events:none;
+    transform:translateX(-50%) scale(1);
+    animation: boss-word-letter-spawn 0.26s cubic-bezier(.34,1.56,.64,1), boss-word-letter-pulse 0.9s ease-in-out infinite 0.26s;
+  }
+  @keyframes boss-word-letter-spawn{
+    0%{ transform:translateX(-50%) scale(0.2) rotate(-10deg); opacity:0; }
+    100%{ transform:translateX(-50%) scale(1) rotate(0deg); opacity:1; }
+  }
+  @keyframes boss-word-letter-pulse{
+    0%,100%{ box-shadow:0 0 16px rgba(255,209,102,0.7); }
+    50%{ box-shadow:0 0 28px rgba(255,209,102,1); }
+  }
+  .boss-word-letter.boss-word-hit{
+    animation: boss-word-letter-hit 0.32s cubic-bezier(.34,1.56,.64,1) forwards !important;
+  }
+  @keyframes boss-word-letter-hit{
+    0%{ transform:translateX(-50%) scale(1) rotate(0deg); opacity:1; }
+    45%{ transform:translateX(-50%) scale(1.5) rotate(10deg); opacity:1; }
+    100%{ transform:translateX(-50%) scale(0.2) rotate(30deg); opacity:0; }
+  }
+  .boss-word-letter.boss-word-miss{
+    animation: boss-word-letter-miss 0.3s ease forwards !important;
+  }
+  @keyframes boss-word-letter-miss{
+    0%{ transform:translateX(-50%) scale(1); opacity:0.9; }
+    100%{ transform:translateX(-50%) scale(0.7) translateY(10px); opacity:0; }
   }
 
   /* ---------- Boss power attack: letters raining from all over the
@@ -2197,6 +2219,9 @@
     z-index:4;
     border-radius:4px;
     transform-origin:50% 100%;
+    /* Angle comes from --laser-angle (set per-shot in JS) rather than a
+       plain inline transform — see the matching note on .laser-beam. */
+    transform: rotate(var(--laser-angle, 0deg));
     pointer-events:none;
     box-shadow:0 0 10px currentColor;
     animation: boss-ship-beam-fade 0.2s ease-out forwards;
@@ -4391,14 +4416,16 @@
     60%{ transform:translateY(-90px) scale(1.3); opacity:0.5; }
     100%{ transform:translateY(-170px) scale(1.9); opacity:0; }
   }
-  /* ---------- World terrain silhouettes: a low horizon-band shape per
-     world, giving each one distinct ground/structure/formation identity
-     beyond dust + one centerpiece, so it stops reading as "generic space
-     with drifting particles". Kept deliberately low-contrast (flat fills,
-     no glow, no eyes/faces) and confined to a shallow band along an edge
-     so invaders — bright, saturated, glowing — always read clearly on
-     top of it. Sits at z-index 0, same layer as the signature/parallax
-     art, well below the invaders themselves. ---------- */
+  /* ---------- World terrain silhouettes: a horizon-band shape per world,
+     giving each one distinct ground/structure/formation identity beyond
+     dust + one centerpiece, so it stops reading as "generic space with
+     drifting particles". Confined to a band along an edge so invaders
+     and the cannon — both pinned to z-index 2 — always render on top of
+     it regardless of how tall or vivid a given world's band gets. Sits
+     at z-index 0, same layer as the signature/parallax art. Punched up
+     (taller, richer color, glow, gentle idle motion) from the original
+     low-contrast pass now that the z-index guarantee makes that safe.
+     ---------- */
   .world-terrain, .world-terrain-top, .world-terrain-float{
     position:absolute;
     pointer-events:none;
@@ -4406,133 +4433,170 @@
   }
   .world-terrain{ left:0; right:0; bottom:0; }
   .world-terrain-top{ left:0; right:0; top:0; }
-  /* Black Hole: a low jagged ridge of rubble caught at the event
-     horizon's edge. */
+  @keyframes terr-glow-breathe{
+    0%,100%{ filter:drop-shadow(0 0 6px var(--terr-glow)); }
+    50%{ filter:drop-shadow(0 0 16px var(--terr-glow)); }
+  }
+  @keyframes terr-drift-soft{
+    0%,100%{ transform:translateX(0); }
+    50%{ transform:translateX(2.5%); }
+  }
+  /* Black Hole: a jagged ridge of rubble caught at the event horizon's
+     edge, with a faint violet rim-light that breathes like gravitational
+     lensing. */
   .world-terrain.terr-blackhole{
-    height:16%;
+    height:22%;
     clip-path: polygon(0% 100%,0% 70%,6% 55%,13% 68%,20% 40%,28% 62%,36% 35%,44% 58%,52% 30%,60% 55%,68% 38%,76% 60%,84% 42%,92% 58%,100% 45%,100% 100%);
-    background: linear-gradient(180deg, rgba(124,58,237,0) 0%, rgba(58,30,110,0.5) 45%, rgba(18,10,32,0.72) 100%);
+    background: linear-gradient(180deg, rgba(124,58,237,0) 0%, rgba(96,42,180,0.68) 42%, rgba(14,7,26,0.9) 100%);
+    --terr-glow: rgba(124,58,237,0.45);
+    animation: terr-glow-breathe 5s ease-in-out infinite;
   }
-  /* Frozen Comet Belt: a jagged pale ice-shelf horizon. */
+  /* Frozen Comet Belt: a jagged ice-shelf horizon with a cold blue glow
+     along its ridgeline. */
   .world-terrain.terr-frozencomet{
-    height:18%;
-    clip-path: polygon(0% 100%,0% 60%,8% 78%,16% 45%,24% 70%,33% 30%,42% 65%,50% 20%,58% 58%,67% 25%,76% 62%,85% 35%,93% 68%,100% 40%,100% 100%);
-    background: linear-gradient(180deg, rgba(186,230,253,0) 0%, rgba(120,190,230,0.45) 45%, rgba(24,58,92,0.68) 100%);
-  }
-  /* Molten Core: dark volcanic spires jutting up through the lava glow
-     already provided by the signature centerpiece. */
-  .world-terrain.terr-moltencore{
-    height:22%;
-    clip-path: polygon(0% 100%,0% 80%,5% 50%,11% 82%,18% 35%,26% 78%,33% 20%,40% 72%,48% 15%,56% 68%,64% 25%,72% 75%,80% 18%,88% 70%,95% 40%,100% 75%,100% 100%);
-    background: linear-gradient(180deg, rgba(217,41,28,0) 0%, rgba(110,20,10,0.55) 40%, rgba(18,4,0,0.8) 100%);
-  }
-  /* Cyber Grid: a blocky digital city skyline. */
-  .world-terrain.terr-cybergrid{
     height:24%;
+    clip-path: polygon(0% 100%,0% 60%,8% 78%,16% 45%,24% 70%,33% 30%,42% 65%,50% 20%,58% 58%,67% 25%,76% 62%,85% 35%,93% 68%,100% 40%,100% 100%);
+    background: linear-gradient(180deg, rgba(186,230,253,0) 0%, rgba(140,205,240,0.6) 42%, rgba(16,44,72,0.86) 100%);
+    --terr-glow: rgba(186,230,253,0.5);
+    animation: terr-glow-breathe 4.5s ease-in-out infinite;
+  }
+  /* Molten Core: dark volcanic spires jutting up, glowing with the same
+     heat as the lava beneath them. */
+  .world-terrain.terr-moltencore{
+    height:28%;
+    clip-path: polygon(0% 100%,0% 80%,5% 50%,11% 82%,18% 35%,26% 78%,33% 20%,40% 72%,48% 15%,56% 68%,64% 25%,72% 75%,80% 18%,88% 70%,95% 40%,100% 75%,100% 100%);
+    background: linear-gradient(180deg, rgba(255,120,40,0) 0%, rgba(180,40,15,0.72) 38%, rgba(14,3,0,0.92) 100%);
+    --terr-glow: rgba(255,102,26,0.55);
+    animation: terr-glow-breathe 2.4s ease-in-out infinite;
+  }
+  /* Cyber Grid: a blocky digital city skyline with a brighter neon
+     top-edge and a scanline flicker. */
+  .world-terrain.terr-cybergrid{
+    height:30%;
     clip-path: polygon(0% 100%,0% 55%,6% 55%,6% 40%,12% 40%,12% 62%,18% 62%,18% 30%,25% 30%,25% 50%,31% 50%,31% 20%,38% 20%,38% 58%,44% 58%,44% 35%,50% 35%,50% 65%,57% 65%,57% 25%,63% 25%,63% 48%,70% 48%,70% 18%,76% 18%,76% 55%,83% 55%,83% 38%,89% 38%,89% 60%,95% 60%,95% 28%,100% 28%,100% 100%);
-    background: linear-gradient(180deg, rgba(46,255,232,0) 0%, rgba(14,14,42,0.5) 30%, rgba(4,4,18,0.8) 100%);
-    box-shadow: inset 0 1px 0 0 rgba(46,255,232,0.35);
+    background: linear-gradient(180deg, rgba(46,255,232,0) 0%, rgba(20,20,60,0.68) 28%, rgba(3,3,14,0.92) 100%);
+    box-shadow: inset 0 1px 0 0 rgba(46,255,232,0.6);
+    --terr-glow: rgba(46,255,232,0.45);
+    animation: terr-glow-breathe 3.2s ease-in-out infinite;
   }
-  /* Desert Wastes: rolling dune ridges. */
+  /* Desert Wastes: rolling dune ridges, warmer and more saturated. */
   .world-terrain.terr-desertwastes{
-    height:16%;
-    clip-path: polygon(0% 100%,0% 75%,10% 60%,20% 70%,30% 50%,38% 42%,42% 55%,50% 30%,58% 55%,66% 42%,74% 65%,84% 55%,92% 68%,100% 58%,100% 100%);
-    background: linear-gradient(180deg, rgba(255,231,168,0) 0%, rgba(201,138,46,0.5) 45%, rgba(84,54,18,0.7) 100%);
-  }
-  /* Storm Nebula: soft bulging storm-cloud bank, not sharp peaks — reads
-     as cloud rather than mountain. */
-  .world-terrain.terr-stormnebula{
-    height:20%;
-    background:
-      radial-gradient(70px 44px at 8% 100%, rgba(107,91,255,0.5), transparent 70%),
-      radial-gradient(90px 54px at 27% 100%, rgba(60,50,120,0.55), transparent 70%),
-      radial-gradient(75px 46px at 47% 100%, rgba(107,91,255,0.48), transparent 70%),
-      radial-gradient(95px 56px at 68% 100%, rgba(60,50,120,0.55), transparent 70%),
-      radial-gradient(72px 45px at 88% 100%, rgba(107,91,255,0.48), transparent 70%);
-  }
-  /* Pluto's Paradise: a pastel crystalline-ice ridge, echoing Frozen
-     Comet's jaggedness but in the aurora world's own palette. */
-  .world-terrain.terr-plutoparadise{
-    height:16%;
-    clip-path: polygon(0% 100%,0% 65%,9% 45%,18% 68%,27% 35%,36% 60%,45% 25%,54% 58%,63% 32%,72% 62%,81% 40%,90% 65%,100% 48%,100% 100%);
-    background: linear-gradient(180deg, rgba(124,255,196,0) 0%, rgba(150,110,190,0.42) 45%, rgba(50,32,80,0.65) 100%);
-  }
-  /* Ashfall Wastes: a broken, uneven ruined-tower skyline with an
-     ember-lit horizon behind it. */
-  .world-terrain.terr-ashfallwastes{
     height:22%;
+    clip-path: polygon(0% 100%,0% 75%,10% 60%,20% 70%,30% 50%,38% 42%,42% 55%,50% 30%,58% 55%,66% 42%,74% 65%,84% 55%,92% 68%,100% 58%,100% 100%);
+    background: linear-gradient(180deg, rgba(255,231,168,0) 0%, rgba(216,150,50,0.65) 42%, rgba(74,48,16,0.85) 100%);
+  }
+  /* Storm Nebula: soft bulging storm-cloud bank that visibly rolls left
+     and right, with brighter cores. */
+  .world-terrain.terr-stormnebula{
+    height:26%;
+    background:
+      radial-gradient(85px 54px at 8% 100%, rgba(120,102,255,0.65), transparent 72%),
+      radial-gradient(108px 64px at 27% 100%, rgba(74,60,140,0.7), transparent 72%),
+      radial-gradient(90px 56px at 47% 100%, rgba(120,102,255,0.62), transparent 72%),
+      radial-gradient(114px 66px at 68% 100%, rgba(74,60,140,0.7), transparent 72%),
+      radial-gradient(86px 55px at 88% 100%, rgba(120,102,255,0.62), transparent 72%);
+    animation: terr-drift-soft 9s ease-in-out infinite;
+  }
+  /* Pluto's Paradise: a pastel crystalline-ice ridge with a soft aurora
+     glow along its peaks. */
+  .world-terrain.terr-plutoparadise{
+    height:22%;
+    clip-path: polygon(0% 100%,0% 65%,9% 45%,18% 68%,27% 35%,36% 60%,45% 25%,54% 58%,63% 32%,72% 62%,81% 40%,90% 65%,100% 48%,100% 100%);
+    background: linear-gradient(180deg, rgba(124,255,196,0) 0%, rgba(170,125,215,0.55) 42%, rgba(58,36,92,0.8) 100%);
+    --terr-glow: rgba(124,255,196,0.4);
+    animation: terr-glow-breathe 5.5s ease-in-out infinite;
+  }
+  /* Ashfall Wastes: a broken ruined-tower skyline with a hotter,
+     brighter ember-lit horizon behind it. */
+  .world-terrain.terr-ashfallwastes{
+    height:28%;
     clip-path: polygon(0% 100%,0% 60%,4% 60%,4% 40%,9% 40%,9% 72%,15% 72%,15% 30%,20% 30%,20% 55%,26% 55%,26% 45%,32% 45%,32% 68%,39% 68%,39% 35%,45% 35%,45% 58%,52% 58%,52% 25%,58% 25%,58% 50%,65% 50%,65% 15%,71% 15%,71% 62%,78% 62%,78% 32%,85% 32%,85% 55%,92% 55%,92% 22%,100% 22%,100% 100%);
-    background: linear-gradient(180deg, rgba(201,196,188,0) 0%, rgba(90,80,70,0.45) 35%, rgba(255,107,53,0.2) 70%, rgba(26,18,14,0.82) 100%);
+    background: linear-gradient(180deg, rgba(201,196,188,0) 0%, rgba(100,88,76,0.55) 32%, rgba(255,107,53,0.32) 68%, rgba(20,14,10,0.92) 100%);
+    --terr-glow: rgba(255,107,53,0.4);
+    animation: terr-glow-breathe 3.6s ease-in-out infinite;
   }
   /* Crystal Caverns: the cave closes in from both top and bottom —
-     stalagmites rising, stalactites hanging. */
+     stalagmites rising, stalactites hanging — with a stronger pink glow. */
   .world-terrain.terr-crystalcaverns{
-    height:20%;
+    height:26%;
     clip-path: polygon(0% 100%,0% 70%,5% 40%,10% 75%,16% 30%,22% 68%,28% 20%,34% 62%,40% 15%,46% 58%,52% 25%,58% 65%,64% 18%,70% 60%,76% 30%,82% 68%,88% 22%,94% 55%,100% 35%,100% 100%);
-    background: linear-gradient(180deg, rgba(255,214,245,0) 0%, rgba(156,77,204,0.4) 45%, rgba(52,14,68,0.68) 100%);
-    filter: drop-shadow(0 0 10px rgba(255,184,240,0.2));
+    background: linear-gradient(180deg, rgba(255,214,245,0) 0%, rgba(190,95,225,0.55) 42%, rgba(46,12,62,0.86) 100%);
+    --terr-glow: rgba(255,184,240,0.4);
+    animation: terr-glow-breathe 4s ease-in-out infinite;
   }
   .world-terrain-top.terr-top-crystalcaverns{
-    height:18%;
+    height:24%;
     clip-path: polygon(0% 0%,0% 30%,5% 60%,10% 25%,16% 70%,22% 32%,28% 80%,34% 38%,40% 85%,46% 42%,52% 75%,58% 35%,64% 82%,70% 40%,76% 70%,82% 32%,88% 78%,94% 45%,100% 65%,100% 0%);
-    background: linear-gradient(0deg, rgba(255,214,245,0) 0%, rgba(156,77,204,0.4) 45%, rgba(52,14,68,0.68) 100%);
-    filter: drop-shadow(0 0 10px rgba(255,184,240,0.2));
+    background: linear-gradient(0deg, rgba(255,214,245,0) 0%, rgba(190,95,225,0.55) 42%, rgba(46,12,62,0.86) 100%);
+    --terr-glow: rgba(255,184,240,0.4);
+    animation: terr-glow-breathe 4s ease-in-out 0.4s infinite;
   }
-  /* Ancient Ruins: a temple pediment silhouette over a row of columns. */
+  /* Ancient Ruins: a temple pediment silhouette over a row of columns,
+     with warmer gold fill. */
   .world-terrain.terr-ruins{
-    height:20%;
+    height:26%;
     clip-path: polygon(0% 100%,0% 55%,50% 20%,100% 55%,100% 100%);
     background:
-      repeating-linear-gradient(90deg, rgba(232,196,104,0.5) 0 10px, transparent 10px 26px),
-      linear-gradient(180deg, rgba(232,196,104,0) 0%, rgba(120,90,40,0.55) 100%);
+      repeating-linear-gradient(90deg, rgba(232,196,104,0.65) 0 10px, transparent 10px 26px),
+      linear-gradient(180deg, rgba(232,196,104,0) 0%, rgba(140,106,46,0.72) 100%);
   }
-  /* Haunted Manor: a crooked gothic rooftop line with bare thin trees. */
+  /* Haunted Manor: a crooked gothic rooftop line with bare thin trees,
+     lit by a sickly green glow. */
   .world-terrain.terr-haunted{
-    height:20%;
+    height:26%;
     clip-path: polygon(0% 100%,0% 60%,5% 45%,9% 60%,9% 25%,11% 25%,11% 60%,18% 60%,18% 40%,26% 40%,26% 55%,26% 30%,30% 30%,30% 55%,38% 55%,38% 20%,40% 20%,40% 55%,48% 55%,48% 45%,56% 45%,56% 60%,64% 60%,64% 35%,66% 35%,66% 60%,74% 60%,74% 42%,82% 42%,82% 58%,90% 58%,90% 38%,100% 38%,100% 100%);
-    background: linear-gradient(180deg, rgba(154,255,192,0) 0%, rgba(58,38,86,0.5) 40%, rgba(16,8,28,0.75) 100%);
+    background: linear-gradient(180deg, rgba(154,255,192,0) 0%, rgba(74,48,108,0.62) 36%, rgba(10,5,18,0.9) 100%);
+    --terr-glow: rgba(154,255,192,0.3);
+    animation: terr-glow-breathe 6s ease-in-out infinite;
   }
-  /* Carnival Nightmare: a row of striped big-top tent peaks. */
+  /* Carnival Nightmare: a row of striped big-top tent peaks, bolder
+     stripes and hotter pink-red base. */
   .world-terrain.terr-carnival{
-    height:18%;
+    height:24%;
     clip-path: polygon(0% 100%,0% 55%,6% 30%,12% 55%,18% 25%,24% 55%,30% 32%,36% 55%,42% 22%,48% 55%,54% 30%,60% 55%,66% 25%,72% 55%,78% 32%,84% 55%,90% 22%,96% 55%,100% 40%,100% 100%);
     background:
-      repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 8px, transparent 8px 16px),
-      linear-gradient(180deg, rgba(255,209,102,0) 0%, rgba(255,92,138,0.45) 45%, rgba(110,20,55,0.7) 100%);
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.16) 0 8px, transparent 8px 16px),
+      linear-gradient(180deg, rgba(255,209,102,0) 0%, rgba(255,92,138,0.6) 42%, rgba(90,16,45,0.86) 100%);
   }
-  /* Steampunk Skyworks: boxy factory blocks with tall thin chimneys. */
+  /* Steampunk Skyworks: boxy factory blocks with tall thin chimneys,
+     brassier and darker at the base. */
   .world-terrain.terr-steampunk{
-    height:22%;
+    height:28%;
     clip-path: polygon(0% 100%,0% 55%,5% 55%,5% 30%,8% 30%,8% 55%,14% 55%,14% 45%,20% 45%,20% 60%,26% 60%,26% 20%,29% 20%,29% 60%,35% 60%,35% 40%,42% 40%,42% 58%,48% 58%,48% 25%,51% 25%,51% 58%,58% 58%,58% 35%,65% 35%,65% 55%,71% 55%,71% 18%,74% 18%,74% 55%,80% 55%,80% 42%,87% 42%,87% 60%,93% 60%,93% 28%,100% 28%,100% 100%);
-    background: linear-gradient(180deg, rgba(217,160,91,0) 0%, rgba(74,90,94,0.5) 35%, rgba(24,26,28,0.8) 100%);
+    background: linear-gradient(180deg, rgba(217,160,91,0) 0%, rgba(96,116,120,0.62) 30%, rgba(16,18,20,0.92) 100%);
   }
-  /* Bioluminescent Cave: a cluster of glowing mushroom-cap domes. */
+  /* Bioluminescent Cave: a cluster of glowing mushroom-cap domes with a
+     stronger pulsing glow. */
   .world-terrain.terr-biocave{
-    height:18%;
+    height:24%;
     background:
-      radial-gradient(52px 56px at 10% 100%, rgba(107,255,192,0.5), transparent 70%),
-      radial-gradient(72px 64px at 30% 100%, rgba(46,217,195,0.55), transparent 70%),
-      radial-gradient(46px 50px at 50% 100%, rgba(107,255,192,0.45), transparent 70%),
-      radial-gradient(66px 60px at 72% 100%, rgba(46,217,195,0.5), transparent 70%),
-      radial-gradient(56px 58px at 92% 100%, rgba(107,255,192,0.5), transparent 70%);
-    filter: drop-shadow(0 0 8px rgba(107,255,192,0.25));
+      radial-gradient(60px 64px at 10% 100%, rgba(107,255,192,0.65), transparent 72%),
+      radial-gradient(82px 74px at 30% 100%, rgba(46,217,195,0.7), transparent 72%),
+      radial-gradient(54px 58px at 50% 100%, rgba(107,255,192,0.6), transparent 72%),
+      radial-gradient(76px 68px at 72% 100%, rgba(46,217,195,0.65), transparent 72%),
+      radial-gradient(64px 66px at 92% 100%, rgba(107,255,192,0.65), transparent 72%);
+    --terr-glow: rgba(107,255,192,0.4);
+    animation: terr-glow-breathe 3.4s ease-in-out infinite;
   }
   /* Zero-G Playground: no ground at all — instead a couple of floating
      playground shapes (a monkey-bar ring, a drifting platform bar)
-     tucked near the edges so the middle stays clear for gameplay. */
+     tucked near the edges so the middle stays clear for gameplay, now
+     brighter and more visible. */
   .world-terrain-float.terr-float-zerog{ inset:0; }
   .world-terrain-float.terr-float-zerog .zg-ring{
     position:absolute; top:38%; left:4%;
     width:min(16vw,90px); height:min(16vw,90px);
     border-radius:50%;
-    border:7px solid rgba(255,158,214,0.32);
+    border:7px solid rgba(255,158,214,0.5);
+    box-shadow: 0 0 14px rgba(255,158,214,0.3);
     animation: sig-zero-bob 6.5s ease-in-out infinite;
   }
   .world-terrain-float.terr-float-zerog .zg-bar{
     position:absolute; top:62%; right:6%;
     width:min(20vw,120px); height:14px;
     border-radius:7px;
-    background: rgba(77,224,255,0.3);
+    background: rgba(77,224,255,0.48);
+    box-shadow: 0 0 14px rgba(77,224,255,0.28);
     animation: sig-zero-bob 5.5s ease-in-out 1s infinite;
   }
   .world-ambience-tint{
@@ -7990,12 +8054,10 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
       '<div class="boss-hpbar"><div class="boss-hpfill"></div></div>' +
       '<div class="boss-timer"></div>' +
     '</div>' +
-    '<div class="boss-word"></div>' +
-    '<div class="boss-hint">Type the word to defeat it!</div>';
+    '<div class="boss-hint">Type the letters as the boss throws them!</div>';
   gameEl.appendChild(overlay);
 
   const introEl = overlay.querySelector('.boss-intro');
-  const wordEl = overlay.querySelector('.boss-word');
   const hpFill = overlay.querySelector('.boss-hpfill');
   const bossFigure = overlay.querySelector('.boss-figure');
   const timerEl = overlay.querySelector('.boss-timer');
@@ -8061,30 +8123,85 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
   // regular idle bob (already defined on .boss-figure) takes back over.
   schedule(()=>{ bossFigure.classList.remove('boss-enter'); }, 660);
 
-  // Boss patrol: the whole figure drifts side to side AND toward/away from
-  // camera throughout the fight (zoom + a matching vertical shift, plus a
-  // slight lean into the direction of travel) so it reads as an actual
-  // creature prowling around instead of just bobbing in one spot. This is
-  // on the wrapper, separate from boss-figure's own bob/rotate/hit
-  // animations, and never touches the word/timer/hit-detection logic —
-  // those all live in the HUD panel below, not on the boss itself.
+  // Boss patrol: the whole figure moves throughout the fight, separate
+  // from boss-figure's own bob/rotate/hit animations. Rather than always
+  // running the same drift algorithm, one of several distinct movement
+  // *styles* is picked fresh at the start of each fight — so beating the
+  // same boss (or the same tier) again doesn't always look identical.
+  // Never touches word/timer/hit-detection logic — those live in the HUD
+  // panel below, not on the boss itself.
   const figureWrap = overlay.querySelector('.boss-figure-wrap');
+  const MOVE_PATTERNS = ['prowl','orbit','lunge','strafe','stomp'];
+  const movePattern = MOVE_PATTERNS[Math.floor(Math.random()*MOVE_PATTERNS.length)];
+  let orbitAngle = Math.random()*Math.PI*2;
+  let lungeCharging = false;
   let moveTimer = null;
   function scheduleBossMove(){
     const overlayW = overlay.getBoundingClientRect().width || 300;
     const maxOffset = Math.min(70, overlayW*0.16);
-    const nextX = (Math.random()*2 - 1) * maxOffset;
-    const lean = nextX > 0 ? 3 : (nextX < 0 ? -3 : 0);
-    // Zoom range widens a bit once raging, so the charge-forward reads as
-    // more aggressive. Scaling up is paired with a small downward shift
-    // (and scaling down with a small upward shift) so it reads as the
-    // boss physically stepping closer/further, not just growing in place.
-    const zoomRange = raging ? 0.34 : 0.22;
-    const nextScale = 1 + (Math.random()*2 - 1) * zoomRange;
-    const nextY = (nextScale - 1) * 60;
-    const moveMs = raging ? (650 + Math.random()*550) : (1300 + Math.random()*1100);
+    let nextX = 0, nextY = 0, nextScale = 1, lean = 0, moveMs = 1000, timingFn = null;
+
+    if(movePattern === 'orbit'){
+      // Smooth continuous loop around center — ticks small and often so
+      // the path reads as one flowing circuit rather than discrete jumps.
+      orbitAngle += raging ? 0.55 : 0.32;
+      const radius = maxOffset * (raging ? 0.95 : 0.72);
+      nextX = Math.cos(orbitAngle) * radius;
+      nextY = Math.sin(orbitAngle) * radius * 0.45;
+      nextScale = 1 + Math.sin(orbitAngle*2) * 0.08;
+      lean = Math.cos(orbitAngle) * 5;
+      moveMs = raging ? 260 : 380;
+      timingFn = 'linear';
+    } else if(movePattern === 'lunge'){
+      // Long telegraphed hold, then a sudden charge at the camera, then a
+      // slower retreat — a stalking rhythm instead of continuous drift.
+      lungeCharging = !lungeCharging;
+      if(lungeCharging){
+        nextX = (Math.random()*2-1) * maxOffset*0.4;
+        nextScale = raging ? 1.55 : 1.32;
+        nextY = (nextScale-1) * 60;
+        lean = nextX > 0 ? 6 : -6;
+        moveMs = raging ? 220 : 320;
+        timingFn = 'cubic-bezier(.34,1.56,.64,1)';
+      } else {
+        nextX = (Math.random()*2-1) * maxOffset*0.7;
+        nextScale = 0.82;
+        nextY = (nextScale-1) * 60;
+        moveMs = raging ? 700 : 1100;
+        timingFn = 'ease-in-out';
+      }
+    } else if(movePattern === 'strafe'){
+      // Quick floaty side-to-side hover with a small zoom range — reads
+      // as skittering/levitating rather than stepping toward the camera.
+      nextX = (Math.random()*2-1) * maxOffset * 1.1;
+      nextScale = 1 + (Math.random()*2-1) * (raging ? 0.14 : 0.08);
+      nextY = -Math.abs(nextX) * 0.12;
+      lean = nextX > 0 ? 4 : (nextX < 0 ? -4 : 0);
+      moveMs = raging ? (260+Math.random()*220) : (480+Math.random()*380);
+      timingFn = 'ease-out';
+    } else if(movePattern === 'stomp'){
+      // Heavy down/up stomps paired with jitter — punchier and more
+      // percussive than a smooth prowl.
+      const down = Math.random() < 0.5;
+      nextScale = down ? (raging?1.4:1.22) : (raging?0.78:0.88);
+      nextY = down ? 34 : -18;
+      nextX = (Math.random()*2-1) * maxOffset * 0.5;
+      lean = (Math.random()*2-1) * 6;
+      moveMs = raging ? (240+Math.random()*180) : (500+Math.random()*300);
+      timingFn = 'cubic-bezier(.36,.07,.19,.97)';
+    } else {
+      // 'prowl' (original default): loose random drift + zoom lean.
+      nextX = (Math.random()*2 - 1) * maxOffset;
+      lean = nextX > 0 ? 3 : (nextX < 0 ? -3 : 0);
+      const zoomRange = raging ? 0.34 : 0.22;
+      nextScale = 1 + (Math.random()*2 - 1) * zoomRange;
+      nextY = (nextScale - 1) * 60;
+      moveMs = raging ? (650 + Math.random()*550) : (1300 + Math.random()*1100);
+    }
+
+    figureWrap.style.transitionTimingFunction = timingFn || '';
     figureWrap.style.transitionDuration = (moveMs/1000).toFixed(2) + 's';
-    figureWrap.style.transform = `translate(${nextX.toFixed(1)}px, ${nextY.toFixed(1)}px) scale(${nextScale.toFixed(2)}) rotate(${lean}deg)`;
+    figureWrap.style.transform = `translate(${nextX.toFixed(1)}px, ${nextY.toFixed(1)}px) scale(${nextScale.toFixed(2)}) rotate(${lean.toFixed(1)}deg)`;
     moveTimer = schedule(scheduleBossMove, moveMs);
   }
   scheduleBossMove();
@@ -8139,14 +8256,6 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
       }, spawnDelay);
     }
   }
-  const letterEls = word.split('').map((ch, i)=>{
-    const s = document.createElement('span');
-    s.className = 'boss-letter' + (i===0 ? ' active' : '');
-    s.textContent = ch.toUpperCase();
-    wordEl.appendChild(s);
-    return s;
-  });
-
   // ---------- Boss power attack ----------
   // While the fight is on, the boss also flings loose letters from random
   // spots across the whole arena (not just the target word above). Typing
@@ -8185,7 +8294,7 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
     beam.style.top = (from.y - length) + 'px';
     beam.style.height = length + 'px';
     beam.style.transformOrigin = '50% 100%';
-    beam.style.transform = `rotate(${angleDeg}deg)`;
+    beam.style.setProperty('--laser-angle', angleDeg + 'deg');
     beam.style.background = `linear-gradient(180deg, #fff, ${color} 45%, transparent)`;
     beam.style.color = color;
     overlay.appendChild(beam);
@@ -8193,6 +8302,103 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
     shipEl.classList.remove('ship-fire');
     void shipEl.offsetWidth;
     shipEl.classList.add('ship-fire');
+  }
+
+  // ---------- Boss word attack ----------
+  // The target word is never spelled out in a static row anymore — instead
+  // the boss flings its letters at the player one at a time, in order,
+  // dressed up bigger and gold-glowing so it always reads as the main
+  // threat next to any regular power letters also in the air. Typing it
+  // hits it (same pointer/hp/finish logic the old static row drove);
+  // missing it just fades away and the boss throws the *same* letter
+  // again a beat later, so only the overall countdown timer can end the
+  // fight — difficulty is identical to the old typed-word version.
+  let currentWordLetter = null;
+  let wordLetterRespawnTimer = null;
+
+  function spawnWordLetter(){
+    if(finished || pointer >= word.length) return;
+    const ch = word[pointer];
+    const el = document.createElement('div');
+    el.className = 'boss-word-letter';
+    el.textContent = ch === ';' ? ';' : ch.toUpperCase();
+
+    const bossPos = relCenter(bossFigure);
+    const startX = bossPos.x;
+    const startY = bossPos.y;
+    el.style.left = startX + 'px';
+    el.style.top = startY + 'px';
+    overlay.appendChild(el);
+
+    bossFigure.classList.remove('boss-cast');
+    void bossFigure.offsetWidth;
+    bossFigure.classList.add('boss-cast');
+    bossSparkBurstAt(el, 4, [theme.glow, '#FFD166']);
+
+    const gw = overlay.clientWidth || gameEl.clientWidth || 300;
+    const gh = overlay.clientHeight || gameEl.clientHeight || 500;
+    // Thrown straight-ish at the ship (tighter spread than regular power
+    // letters) since this is the one letter the player actually needs.
+    const shipPos = relCenter(shipEl);
+    const spread = gw * 0.14;
+    const targetX = Math.min(gw*0.92, Math.max(gw*0.08, shipPos.x + (Math.random()*2-1)*spread));
+    const targetY = Math.max(40, gh - 64);
+    const durMs = raging ? (1300 + Math.random()*300) : (2100 + Math.random()*500);
+
+    const obj = { el, ch };
+    currentWordLetter = obj;
+    requestAnimationFrame(()=>{
+      if(currentWordLetter !== obj) return;
+      const durSec = (durMs/1000).toFixed(2) + 's';
+      el.style.transition = 'left ' + durSec + ' ease-in, top ' + durSec + ' ease-in';
+      el.style.left = targetX + 'px';
+      el.style.top = targetY + 'px';
+    });
+    obj.missTimer = schedule(()=>{
+      if(currentWordLetter === obj) missWordLetter(obj);
+    }, durMs + 40);
+  }
+
+  // Thrown letter reached the bottom untouched — no penalty (only the
+  // overall timer punishes being slow), just fades out and gets thrown
+  // again so there's always something to type.
+  function missWordLetter(obj){
+    if(currentWordLetter === obj) currentWordLetter = null;
+    clearTimeout(obj.missTimer);
+    obj.el.style.transition = 'none';
+    obj.el.classList.add('boss-word-miss');
+    schedule(()=>obj.el.remove(), 320);
+    if(!finished) wordLetterRespawnTimer = schedule(spawnWordLetter, 260);
+  }
+
+  // Player zapped the thrown letter before it landed — this is what used
+  // to be "typed the next letter in the static row". Same pointer/hp/
+  // rage/finish logic as before, just fired from here instead of onKey.
+  function hitWordLetter(obj){
+    if(currentWordLetter === obj) currentWordLetter = null;
+    clearTimeout(obj.missTimer);
+    const pos = relCenter(obj.el);
+    obj.el.style.transition = 'none';
+    obj.el.classList.add('boss-word-hit');
+    schedule(()=>obj.el.remove(), 340);
+
+    pointer += 1;
+    const hpPercent = Math.max(0, 100 - Math.round((pointer/word.length)*100));
+    hpFill.style.width = hpPercent + '%';
+    fireShipBeam(pos.x, pos.y, shipColor);
+    bossFigure.classList.remove('boss-hit');
+    void bossFigure.offsetWidth;
+    bossFigure.classList.add('boss-hit');
+    flashScreenPulse('flash-hit', 200);
+    bossSparkBurst(raging ? 10 : 6, [theme.glow, '#FFD166']);
+    if(pointer > 1 && pointer % 2 === 1) spawnHypeText();
+    screenShake(gameEl, 'light');
+    maybeEnterRage(hpPercent);
+    if(pointer < word.length){
+      wordLetterRespawnTimer = schedule(spawnWordLetter, 320);
+    } else {
+      finish(true);
+    }
   }
 
   function spawnPowerLetter(){
@@ -8344,6 +8550,15 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
     powerLetters = [];
   }
 
+  function clearWordLetter(){
+    clearTimeout(wordLetterRespawnTimer);
+    if(currentWordLetter){
+      clearTimeout(currentWordLetter.missTimer);
+      currentWordLetter.el.remove();
+      currentWordLetter = null;
+    }
+  }
+
   // Ends the fight immediately with no defeat/timeout screen of its own —
   // used only when a power-letter hit brings hearts to zero, since the
   // outer game's triggerGameOver() already takes over the screen at that
@@ -8355,8 +8570,10 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
     clearTimeout(ambientTimer);
     clearTimeout(moveTimer);
     clearAllPowerLetters();
+    clearWordLetter();
     if(timerId) clearInterval(timerId);
     document.removeEventListener('keydown', onKey);
+    figureWrap.style.transitionTimingFunction = '';
     figureWrap.style.transitionDuration = '0.3s';
     figureWrap.style.transform = 'translate(0px, 0px) scale(1) rotate(0deg)';
     overlay.remove();
@@ -8384,8 +8601,10 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
       if(timeLeft <= 0) finish(false);
     }, 1000);
     document.addEventListener('keydown', onKey);
-    // Grace period before the boss starts flinging letters, so there's a
-    // beat to read the target word before also having to watch the skies.
+    // The boss throws the first word letter right away — that's the main
+    // challenge now. Its own power attack (unrelated stray letters) still
+    // waits a beat before joining in, same grace period as before.
+    spawnWordLetter();
     powerSpawnTimer = schedule(schedulePowerSpawn, 900);
   }
 
@@ -8396,8 +8615,10 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
     clearTimeout(ambientTimer);
     clearTimeout(moveTimer);
     clearAllPowerLetters();
+    clearWordLetter();
     if(timerId) clearInterval(timerId);
     document.removeEventListener('keydown', onKey);
+    figureWrap.style.transitionTimingFunction = '';
     figureWrap.style.transitionDuration = '0.3s';
     figureWrap.style.transform = 'translate(0px, 0px) scale(1) rotate(0deg)';
     if(won){
@@ -8452,27 +8673,12 @@ function startBossFight(gameEl, bossNumber, unlockedLetters, difficulty, worldKe
       }
       return;
     }
-    const hitIdx = pointer;
-    letterEls[hitIdx].classList.remove('active');
-    letterEls[hitIdx].classList.add('hit', 'letter-pop');
-    schedule(()=>letterEls[hitIdx].classList.remove('letter-pop'), 340);
-    pointer += 1;
-    const hpPercent = Math.max(0, 100 - Math.round((pointer/word.length)*100));
-    hpFill.style.width = hpPercent + '%';
-    const bossPos = relCenter(bossFigure);
-    fireShipBeam(bossPos.x, bossPos.y, shipColor);
-    bossFigure.classList.remove('boss-hit');
-    void bossFigure.offsetWidth;
-    bossFigure.classList.add('boss-hit');
-    flashScreenPulse('flash-hit', 200);
-    bossSparkBurst(raging ? 10 : 6, [theme.glow, '#FFD166']);
-    if(hitIdx > 0 && hitIdx % 2 === 0) spawnHypeText();
-    screenShake(gameEl, 'light');
-    maybeEnterRage(hpPercent);
-    if(pointer < word.length){
-      letterEls[pointer].classList.add('active');
-    } else {
-      finish(true);
+    // Correct next letter — but it only counts as a hit while the boss
+    // actually has that letter in flight (there's a brief beat between a
+    // miss/hit and the next throw). If it hasn't been thrown yet, treat
+    // this as an early/idle keystroke: no shake, no hit, just wait for it.
+    if(currentWordLetter && currentWordLetter.ch === ch){
+      hitWordLetter(currentWordLetter);
     }
   }
 }
@@ -11733,7 +11939,7 @@ const pauseSpace = (function(){
     beam.style.top = (originY-length)+'px';
     beam.style.height = length+'px';
     beam.style.transformOrigin = '50% 100%';
-    beam.style.transform = `rotate(${angleDeg}deg)`;
+    beam.style.setProperty('--laser-angle', angleDeg + 'deg');
     beam.style.background = `linear-gradient(180deg, #fff, ${color} 40%, transparent)`;
     beam.style.width = '6px';
     beam.style.color = color;
@@ -12087,7 +12293,7 @@ const pauseSpace = (function(){
     rainbowbeam: { emoji:'🌈', c1:'#FF9EDB', c2:'#4DE8FF', desc:'A sweeping beam pops everything it touches' },
     lifesupport: { emoji:'💚', c1:'#A8FFC8', c2:'#2ECC71', desc:'Instantly grants an extra heart' },
     deepfreeze:  { emoji:'🧊', c1:'#EAFBFF', c2:'#3FC6FF', desc:'Freezes every invader solid, then shatters them all at once' },
-    tornado:     { emoji:'🌪️', c1:'#E8E4D8', c2:'#8C7A5B', desc:'Two funnels sweep the screen in opposite directions, popping what they touch' },
+    tornado:     { emoji:'🌪️', c1:'#E8E4D8', c2:'#8C7A5B', desc:'Six funnels swarm in and hunt down invaders one by one' },
     tidalwave:   { emoji:'🌊', c1:'#B8E8FF', c2:'#1478B8', desc:'A wavy wall of water washes up the screen and splashes everything it crests past' },
     rocketbarrage:{ emoji:'🚀', c1:'#FFD9A0', c2:'#FF6A1A', desc:'Rockets lock onto every invader on screen and blast them' },
   };
@@ -12542,7 +12748,7 @@ const pauseSpace = (function(){
     beam.style.height = length+'px';
     beam.style.width = '5px';
     beam.style.transformOrigin = '50% 100%';
-    beam.style.transform = `rotate(${angleDeg}deg)`;
+    beam.style.setProperty('--laser-angle', angleDeg + 'deg');
     beam.style.background = `linear-gradient(180deg, #fff, ${color} 40%, transparent)`;
     game.appendChild(beam);
     schedule(()=>beam.remove(), 160);
@@ -12711,26 +12917,53 @@ const pauseSpace = (function(){
     }, DEEP_FREEZE_HOLD_MS);
   }
 
-  // ---- Tornado Sweep: TWO funnels run at once, each on its own band
-  // (upper/lower) and sweeping in opposite directions, instead of one
-  // funnel gambling on a single wandering path through the middle of the
-  // screen. One funnel alone could easily miss everything if invaders
-  // happened to be clustered near the top or bottom; splitting it across
-  // two bands covering most of the field's height makes it reliably
-  // catch what's actually on screen. ----
+  // ---- Tornado Sweep: SIX funnels, each actively homing toward the
+  // nearest still-alive invader (retargeting the moment its target pops
+  // or vanishes), instead of blindly sweeping a fixed S-curve and hoping
+  // invaders happen to be in the way. This makes the power reliably
+  // clear most of what's on screen rather than gambling on overlap. ----
+  const TORNADO_COUNT = 6;
   const TORNADO_MS = 4500;
   const TORNADO_RADIUS = 62;
-  function runTornadoFunnel(dur, baseY, amplitude, reverse, wobbleSpeed, popped){
-    const gameW = game.clientWidth;
+  function tornadoPickTarget(x, y, popped){
+    let best = null, bestDist = Infinity;
+    invaders.forEach(c=>{
+      if(c.popping || c.missed || popped.has(c.id)) return;
+      const dx = (c.x+30) - x, dy = (c.y+28) - y;
+      const d = dx*dx + dy*dy;
+      if(d < bestDist){ bestDist = d; best = c; }
+    });
+    return best;
+  }
+  function runTornadoHoming(dur, startX, startY, popped, wobbleSeed, speedPxPerSec){
+    let x = startX, y = startY;
     const funnel = document.createElement('div');
     funnel.className = 'tornado-funnel';
+    funnel.style.left = x+'px';
+    funnel.style.top = y+'px';
     game.appendChild(funnel);
     const startTime = performance.now();
+    let lastTime = startTime;
+    let target = null;
     function step(now){
-      const raw = Math.min(1, (now-startTime)/dur);
-      const t = reverse ? 1-raw : raw;
-      const x = t * (gameW + 100) - 50;
-      const y = baseY + Math.sin(raw*Math.PI*wobbleSpeed) * amplitude;
+      const dt = Math.min(50, now - lastTime);
+      lastTime = now;
+      const elapsed = now - startTime;
+      if(!target || target.popping || target.missed || popped.has(target.id)){
+        target = tornadoPickTarget(x, y, popped);
+      }
+      if(target){
+        const tx = target.x+30, ty = target.y+28;
+        const dx = tx - x, dy = ty - y;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        const step = speedPxPerSec * dt/1000;
+        x += (dx/dist) * Math.min(step, dist);
+        y += (dy/dist) * Math.min(step, dist);
+        x += Math.sin(elapsed/140 + wobbleSeed) * 1.6; // organic wobble on top of the chase
+      } else {
+        // nothing left to chase — drift gently so it doesn't just freeze
+        y += 45 * dt/1000;
+      }
       funnel.style.left = x+'px';
       funnel.style.top = y+'px';
       invaders.forEach(c=>{
@@ -12739,9 +12972,10 @@ const pauseSpace = (function(){
         if(Math.sqrt(dx*dx+dy*dy) < TORNADO_RADIUS){
           popped.add(c.id);
           popInvaderGroup([c], 8);
+          if(target && target.id === c.id) target = null;
         }
       });
-      if(raw < 1){
+      if(elapsed < dur){
         requestAnimationFrame(step);
       } else {
         funnel.remove();
@@ -12752,16 +12986,17 @@ const pauseSpace = (function(){
   function triggerTornadoPower(){
     showToast('🌪️ Tornado Sweep!');
     speak('Tornado!');
-    const gameH = game.clientHeight;
+    const gameW = game.clientWidth, gameH = game.clientHeight;
     const dur = powerDurationMs(TORNADO_MS, 'tornado');
     const popped = new Set();
-    // Upper funnel sweeps left-to-right, lower funnel sweeps right-to-left
-    // (started a beat later so the two don't read as one mirrored
-    // copy-paste). Bands widened (was 0.16-0.48 / 0.52-0.84, missing
-    // invaders near the top and bottom) so together they cover nearly
-    // the full field.
-    runTornadoFunnel(dur, gameH * 0.25, gameH * 0.22, false, 3.2, popped);
-    schedule(()=> runTornadoFunnel(dur, gameH * 0.65, gameH * 0.22, true, 2.8, popped), 150);
+    // Chase speed scaled to the field size so it always feels equally
+    // snappy regardless of screen dimensions.
+    const speedPxPerSec = (gameW + gameH) * 0.55;
+    for(let i=0; i<TORNADO_COUNT; i++){
+      const startX = gameW * (0.12 + 0.76 * (i / (TORNADO_COUNT-1)));
+      const startY = -40 - Math.random()*60;
+      schedule(()=> runTornadoHoming(dur, startX, startY, popped, i*1.7, speedPxPerSec), i*80);
+    }
   }
 
   // ---- Tidal Wave: unlike Rainbow Beam's flat line sweeping straight up,
