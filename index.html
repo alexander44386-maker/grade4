@@ -7907,10 +7907,11 @@ function normalizeQuestionsJSON(parsed, fallbackTopicRaw, forcedTopicRaw) {
 // GEMINI_KEY_STORAGE / loadGeminiApiKey / saveGeminiApiKey above) so the
 // student's family only has to paste one free Gemini key for the whole app.
 // ============================================================
-// Sep 2026: Gemini 3.8 Flash is the current recommended Flash model. Note that
-// starting with 3.6 Flash, Google deprecated the temperature/top_p/top_k
-// sampling params — generationConfig below intentionally omits them.
-const GEMINI_TEXT_MODEL = "gemini-3.8-flash";
+// Reverted to Gemini 3.6 Flash (3.8 Flash was hitting high-demand/availability
+// issues). Note that starting with 3.6 Flash, Google deprecated the
+// temperature/top_p/top_k sampling params — generationConfig below
+// intentionally omits them.
+const GEMINI_TEXT_MODEL = "gemini-3.6-flash";
 const GEMINI_TEXT_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TEXT_MODEL}:generateContent`;
 const GEMINI_DIFFICULTY_PHRASING = {
   easy: "Keep it EASY: short sentences, the most basic recall-level facts straight from the notes, and obviously-different wrong answers.",
